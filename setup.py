@@ -33,4 +33,5 @@ setup(
     setup_requires=setup_requirements,
     # url='to be defined',
     version=__version__,
+    entry_points={'console_scripts': ['ackrep=ackrep_core.script:main']}
 )
