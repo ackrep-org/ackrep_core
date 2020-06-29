@@ -1,2 +1,4 @@
 ipydex
 colorama
+questionary
+django
