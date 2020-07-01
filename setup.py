@@ -13,6 +13,10 @@ with open("requirements.txt") as requirements_file:
 
 setup_requirements = [ ]
 
+main_package_name = "ackrep_core"
+assert main_package_name in find_packages()
+
+
 setup(
     author="Carsten Knoll",
     author_email='carsten.knoll@posteo.de',
@@ -30,6 +34,7 @@ setup(
     keywords='knowledge mangement, repository based database',
     name='ackrep-core',
     packages=find_packages(),
+    package_data={'ackrep_core': ['templates/*']},
     setup_requires=setup_requirements,
     # url='to be defined',
     version=__version__,

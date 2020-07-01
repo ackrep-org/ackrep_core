@@ -1,4 +1,5 @@
 ipydex
+yaml
 colorama
 questionary
 django

@@ -5,7 +5,9 @@ import pprint
 from colorama import Style, Fore
 import questionary
 
-from ipydex import IPS
+from ipydex import IPS, activate_ips_on_exception
+
+activate_ips_on_exception()
 
 
 def main():
@@ -19,23 +21,17 @@ def main():
     args = argparser.parse_args()
 
     if args.pk:
-        print("Random primary key: ", core.gen_random_pk())
+        print("Random primary key: ", core.gen_random_key())
         return
 
     if args.dd:
         IPS()
         return
     if args.qq:
-        # !! debug/testing
-        res = questionary.select(
-            "What do you want to do?",
-            choices=[
-                'Order a pizza',
-                'Make a reservation',
-                'Ask for opening hours'
-            ]).ask()  # returns value of selection
 
-        IPS()
+        entity = dialoge_entity_type()
+        field_values = dialoge_field_values(entity)
+        core.convert_dict_to_yaml(field_values, target_path="./metadata.yml")
         return
 
     if args.md:
@@ -52,6 +48,60 @@ def main():
 
     print("This is the ackrep_core command line tool\n")
     argparser.print_help()
+
+
+# worker functions
+
+def dialoge_entity_type():
+    entities = models.get_entities()
+
+    choices = [e._type for e in entities]
+
+    type_map = dict(zip(choices, entities))
+
+    res = questionary.select(
+        "\nWhich entity do you want to create?\n(Use `..` to answer all remaining questions with default values).",
+        choices=choices,
+        ).ask()  # returns value of selection
+
+    return type_map[res]
+
+
+def dialoge_field_values(entity_class):
+
+    fields = entity_class.get_fields()
+
+    entity = entity_class(key=core.gen_random_key())
+
+    res_dict = dict()
+
+    # prefill the dict with default values
+    for f in fields:
+        default = getattr(entity, f.name, None)
+        if default is None:
+            default = ""
+        res_dict[f.name] = default
+
+    # now ask the user on each value
+    omit_flag = False
+    for f in fields:
+        question = f"{f.name} ? "
+        default = res_dict[f.name]
+
+        qres = questionary.text(question, default=default).skip_if(omit_flag, default=default).ask()
+
+        # shortcut to omit further questions
+        if qres == "..":
+            omit_flag = True
+            qres = default
+
+        # pragmatic way to handle lists
+        if f.name.endswith("_list"):
+            qres = qres.split(";")
+
+        res_dict[f.name] = qres
+
+    return res_dict
 
 
 # helper functions

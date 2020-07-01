@@ -2,10 +2,6 @@ import secrets
 import yaml
 
 
-def gen_random_pk():
-    return "".join([c for c in secrets.token_urlsafe(10).upper() if c.isalnum()])[:5]
-
-
 valid_types = [
     "problem_class",
     "problem_specification",
@@ -34,6 +30,10 @@ required_generic_meta_data = {
     }
 
 
+def gen_random_key():
+    return "".join([c for c in secrets.token_urlsafe(10).upper() if c.isalnum()])[:5]
+
+
 def get_metadata_from_file(fname, subtype=None):
     """
     Load metadata
@@ -51,3 +51,24 @@ def get_metadata_from_file(fname, subtype=None):
     # TODO: add more consistency checks
 
     return data
+
+
+def convert_dict_to_yaml(data, target_path=None):
+
+    class MyDumper(yaml.Dumper):
+        """
+        This class results in the preferred indentation style
+        source: https://stackoverflow.com/a/39681672/333403
+        """
+
+        def increase_indent(self, flow=False, indentless=False):
+            return super(MyDumper, self).increase_indent(flow, False)
+
+    yml_txt = yaml.dump(data, Dumper=MyDumper, default_flow_style=False, sort_keys=False, indent=4)
+
+    if target_path is not None:
+        with open(target_path, "w") as f:
+            f.write(yml_txt)
+
+    return yml_txt
+
