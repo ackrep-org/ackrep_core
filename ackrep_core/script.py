@@ -2,6 +2,7 @@ import os
 import argparse
 from . import core, models
 import pprint
+import subprocess
 
 from colorama import Style, Fore
 import questionary
@@ -76,16 +77,58 @@ def create_new_entity():
 
 
 def check_solution(metadatapath):
-    data = core.get_metadata_from_file(metadatapath)
+    solution_meta_data = core.get_metadata_from_file(metadatapath)
 
     # get path for solution
-    solution_file = data["solution_file"]
+    solution_file = solution_meta_data["solution_file"]
+
+    if solution_file != "solution.py":
+        msg = "Arbitrary filename will be supported in the future"
+        raise NotImplementedError(msg)
+
     basepath = os.path.split(metadatapath)[0]
 
-    solution_path = os.path.join(basepath, solution_file)
+    c = core.Container()  # this will be our easily accessible context dict
 
-    print(solution_path)
+    # TODO: handle the filename (see also template)
+    c.solution_path = basepath
 
+    # currently we expect exactly one solution
+    assert len(solution_meta_data["solved_problem_list"]) == 1
+
+    problem_spec_key = solution_meta_data["solved_problem_list"][0]
+
+    hintpath = os.path.join(basepath, "../demo_problem_spec/metadata.yml")
+    problem_spec = core.get_entity(key=problem_spec_key, hint=hintpath)
+
+    if problem_spec.problem_file != "problem.py":
+        msg = "Arbitrary filename will be supported in the future"
+        raise NotImplementedError(msg)
+
+    # TODO: handle the filename (see also template)
+    c.problem_spec_path = problem_spec.base_path
+
+    context = dict(c.item_list())
+
+    print("  ... Creating exec-script ... ")
+
+    scriptname = "./execscript.py"
+
+    core.render_template("templates/execscript.py.template", context, target_path=scriptname)
+
+    print("  ... running exec-script ... ")
+
+    # TODO: plug in containerization here:
+    # Note: this hangs on any interactive element inside the script (such as IPS)
+    res = subprocess.run(["python", scriptname], capture_output=True)
+    res.exited = res.returncode
+    res.stdout = res.stdout.decode("utf8")
+    res.stderr = res.stderr.decode("utf8")
+
+    if res.returncode == 0:
+        print(bgreen("Success."))
+    else:
+        print(bred("Fail."))
 
 
 

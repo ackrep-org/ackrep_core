@@ -56,12 +56,13 @@ class GenericEntity(models.Model):
 
 class ProblemSpecification(GenericEntity):
     problemclass_list = models.CharField(max_length=500, null=True, blank=True,)
+    problem_file = models.CharField(max_length=500, null=True, blank=True, default="problem.py")
     _type = "problem_specification"
 
 
 class ProblemSolution(GenericEntity):
     _type = "problem_solution"
-    problemclass_list = models.CharField(max_length=500, null=True, blank=True,)
+    solved_problem_list = models.CharField(max_length=500, null=True, blank=True,)
     method_list = models.CharField(max_length=500, null=True, blank=True,)
     related_dataset_list = models.CharField(max_length=500, null=True, blank=True,)
     compatible_environment_list = models.CharField(max_length=500, null=True, blank=True,)
@@ -81,3 +82,18 @@ def get_entities():
     res = [c[1] for c in clsmembers if issubclass(c[1], GenericEntity) and not c[1] is GenericEntity]
     return res
 
+
+def create_entity_from_metadata(md):
+    """
+    :param md:  dict (from yml-file)
+    :return:
+    """
+
+    all_entities = get_entities()
+
+    # noinspection PyProtectedMember
+    mapping = dict([(e._type, e) for e in all_entities])
+
+    entity = mapping[md["type"]](**md)
+
+    return entity

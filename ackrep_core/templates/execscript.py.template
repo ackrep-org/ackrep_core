@@ -1,0 +1,24 @@
+{# This file is the template for what will become an executed python script.#}
+
+# {{context.warning}}
+
+import sys
+import ackrep_core
+
+from ipydex import IPS
+
+sys.path.insert(0, "{{context.solution_path}}")
+sys.path.insert(0, "{{context.problem_spec_path}}")
+
+# IPS()
+
+import problem_specification as ps
+import solution
+
+# perform the solution
+solution_data = solution.solve(ps.ProblemSpecification)
+
+# evaluate the solution (-> ResultContainer)
+rc = ps.evaluate_solution(solution_data)
+
+print(rc.success)

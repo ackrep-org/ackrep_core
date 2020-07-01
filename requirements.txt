@@ -3,3 +3,4 @@ yaml
 colorama
 questionary
 django
+jinja2
