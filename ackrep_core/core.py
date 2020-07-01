@@ -44,7 +44,8 @@ def get_metadata_from_file(fname, subtype=None):
     with open(fname) as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
 
-    if not set(required_generic_meta_data.keys()).issubset(data.keys()):
+    # TODO: this check is outdated -> temporarily deactivated
+    if 0 and not set(required_generic_meta_data.keys()).issubset(data.keys()):
         msg = f"In the provided file `{fname}` at least one required key is missing."
         raise KeyError(msg)
 

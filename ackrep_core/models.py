@@ -25,7 +25,7 @@ class GenericEntity(models.Model):
     type = models.CharField(max_length=20, null=False, blank=False,)
     name = models.CharField(max_length=40, null=False, blank=False,)
     short_description = models.CharField(max_length=500, null=True, blank=True,)
-    version = models.CharField(max_length=10, null=False, blank=False,)
+    version = models.CharField(max_length=10, null=False, blank=False, default="0.1.0")
     tag_list = models.CharField(max_length=500, null=True, blank=True,)
 
     # !! TODO: review

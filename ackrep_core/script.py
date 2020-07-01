@@ -1,3 +1,4 @@
+import os
 import argparse
 from . import core, models
 import pprint
@@ -16,28 +17,31 @@ def main():
     argparser.add_argument("--md", help="shortcut for `-m metadata.yml`", action="store_true")
     argparser.add_argument("--pk", help="print a random primary key and exit", action="store_true")
     argparser.add_argument("--qq", help="test interactive questionnaire", action="store_true")
-    argparser.add_argument("--dd", help="debug", action="store_true")
+    argparser.add_argument("--dd", help="start interactive IPython shell for debugging", action="store_true")
+    argparser.add_argument("-cs","--check-solution", metavar="metadatafile",
+                           help="check solution (specified by metadata file)")
+    argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
 
     args = argparser.parse_args()
 
-    if args.pk:
-        print("Random primary key: ", core.gen_random_key())
-        return
+    if args.new:
+        create_new_entity()
 
-    if args.dd:
+    elif args.dd:
         IPS()
-        return
-    if args.qq:
+    elif args.qq:
 
         entity = dialoge_entity_type()
         field_values = dialoge_field_values(entity)
         core.convert_dict_to_yaml(field_values, target_path="./metadata.yml")
         return
+    elif args.check_solution:
+        metadatapath = args.check_solution
+        check_solution(metadatapath)
 
-    if args.md:
-        args.metadata="metadata.yml"
-
-    if args.metadata:
+    elif args.metadata or args.md:
+        if args.md:
+            args.metadata = "metadata.yml"
         data = core.get_metadata_from_file(args.metadata)
 
         print(f"\n  {bgreen('content of '+args.metadata)}\n")
@@ -45,16 +49,52 @@ def main():
         pprint.pprint(data, indent=1)
         print("")
         return
-
-    print("This is the ackrep_core command line tool\n")
-    argparser.print_help()
+    else:
+        print("This is the ackrep_core command line tool\n")
+        argparser.print_help()
 
 
 # worker functions
 
+def create_new_entity():
+
+    entity_class = dialoge_entity_type()
+    dir_name = questionary.text("directory name?", default="unnamed_entity").ask()
+
+    try:
+        os.mkdir(dir_name)
+    except FileExistsError:
+        print(yellow(f"directory `{dir_name}` already exists!"))
+        q = input("Write into it? (y|N)")
+        if q != "y":
+            print(bred("aborted."))
+
+    field_values = dialoge_field_values(entity_class)
+
+    path = os.path.join(dir_name, "metadata.yml")
+    core.convert_dict_to_yaml(field_values, target_path=path)
+
+
+def check_solution(metadatapath):
+    data = core.get_metadata_from_file(metadatapath)
+
+    # get path for solution
+    solution_file = data["solution_file"]
+    basepath = os.path.split(metadatapath)[0]
+
+    solution_path = os.path.join(basepath, solution_file)
+
+    print(solution_path)
+
+
+
+
+
+
 def dialoge_entity_type():
     entities = models.get_entities()
 
+    # noinspection PyProtectedMember
     choices = [e._type for e in entities]
 
     type_map = dict(zip(choices, entities))
@@ -81,6 +121,9 @@ def dialoge_field_values(entity_class):
         if default is None:
             default = ""
         res_dict[f.name] = default
+
+    # noinspection PyProtectedMember
+    res_dict["type"] = entity._type
 
     # now ask the user on each value
     omit_flag = False
