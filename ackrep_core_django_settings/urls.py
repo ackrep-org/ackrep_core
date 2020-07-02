@@ -1,4 +1,4 @@
-"""URL Configuration for the moodpoll django project (not the moodpoll app)
+"""URL Configuration for the ackrep_core project
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/2.1/topics/http/urls/
@@ -19,6 +19,6 @@ from django.conf.urls import url
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    url(r'', include('ackrep_core.urls')),
+    #url(r'', include('ackrep_core.urls')),
 ]
 

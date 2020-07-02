@@ -12,6 +12,6 @@ import os
 from django.core.wsgi import get_wsgi_application
 
 # "settings" is the name of the django-project
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ackrep_core_django_settings.settings')
 
 application = get_wsgi_application()

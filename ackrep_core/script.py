@@ -22,6 +22,7 @@ def main():
     argparser.add_argument("-cs","--check-solution", metavar="metadatafile",
                            help="check solution (specified by metadata file)")
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
+    argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
 
     args = argparser.parse_args()
 
@@ -30,6 +31,9 @@ def main():
 
     elif args.dd:
         IPS()
+    elif args.load_repo_to_db:
+        startdir = args.load_repo_to_db
+        core.load_repo_to_db(startdir)
     elif args.qq:
 
         entity = dialoge_entity_type()
@@ -139,9 +143,6 @@ def check_solution(metadatapath):
         print(bgreen("Success."))
     else:
         print(bred("Fail."))
-
-
-
 
 
 def dialoge_entity_type():

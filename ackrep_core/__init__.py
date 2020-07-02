@@ -1,5 +1,7 @@
 try:
-    from .core import *
+    pass
+    # from .core import *
+    # this causes problems with django
 except ImportError:
     # this might be relevant during the installation process
     # otherwise setup.py cannot be executed

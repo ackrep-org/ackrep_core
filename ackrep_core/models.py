@@ -4,22 +4,42 @@ import inspect
 
 from django.db import models
 import django
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 
 """
 This module uses the django model engine to specify models
 """
 
-mod_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, mod_path)
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_settings.settings')
-django.setup()
+
+# from ipydex import IPS, activate_ips_on_exception
+# IPS()
+# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_settings.settings')
+
+# if 1 and not os.environ.get('DJANGO_SETTINGS_MODULE'):
+
+try:
+    hasattr(settings, "BASE_DIR")
+except ImproperlyConfigured:
+    settings_configured_flag = False
+else:
+    settings_configured_flag = True
+
+if not settings_configured_flag:
+    mod_path = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, mod_path)
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'ackrep_core_django_settings.settings'
+    django.setup()
+else:
+    pass
 
 
 class GenericEntity(models.Model):
     """
     This is the base class for all other acrep-entities
     """
+    id = models.AutoField(primary_key=True)
     key = models.CharField(max_length=5, null=False, blank=False,)
     predecessor_key = models.CharField(max_length=5, null=True, blank=False,)
     type = models.CharField(max_length=20, null=False, blank=False,)
@@ -71,6 +91,18 @@ class ProblemSolution(GenericEntity):
     postprocessing_file = models.CharField(max_length=500, null=True, blank=True,)
 
 
+class ProblemClass(GenericEntity):
+    _type = "problem_class"
+
+
+class EnvironmentSpecification(GenericEntity):
+    _type = "environment_specification"
+
+
+class MethodPackage(GenericEntity):
+    _type = "method_package"
+
+
 def get_entities():
     """
     Return a list of all defined entities
@@ -83,17 +115,16 @@ def get_entities():
     return res
 
 
+all_entities = get_entities()
+# noinspection PyProtectedMember
+entity_mapping = dict([(e._type, e) for e in all_entities])
+
+
 def create_entity_from_metadata(md):
     """
     :param md:  dict (from yml-file)
     :return:
     """
 
-    all_entities = get_entities()
-
-    # noinspection PyProtectedMember
-    mapping = dict([(e._type, e) for e in all_entities])
-
-    entity = mapping[md["type"]](**md)
-
+    entity = entity_mapping[md["type"]](**md)
     return entity

@@ -136,3 +136,39 @@ def render_template(tmpl_path, context, target_path=None):
 
     # also return the result (useful for testing)
     return result
+
+
+def get_files_by_pattern(directory, match_func):
+    """
+    source:  https://stackoverflow.com/questions/8505457/how-to-crawl-folders-to-index-files
+    :param directory: 
+    :param match_func:      example: `lambda fn: fn == "metadata.yml"`
+    :return: 
+    """
+    for path, dirs, files in os.walk(directory):
+        # TODO: this should be made more robust
+        if "_template" in path:
+            continue
+        for f in filter(match_func, files):
+            yield os.path.join(path, f)
+
+
+def load_repo_to_db(startdir):
+
+    meta_data_files = get_files_by_pattern(startdir, lambda fn: fn == "metadata.yml")
+
+    entity_list = []
+
+    for md_path in meta_data_files:
+        print(md_path)
+
+        md = get_metadata_from_file(md_path)
+
+        print(md["type"])
+
+        e = models.create_entity_from_metadata(md)
+        entity_list.append(e)
+
+    IPS()
+
+
