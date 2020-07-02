@@ -1,6 +1,8 @@
 ipydex
-yaml
+pyyaml
 colorama
 questionary
 django
+django-bleach
+django-nose
 jinja2
