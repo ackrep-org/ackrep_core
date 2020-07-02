@@ -8,3 +8,9 @@ except ImportError:
     pass
 
 from .release import __version__
+
+from ipydex import Container
+
+
+class ResultContainer(Container):
+    pass

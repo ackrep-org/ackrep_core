@@ -86,18 +86,25 @@ def convert_dict_to_yaml(data, target_path=None):
     return yml_txt
 
 
-def get_entity(key, hint):
-    # TODO: This will be a database lookup in the future (without hint)
+def get_entity(key, hint=None):
     # TODO: remove argument `hint`
 
-    md = get_metadata_from_file(path=hint)
+    assert hint is None, "the path-hint in the caller must be removed now"
 
-    assert md["key"] == key
+    results = []
+    for entity_type in models.all_entities:
+        res = entity_type.objects.filter(key=key)
+        results.extend(res)
 
-    entity = models.create_entity_from_metadata(md)
+    if len(results) == 0:
+        msg = f"No entity with key '{key}' could be found. Make sure that the database is in sync with repo."
+        # TODO: this should be a 404 Error in the future
+        raise ValueError(msg)
+    elif len(results) > 1:
+        msg = f"There have been multiple entities with key '{key}'. "
+        raise ValueError(msg)
 
-    # TODO: find out real path
-    entity.base_path = os.path.split(hint)[0]
+    entity = results[0]
 
     return entity
 
@@ -153,20 +160,28 @@ def get_files_by_pattern(directory, match_func):
             yield os.path.join(path, f)
 
 
+def clear_db():
+
+    for e in models.all_entities:
+        e.objects.all().delete()
+
+
 def load_repo_to_db(startdir):
 
-    meta_data_files = get_files_by_pattern(startdir, lambda fn: fn == "metadata.yml")
+    clear_db()
 
+    meta_data_files = get_files_by_pattern(startdir, lambda fn: fn == "metadata.yml")
     entity_list = []
 
     for md_path in meta_data_files:
         print(md_path)
 
         md = get_metadata_from_file(md_path)
-
-        print(md["type"])
-
         e = models.create_entity_from_metadata(md)
+        e.base_path = os.path.abspath(os.path.split(md_path)[0])
+
+        # store to db
+        e.save()
         entity_list.append(e)
 
     IPS()

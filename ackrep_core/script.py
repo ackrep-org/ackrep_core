@@ -58,6 +58,8 @@ def main():
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
 
+    # TODO: add this to epilog or docs: useful comment: rm -f db.sqlite3; python manage.py migrate --run-syncdb
+
 
 # worker functions
 
@@ -102,8 +104,7 @@ def check_solution(metadatapath):
 
     problem_spec_key = solution_meta_data["solved_problem_list"][0]
 
-    hintpath = os.path.join(basepath, "../demo_problem_spec/metadata.yml")
-    problem_spec = core.get_entity(key=problem_spec_key, hint=hintpath)
+    problem_spec = core.get_entity(key=problem_spec_key)
 
     if problem_spec.problem_file != "problem.py":
         msg = "Arbitrary filename will be supported in the future"
@@ -116,11 +117,10 @@ def check_solution(metadatapath):
 
     c.method_package_list = []
     for method_package_key in method_package_keys:
-        #hintpath = os.path.join(basepath, "../../method_packages/PyTrajectory/metadata.yml")
-        #method_package = core.get_entity(key=method_package_key, hint=hintpath)
-        #build_path = os.path.join(method_package.base_path, "_build")
-        build_path_hint = os.path.join(basepath, "../../method_packages/PyTrajectory/_build")
-        c.method_package_list.append(build_path_hint)
+        method_package = core.get_entity(method_package_key)
+        build_path = os.path.abspath(os.path.join(method_package.base_path, "_build"))
+        assert os.path.isdir(build_path)
+        c.method_package_list.append(build_path)
 
     context = dict(c.item_list())
 
