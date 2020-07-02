@@ -117,6 +117,8 @@ def check_solution(metadatapath):
 
     c.method_package_list = []
     for method_package_key in method_package_keys:
+        if method_package_key == "":
+            continue
         method_package = core.get_entity(method_package_key)
         build_path = os.path.abspath(os.path.join(method_package.base_path, "_build"))
         assert os.path.isdir(build_path)
