@@ -108,6 +108,16 @@ def check_solution(metadatapath):
     # TODO: handle the filename (see also template)
     c.problem_spec_path = problem_spec.base_path
 
+    method_package_keys = solution_meta_data["method_package_list"]
+
+    c.method_package_list = []
+    for method_package_key in method_package_keys:
+        #hintpath = os.path.join(basepath, "../../method_packages/PyTrajectory/metadata.yml")
+        #method_package = core.get_entity(key=method_package_key, hint=hintpath)
+        #build_path = os.path.join(method_package.base_path, "_build")
+        build_path_hint = os.path.join(basepath, "../../method_packages/PyTrajectory/_build")
+        c.method_package_list.append(build_path_hint)
+
     context = dict(c.item_list())
 
     print("  ... Creating exec-script ... ")

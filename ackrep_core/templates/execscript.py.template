@@ -7,12 +7,15 @@ import ackrep_core
 
 from ipydex import IPS
 
+{% for package in context.method_package_list %}
+sys.path.insert(0, "{{package}}")
+{% endfor %}
 sys.path.insert(0, "{{context.solution_path}}")
 sys.path.insert(0, "{{context.problem_spec_path}}")
 
 # IPS()
 
-import problem_specification as ps
+import problem as ps
 import solution
 
 # perform the solution
