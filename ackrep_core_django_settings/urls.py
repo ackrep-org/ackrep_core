@@ -19,6 +19,6 @@ from django.conf.urls import url
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    #url(r'', include('ackrep_core.urls')),
+    url(r'', include('ackrep_web.urls')),
 ]
 

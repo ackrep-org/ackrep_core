@@ -1,0 +1,12 @@
+.form-errors {
+    color: red;
+    font-weight: bold;
+}
+
+footer {
+    position: fixed;
+    bottom: 0;
+    left: 10px;
+    color: rgb(190, 190, 190);
+    font-size: 8pt;
+}

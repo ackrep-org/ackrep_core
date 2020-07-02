@@ -26,7 +26,7 @@ SECRET_KEY = '4(bbovkj6lx0txurbo4uozpr+sk&y%cu-o$8w0kww&cgyp)hww'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 
 # Application definition
@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django_bleach',
     'django_nose',
     'ackrep_core',
+    'ackrep_web',
 ]
 
 MIDDLEWARE = [
@@ -56,7 +57,7 @@ MIDDLEWARE = [
 
 # "settings" is the name of the django-projects settings
 ROOT_URLCONF = 'ackrep_core_django_settings.urls'
-WSGI_APPLICATION = 'ackrep_core_django_settings.application'
+WSGI_APPLICATION = 'ackrep_core_django_settings.wsgi.application'
 
 TEMPLATES = [
     {
