@@ -53,9 +53,12 @@ class GenericEntity(models.Model):
     editor_list = models.CharField(max_length=500, null=True, blank=True,)
     creation_date = models.CharField(max_length=500, null=True, blank=True,)
     related_doc_list = models.CharField(max_length=500, null=True, blank=True,)
-    related_dataset_list = models.CharField(max_length=500, null=True, blank=True,)
     external_references = models.CharField(max_length=500, null=True, blank=True,)
     notes = models.CharField(max_length=5000, null=True, blank=True,)
+
+    # this is automatically filled when importing .yml files into the db
+    # should not be specified inside the .yml file
+    base_path = models.CharField(max_length=5000, null=True, blank=True,)
 
     class Meta:
         abstract = True
@@ -71,7 +74,13 @@ class GenericEntity(models.Model):
         if fields[-1].name == "genericentity_ptr":
             fields.pop()
 
-        return fields
+        # ensure that base_path is not exported. (only meant for internal usage)
+        final_fields = []
+        for f in fields:
+            if f.name != "base_path":
+                final_fields.append(f)
+
+        return final_fields
 
 
 class ProblemSpecification(GenericEntity):
@@ -83,9 +92,8 @@ class ProblemSpecification(GenericEntity):
 class ProblemSolution(GenericEntity):
     _type = "problem_solution"
     solved_problem_list = models.CharField(max_length=500, null=True, blank=True,)
-    method_list = models.CharField(max_length=500, null=True, blank=True,)
-    related_dataset_list = models.CharField(max_length=500, null=True, blank=True,)
-    compatible_environment_list = models.CharField(max_length=500, null=True, blank=True,)
+    method_package_list = models.CharField(max_length=500, null=True, blank=True,)
+    compatible_environment = models.CharField(max_length=500, null=True, blank=True,)
     estimated_runtime = models.CharField(max_length=500, null=True, blank=True,)
     solution_file = models.CharField(max_length=500, null=True, blank=True, default="solution.py")
     postprocessing_file = models.CharField(max_length=500, null=True, blank=True,)
@@ -95,12 +103,21 @@ class ProblemClass(GenericEntity):
     _type = "problem_class"
 
 
+class Comment(GenericEntity):
+    _type = "comment"
+
+
+class Documentation(GenericEntity):
+    _type = "documentation"
+
+
 class EnvironmentSpecification(GenericEntity):
     _type = "environment_specification"
 
 
 class MethodPackage(GenericEntity):
     _type = "method_package"
+    compatible_environment_list = models.CharField(max_length=500, null=True, blank=True,)
 
 
 def get_entities():
