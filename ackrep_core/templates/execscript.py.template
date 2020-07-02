@@ -25,3 +25,10 @@ solution_data = solution.solve(ps.ProblemSpecification)
 rc = ps.evaluate_solution(solution_data)
 
 print(rc.success)
+
+if rc.success:
+    # returncode 0 means: no errors (general convention)
+    exit(0)
+else:
+    # returncode 1 means: wrong result (our convention)
+    exit(1)
