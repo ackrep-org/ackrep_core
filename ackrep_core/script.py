@@ -14,15 +14,17 @@ activate_ips_on_exception()
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("-m", "--metadata", help="process metadata in yaml syntax (.yml file). ")
-    argparser.add_argument("--md", help="shortcut for `-m metadata.yml`", action="store_true")
-    argparser.add_argument("--pk", help="print a random primary key and exit", action="store_true")
-    argparser.add_argument("--qq", help="test interactive questionnaire", action="store_true")
-    argparser.add_argument("--dd", help="start interactive IPython shell for debugging", action="store_true")
-    argparser.add_argument("-cs","--check-solution", metavar="metadatafile",
+    argparser.add_argument("--key", help="print a random key and exit", action="store_true")
+    argparser.add_argument("-cs", "--check-solution", metavar="metadatafile",
                            help="check solution (specified by metadata file)")
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
+    argparser.add_argument("--qq", help="create new metada.yml based on interactive questionnaire", action="store_true")
+
+    # for development only
+    argparser.add_argument("--dd", help="start interactive IPython shell for debugging", action="store_true")
+    argparser.add_argument("--md", help="shortcut for `-m metadata.yml`", action="store_true")
+    argparser.add_argument("-m", "--metadata", help="process metadata in yaml syntax (.yml file). ")
 
     args = argparser.parse_args()
 
