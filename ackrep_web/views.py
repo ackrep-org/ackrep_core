@@ -1,5 +1,6 @@
 from django.views import View
 from django.shortcuts import render
+from ackrep_core import core
 
 
 class LandingPageView(View):
@@ -10,3 +11,21 @@ class LandingPageView(View):
         context = {}
 
         return render(request, "ackrep_web/index.html", context)
+
+
+class ImportRepoView(View):
+
+    # noinspection PyMethodMayBeStatic
+    def get(self, request):
+
+        context = {}
+
+        # clone git repo
+        # import into database
+        #
+
+        return render(request, "ackrep_web/index.html", context)
+
+
+
+from django.contrib.staticfiles import views
