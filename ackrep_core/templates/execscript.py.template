@@ -8,10 +8,10 @@ import ackrep_core
 from ipydex import IPS
 
 {% for package in context.method_package_list %}
-sys.path.insert(0, "{{package}}")
+sys.path.insert(0, r"{{package}}")
 {% endfor %}
-sys.path.insert(0, "{{context.solution_path}}")
-sys.path.insert(0, "{{context.problem_spec_path}}")
+sys.path.insert(0, r"{{context.solution_path}}")
+sys.path.insert(0, r"{{context.problem_spec_path}}")
 
 # IPS()
 
