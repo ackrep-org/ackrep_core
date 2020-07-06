@@ -135,5 +135,11 @@ BACKUP_PATH = os.path.join(BASE_DIR, "db_backups")
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 
-# noinspection PyUnresolvedReferences
-# from .site_specific_settings import *
+# The following mechanism allows to incorporate custom settings (which are maintained
+# outside of the repository, see ackrep_deployment)
+
+try:
+    # noinspection PyUnresolvedReferences
+    from .custom_settings import *
+except ImportError:
+    pass

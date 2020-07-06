@@ -1,0 +1,9 @@
+{# This is the template for `custom_settings.py`. See ackrep_deployment/custom_settings/settings.yml #}
+
+
+# {{context.warning}}
+
+{% for key, value in context.settings.items() %}
+{{key}} = {{value.__repr__()}}
+{% endfor %}
+
