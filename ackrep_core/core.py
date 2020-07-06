@@ -46,7 +46,7 @@ def gen_random_key():
     return "".join([c for c in secrets.token_urlsafe(10).upper() if c.isalnum()])[:5]
 
 
-def get_metadata_from_file(path, subtype=None):
+def get_metadata_from_file(path, subtype=None, check=False):
     """
     Load metadata
     :param path:
@@ -57,7 +57,7 @@ def get_metadata_from_file(path, subtype=None):
         data = yaml.load(f, Loader=yaml.FullLoader)
 
     # TODO: this check is outdated -> temporarily deactivated
-    if 0 and not set(required_generic_meta_data.keys()).issubset(data.keys()):
+    if check and not set(required_generic_meta_data.keys()).issubset(data.keys()):
         msg = f"In the provided file `{path}` at least one required key is missing."
         raise KeyError(msg)
 
@@ -109,27 +109,33 @@ def get_entity(key, hint=None):
     return entity
 
 
-def render_template(tmpl_path, context, target_path=None):
+def render_template(tmpl_path, context, target_path=None, base_path=None, special_str="template_"):
     """
     Render a jinja2 template and save it to target_path. If target_path ist `None` (default),
-    autogenerate it by dropping the then mandatory `template_` substring of the templates filename.
+    autogenerate it by dropping the then mandatory `template_` substring of the templates filename
+    (or another nonempty special string).
 
     :param tmpl_path:   template path (relative to the modules path, usually starts with "templates/")
     :param context:     dict with context data for rendering
     :param target_path: None or string
+    :param base_path:   None or string (if None then the absolute path of this module will be used)
+    :param target_path: None or string
+    :param special_str: default: "template_"; will be replaced by '' if target_path is given
     :return:
     """
 
     path, fname = os.path.split(tmpl_path)
     assert path != ""
 
-    path = os.path.join(mod_path, path)
+    if base_path is None:
+        base_path = mod_path
+
+    path = os.path.join(base_path, path)
 
     jin_env = Environment(loader=FileSystemLoader(path))
 
     if target_path is None:
-        special_str = "template_"
-        assert fname.startswith(special_str) and (fname.count(special_str) == 1) and len(fname) > len(special_str)
+        assert 1 < len(special_str) < len(fname) and (fname.count(special_str) == 1)
         res_fname = fname.replace(special_str, "")
         target_path = os.path.join(path, res_fname)
 
@@ -142,7 +148,7 @@ def render_template(tmpl_path, context, target_path=None):
         resfile.write(result)
 
     # also return the result (useful for testing)
-    return result
+    return target_path
 
 
 def get_files_by_pattern(directory, match_func):
