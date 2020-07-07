@@ -1,8 +1,5 @@
 {% extends "ackrep_web/base.html" %}
 
-
-
-
 {% block content %}
 <a href="{%url 'login'%}">Log in</a>
 
@@ -16,6 +13,14 @@
 <a href="https://github.com/cknoll/ackrep_core">ackrep_core</a> and
 <a href="https://github.com/cknoll/ackrep_core/tree/main/ackrep_web">ackrep_web</a>.
 </p>
+
+<h3>Available Functions</h3>
+<p>
+<ul>
+<li><a href="{%url 'entity-list'%}">List of all entities</a></li>
+</ul>
+</p>
+
 
 
 {% endblock  %}

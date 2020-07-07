@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
   url(r'^$', views.LandingPageView.as_view(), name='landing-page'),
+  path('entities', views.EntityListView.as_view(), name='entity-list'),
   path('login', views.LandingPageView.as_view(), name='login'),
 
   # placeholders
