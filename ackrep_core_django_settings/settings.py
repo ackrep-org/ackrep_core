@@ -142,3 +142,5 @@ try:
     from .custom_settings import *
 except ImportError:
     pass
+except SyntaxError:
+    print("\n"*2, " !! Warning: Syntax-Error in custom_settings.py !!", "\n\n")

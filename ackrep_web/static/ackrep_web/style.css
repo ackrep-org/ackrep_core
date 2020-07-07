@@ -18,3 +18,11 @@ footer {
 .opacity30 {
     opacity:0.3;
 }
+
+.footer_link_menu {
+
+    margin-top: 2em;
+    float:right;
+    position:relative;
+    bottom: 5px;
+}

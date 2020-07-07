@@ -1,14 +1,17 @@
 {% load i18n %}
+{% load extra_filters %}
 
-<hr class="section_divider hr_style_gradient opacity30">
+<hr class="hr_style_gradient opacity30">
 <div class="box_base box_footer">
 
     <div class="box_footer_text modest_links">
     This web site is powered by the free software
-    <a href="https://github.com/cknoll/ackrep_core">ackrep_core</a>.
+    <a href="https://github.com/cknoll/ackrep_core">ackrep_core</a> in version {{"foobar"|get_version}}.
+    <br>
+    Last deployment was on {{"foobar"|get_last_deployment}}.
     </div>
 
-    <div class="box_header_menu">
+    <div class="footer_link_menu">
         <!-- !!hcl_de -->
     <a href="{% url 'imprint-page' %}">{% trans "Legal Notice" %}</a> |
     <a href="{% url 'privacy-page' %}">{% trans "Privacy" %}</a> |
