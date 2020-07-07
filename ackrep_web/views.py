@@ -10,7 +10,7 @@ class LandingPageView(View):
 
         context = {}
 
-        return render(request, "ackrep_web/index.html", context)
+        return render(request, "ackrep_web/landing.html", context)
 
 
 class ImportRepoView(View):
@@ -24,8 +24,4 @@ class ImportRepoView(View):
         # import into database
         #
 
-        return render(request, "ackrep_web/index.html", context)
-
-
-
-from django.contrib.staticfiles import views
+        return render(request, "ackrep_web/landing.html", context)

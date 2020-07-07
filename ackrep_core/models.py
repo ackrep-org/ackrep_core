@@ -9,7 +9,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 
 """
-This module uses the django model engine to specify models
+This module uses the django model engine to specify models.
+However, they are used also outside the web application, i.e. for the command line application.  
 """
 
 

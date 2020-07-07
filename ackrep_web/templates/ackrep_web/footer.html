@@ -1,0 +1,18 @@
+{% load i18n %}
+
+<hr class="section_divider hr_style_gradient opacity30">
+<div class="box_base box_footer">
+
+    <div class="box_footer_text modest_links">
+    This web site is powered by the free software
+    <a href="https://github.com/cknoll/ackrep_core">ackrep_core</a>.
+    </div>
+
+    <div class="box_header_menu">
+        <!-- !!hcl_de -->
+    <a href="{% url 'imprint-page' %}">{% trans "Legal Notice" %}</a> |
+    <a href="{% url 'privacy-page' %}">{% trans "Privacy" %}</a> |
+    <a href="{% url 'contact-page' %}">{% trans "Contact" %}</a>
+    </div>
+</div>
+<br>
