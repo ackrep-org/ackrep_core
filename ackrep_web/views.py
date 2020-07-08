@@ -27,6 +27,7 @@ class EntityListView(View):
         core.load_repo_to_db(data_path)
         entity_type_list = core.models.get_entities()
 
+
         result = {}
 
         for et in entity_type_list:
@@ -36,10 +37,11 @@ class EntityListView(View):
             result[et.__name__] = object_list
 
         context = {"title": "Entity List",
-                   "entity_list": pprint.pformat(result)
+                   "entity_list": pprint.pformat(result),
+                   "entity_dict": result
                    }
 
-        return render(request, "ackrep_web/generic_content.html", context)
+        return render(request, "ackrep_web/entity_list.html", context)
 
 
 class ImportRepoView(View):

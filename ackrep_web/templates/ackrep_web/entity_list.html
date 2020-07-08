@@ -1,0 +1,17 @@
+{% extends "ackrep_web/base.html" %}
+
+{% block content %}
+
+<h3>{{title}}</h3>
+
+
+{% for entity_type, entity_list in entity_dict.items %}
+<h4>{{entity_type}} ({{entity_list|length}})</h4>
+    {% for e in entity_list %}
+        {% include "ackrep_web/widgets/entity_short.html" with entity=e only %}
+    {% endfor %}
+{% endfor %}
+
+
+
+{% endblock  %}
