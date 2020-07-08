@@ -66,6 +66,8 @@ class GenericEntity(models.Model):
 
     @classmethod
     def get_fields(cls):
+
+        # noinspection PyUnresolvedReferences
         fields = list(cls._meta.fields)
 
         # remove the first and the last field (they where added automatically)

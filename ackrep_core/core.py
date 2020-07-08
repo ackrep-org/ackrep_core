@@ -5,10 +5,14 @@ import time
 import subprocess
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
+
+# noinspection PyUnresolvedReferences
 from ipydex import IPS  # for debugging only
 
 # settings might be accessd from other modules which import this one (core)
+# noinspection PyUnresolvedReferences
 from django.conf import settings
+
 from . import models
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
@@ -50,18 +54,18 @@ def gen_random_key():
     return "".join([c for c in secrets.token_urlsafe(10).upper() if c.isalnum()])[:5]
 
 
-def get_metadata_from_file(path, subtype=None, check=False):
+def get_metadata_from_file(path, check_sanity=False):
     """
     Load metadata
     :param path:
-    :param subtype:
+    :param check_sanity:       flag whether to check the sanity of the metadata against the models
     :return:
     """
     with open(path) as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
 
     # TODO: this check is outdated -> temporarily deactivated
-    if check and not set(required_generic_meta_data.keys()).issubset(data.keys()):
+    if check_sanity and not set(required_generic_meta_data.keys()).issubset(data.keys()):
         msg = f"In the provided file `{path}` at least one required key is missing."
         raise KeyError(msg)
 

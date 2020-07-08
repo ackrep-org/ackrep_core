@@ -7,12 +7,6 @@ activate_ips_on_exception()
 
 if __name__ == '__main__':
 
-    #mod_path = os.path.dirname(os.path.abspath(__file__))
-
-    # sys.path.insert(0, os.path.join(mod_path, "ackrep_core"))
-    # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_settings.settings')
-
-    # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings.settings')
     os.environ['DJANGO_SETTINGS_MODULE'] = 'ackrep_core_django_settings.settings'
 
     try:

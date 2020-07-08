@@ -3,6 +3,8 @@ import pprint
 from django.views import View
 from django.shortcuts import render
 from ackrep_core import core
+
+# noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
 
 
