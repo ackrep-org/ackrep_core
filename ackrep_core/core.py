@@ -7,6 +7,8 @@ from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from ipydex import IPS  # for debugging only
 
+# settings might be accessd from other modules which import this one (core)
+from django.conf import settings
 from . import models
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
