@@ -8,7 +8,7 @@
 {% for entity_type, entity_list in entity_dict.items %}
 <h4>{{entity_type}} ({{entity_list|length}})</h4>
     {% for e in entity_list %}
-        {% include "ackrep_web/widgets/entity_short.html" with entity=e only %}
+        {% include "ackrep_web/widgets/entity.html" with entity=e display="short" only %}
     {% endfor %}
 {% endfor %}
 

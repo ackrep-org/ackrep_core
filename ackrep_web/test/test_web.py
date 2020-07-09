@@ -9,18 +9,9 @@ from ipydex import IPS
 This module contains the tests for the web application module (not ackrep_core)
 
 
-possibilities to run these tests
-(normal `python -m unittest <path>` will not work because we need django to create an empty test-database for us):
+python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_web:TestCases1
 
-python3 manage.py test --nocapture
-
-# with rednose and its ips-extension installed 
-python3 manage.py test --nocapture --rednose --ips
-
-specific class or method:
-
-python3 manage.py test --nocapture --rednose --ips ackrep_web.test.test_web:TestCases1
-python3 manage.py test --nocapture --rednose --ips ackrep_web.test.test_web:TestCases1.test_00
+For more infos see doc/devdoc/README.md.
 """
 
 
@@ -50,6 +41,9 @@ class TestCases1(DjangoTestCase):
         # this should be an standard response for successful HTTP requests
         self.assertEqual(response.status_code, 200)
 
+        self.assertContains(response, "utc_entity_short")
+        self.assertNotContains(response, "utc_entity_full")
+
 
 class TestCases2(DjangoTestCase):
     """
@@ -63,4 +57,6 @@ class TestCases2(DjangoTestCase):
         url = reverse('entity-detail', kwargs={"key": "UKJZI"})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, "utc_entity_full")
 

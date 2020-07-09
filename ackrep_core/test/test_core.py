@@ -10,22 +10,11 @@ from ipydex import IPS
 This module contains the tests of the core module (not ackrep_web)
 
 
-possibilities to run these tests
-(normal `python -m unittest <path>` will not work because we need django to create an empty test-database for us):
+one possibility to run these (some of) the tests
 
-# all tests (of including ackrep_wev)
-
-python3 manage.py test --nocapture
-
-# with rednose and its ips-extension installed 
-python3 manage.py test --nocapture --rednose --ips
-
-
-specific module class or method:
-
-python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_core
 python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_core:TestCases1
-python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_core:TestCases1.test_00
+
+For more infos see doc/devdoc/README.md.
 """
 
 

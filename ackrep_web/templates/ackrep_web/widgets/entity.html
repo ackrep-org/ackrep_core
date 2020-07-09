@@ -5,6 +5,12 @@
     <b>Key:</b> <a href="{% url 'entity-detail' entity.key %}">{{entity.key}}</a><br>
     <b>Name:</b> {{entity.name}}<br>
     <b>Type:</b> {{entity.type}}<br>
+
+    {% if display == "full"%}
+    <!--utc_entity_full -->
+    {% else %}
+    <!--utc_entity_short -->
+    {% endif %}
 </div>
 
 
