@@ -6,11 +6,35 @@
     <b>Name:</b> {{entity.name}}<br>
     <b>Type:</b> {{entity.type}}<br>
 
-    {% if display == "full"%}
-    <!--utc_entity_full -->
-    {% else %}
-    <!--utc_entity_short -->
-    {% endif %}
+{% if display == "full"%}
+<!--utc_entity_full -->
+
+    <b>Created:</b> {{entity.creation_date}}<br>
+    <b>Path:</b> <tt>{{entity.base_path}}</tt><br>
+
+{#--------------------------------------------------------------------------------------------------------------------#}
+{% if entity.type == "problem_solution"%}
+    <b>Solved Problems:</b>
+    {% for e in entity.oc.solved_problem_list %}
+    {# TODO: add more information in mouseover #}
+    <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a>
+    {% endfor %}
+    <br>
+    <b>Used Methods:</b>
+    {% for e in entity.oc.method_package_list %}
+    {# TODO: add more information in mouseover #}
+    <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a>
+    {% endfor %}
+<br>
+<a href="{% url 'entity-detail' entity.key %}">check this solution</a><br>
+
+{% endif %}
+{#--------------------------------------------------------------------------------------------------------------------#}
+
+
+{% else %}
+<!--utc_entity_short -->
+{% endif %}
 </div>
 
 

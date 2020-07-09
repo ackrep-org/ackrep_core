@@ -47,7 +47,8 @@ class EntityDetailView(View):
         context = {"entity": entity,
                    }
 
-        print(entity)
+        # create an object container (entity.oc) where for each string-keys the real object is available
+        core.resolve_keys(entity)
 
         return render(request, "ackrep_web/entity_detail.html", context)
 
