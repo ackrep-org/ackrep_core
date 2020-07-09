@@ -25,20 +25,12 @@ class EntityListView(View):
 
         data_path = os.path.join(core.mod_path, "..", "..", "ackrep_data")
         core.load_repo_to_db(data_path)
-        entity_type_list = core.models.get_entities()
 
-
-        result = {}
-
-        for et in entity_type_list:
-
-            object_list = list(et.objects.all())
-
-            result[et.__name__] = object_list
+        entity_dict = core.get_entity_dict_from_db()
 
         context = {"title": "Entity List",
-                   "entity_list": pprint.pformat(result),
-                   "entity_dict": result
+                   "entity_list": pprint.pformat(entity_dict),
+                   "entity_dict": entity_dict
                    }
 
         return render(request, "ackrep_web/entity_list.html", context)

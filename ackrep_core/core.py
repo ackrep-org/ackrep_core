@@ -200,6 +200,23 @@ def load_repo_to_db(startdir):
         entity_list.append(e)
 
 
+def get_entity_dict_from_db():
+    """
+    get all entities which are currently in the database
+    :return:
+    """
+    entity_type_list = models.get_entities()
+
+    entity_dict = {}
+
+    for et in entity_type_list:
+        object_list = list(et.objects.all())
+
+        entity_dict[et.__name__] = object_list
+
+    return entity_dict
+
+
 def clone_git_repo(giturl):
     res = subprocess.run(["git", "clone", giturl], capture_output=True)
     res.exited = res.returncode
