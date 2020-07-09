@@ -19,12 +19,10 @@ class LandingPageView(View):
 
 
 class EntityListView(View):
-
     # noinspection PyMethodMayBeStatic
     def get(self, request):
 
-        data_path = os.path.join(core.mod_path, "..", "..", "ackrep_data")
-        core.load_repo_to_db(data_path)
+        core.load_repo_to_db(core.data_path)
 
         entity_dict = core.get_entity_dict_from_db()
 

@@ -29,7 +29,7 @@ python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_core:Te
 """
 
 
-ackrep_data_test_repo = os.path.join(core.mod_path, "..", "..", "ackrep_data_for_unittests")
+ackrep_data_test_repo_path = core.data_test_repo_path
 default_repo_head_hash = "f8be6de4e850139e9366d321ef044e11c156991b"
 
 
@@ -43,12 +43,12 @@ class TestCases1(DjangoTestCase):
         """
 
         msg = "Test repo not found. It must be created manually."
-        self.assertTrue(os.path.isdir(ackrep_data_test_repo), msg=msg)
+        self.assertTrue(os.path.isdir(ackrep_data_test_repo_path), msg=msg)
 
         try:
-            repo = Repo(ackrep_data_test_repo)
+            repo = Repo(ackrep_data_test_repo_path)
         except InvalidGitRepositoryError:
-            msg = f"The directory {ackrep_data_test_repo} is not a git repository!"
+            msg = f"The directory {ackrep_data_test_repo_path} is not a git repository!"
             self.assertTrue(False, msg=msg)
             repo = None
 

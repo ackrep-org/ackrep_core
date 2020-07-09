@@ -17,6 +17,8 @@ from django.conf import settings
 from . import models
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(mod_path, "..", "..", "ackrep_data")
+data_test_repo_path = os.path.join(mod_path, "..", "..", "ackrep_data_for_unittests")
 
 
 class ResultContainer(Container):
@@ -205,11 +207,11 @@ def crawl_files_and_load_to_db(startdir, warn_duplicate_key=True):
 
     print("Creating DB objects...")
     for md_path in meta_data_files:
-        print(md_path)
 
         md = get_metadata_from_file(md_path)
         e = models.create_entity_from_metadata(md)
         e.base_path = os.path.abspath(os.path.split(md_path)[0])
+        print(e.key, md_path)
 
         # check DB if key already exists, if so, skip entity
         duplicates = get_entities_with_key(e.key)
