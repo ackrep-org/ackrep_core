@@ -7,3 +7,4 @@ django-bleach
 django-nose
 jinja2
 uwsgi>=2.0,<2.1
+gitpython

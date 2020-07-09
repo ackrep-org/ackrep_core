@@ -36,6 +36,17 @@ else:
     pass
 
 
+class UsedKey(models.Model):
+    """
+    adhoc solution to track ackrep-keys which are in use.
+    """
+    # TODO: find a django query to make this class obsolete:
+
+    id = models.AutoField(primary_key=True)
+    key = models.CharField(max_length=5, null=False, blank=False,)
+    entity_type = models.CharField(max_length=20, null=False, blank=False,)
+
+
 class GenericEntity(models.Model):
     """
     This is the base class for all other acrep-entities
@@ -123,6 +134,7 @@ class MethodPackage(GenericEntity):
     compatible_environment_list = models.CharField(max_length=500, null=True, blank=True,)
 
 
+# TODO: rename this to get_entity_types
 def get_entities():
     """
     Return a list of all defined entities
