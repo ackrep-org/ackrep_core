@@ -66,3 +66,35 @@ class TestCases1(DjangoTestCase):
         self.assertEqual(len(entity_dict), len(core.models.get_entities()))
 
 
+class TestCases2(DjangoTestCase):
+    """
+    These tests expect the database to be loaded
+    """
+
+    def setUp(self):
+        core.load_repo_to_db(core.data_test_repo_path)
+
+    def test_resolve_keys(self):
+        entity = core.get_entity("UKJZI")
+
+        # ensure that the object container does not yet exist
+        self.assertFalse(hasattr(entity, "oc"))
+
+        core.resolve_keys(entity)
+
+        self.assertTrue(hasattr(entity, "oc"))
+
+        self.assertTrue(isinstance(entity.oc.solved_problem_list, list))
+        self.assertEquals(len(entity.oc.solved_problem_list), 1)
+        self.assertEquals(entity.oc.solved_problem_list[0].key, "4ZZ9J")
+        self.assertTrue(isinstance(entity.oc.method_package_list, list))
+        self.assertEquals(entity.oc.method_package_list[0].key, "UENQQ")
+        self.assertTrue(entity.oc.predecessor_key is None)
+
+        default_env = core.get_entity("YJBOX")
+        # TODO: this should be activated when ackrep_data is fixed
+        if 0:
+            self.assertTrue(isinstance(entity.oc.compatible_environment, core.models.EnvironmentSpecification))
+            self.assertTrue(entity.oc.compatible_environment, default_env)
+
+

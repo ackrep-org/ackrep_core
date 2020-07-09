@@ -235,6 +235,46 @@ def crawl_files_and_load_to_db(startdir, warn_duplicate_key=True):
     return entity_list
 
 
+# This function is needed during the prototype phase due to some design simplification
+# once the models have stabilized this should be deprecated
+def resolve_keys(entity):
+    """
+    For quick progress almost all model fields are strings. This function converts those fields, which contains keys
+    to contain the real reference (or list of references).
+    :param entity:
+    :return:
+    """
+
+    entity_type = type(entity)
+    fields = entity_type.get_fields()
+
+    # endow every entity with an object container:
+
+    entity.oc = Container()
+
+    for f in fields:
+        if isinstance(f, models.EntityKeyField):
+
+            # example: get the content of entity.predecessor_key
+            refkey = getattr(entity, f.name)
+            if refkey:
+                ref_entity = get_entity(refkey)
+            else:
+                ref_entity = None
+
+            # save the real object to the object container (allow later access)
+            setattr(entity.oc, f.name, ref_entity)
+
+        elif isinstance(f, models.EntityKeyListField):
+            refkeylist_str = getattr(entity, f.name)
+            refkeylist = yaml.load(refkeylist_str, Loader=yaml.FullLoader)
+            if refkeylist in (None, [], [""]):
+                refkeylist = []
+
+            entity_list = [get_entity(refkey) for refkey in refkeylist]
+            setattr(entity.oc, f.name, entity_list)
+
+
 def get_entity_dict_from_db():
     """
     get all entities which are currently in the database
