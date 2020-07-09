@@ -2,6 +2,7 @@ import os
 import pprint
 from django.views import View
 from django.shortcuts import render
+from django.http import Http404
 from ackrep_core import core
 
 # noinspection PyUnresolvedReferences
@@ -32,6 +33,23 @@ class EntityListView(View):
                    }
 
         return render(request, "ackrep_web/entity_list.html", context)
+
+
+class EntityDetailView(View):
+    # noinspection PyMethodMayBeStatic
+    def get(self, request, key):
+
+        try:
+            entity = core.get_entity(key)
+        except ValueError as ve:
+            raise Http404(ve)
+
+        context = {"entity": entity,
+                   }
+
+        print(entity)
+
+        return render(request, "ackrep_web/entity_detail.html", context)
 
 
 class ImportRepoView(View):

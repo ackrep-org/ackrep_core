@@ -49,3 +49,18 @@ class TestCases1(DjangoTestCase):
 
         # this should be an standard response for successful HTTP requests
         self.assertEqual(response.status_code, 200)
+
+
+class TestCases2(DjangoTestCase):
+    """
+    These tests expect the database to be loaded
+    """
+
+    def setUp(self):
+        core.load_repo_to_db(core.data_test_repo_path)
+
+    def test_entity_detail(self):
+        url = reverse('entity-detail', kwargs={"key": "UKJZI"})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+

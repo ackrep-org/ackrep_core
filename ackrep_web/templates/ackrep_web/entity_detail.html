@@ -1,0 +1,12 @@
+{% extends "ackrep_web/base.html" %}
+
+{% block content %}
+
+<h3>Entity Detail: {{entity.name}} ({{entity.type}})</h3>
+
+
+{% include "ackrep_web/widgets/entity_full.html" with entity=entity only %}
+
+
+
+{% endblock  %}
