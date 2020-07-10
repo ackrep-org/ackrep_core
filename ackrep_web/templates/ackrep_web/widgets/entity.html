@@ -25,10 +25,19 @@
     {# TODO: add more information in mouseover #}
     <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a>
     {% endfor %}
-<br>
-<a href="{% url 'check-solution' entity.key %}">check this solution</a> (this might take some time)<br>
 
-{% endif %}
+    {% if c.view_type == "detail" %}
+    <br>
+    <a href="{% url 'check-solution' entity.key %}">check this solution</a> (this might take some time)<br>
+    {% elif c.view_type == "check-solution"%}
+<!--utc_check_solution -->
+    <br>
+    <b>Runtime:</b> {{c.diff_time_str}}<br>
+    <b>Result:</b> <span class="cs_result {{c.cs_result_css_class}}">{{c.cs_verbal_result}}</span><br>
+    <b>Output:</b><br>
+    <pre>{{c.cs_result.stdout}}</pre>
+    {% endif %}
+{% endif %} {# end if display == "full" #}
 {#--------------------------------------------------------------------------------------------------------------------#}
 
 

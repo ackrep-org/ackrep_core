@@ -327,6 +327,7 @@ def get_entity_dict_from_db():
     return entity_dict
 
 
+# TODO: merge with `get_entity_dict_from_db`
 def get_entities_with_key(key):
     """
     get all entities in the database that have a specific key

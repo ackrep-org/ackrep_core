@@ -1,8 +1,10 @@
-import os
+import time
 import pprint
 from django.views import View
 from django.shortcuts import render
 from django.http import Http404
+from django.utils import timezone
+from ackrep_core import util
 from ackrep_core import core
 
 # noinspection PyUnresolvedReferences
@@ -44,8 +46,13 @@ class EntityDetailView(View):
         except ValueError as ve:
             raise Http404(ve)
 
-        context = {"entity": entity,
-                   }
+        c = core.Container()
+
+        c.entity = entity
+        c.view_type = "detail"
+        c.view_type_title = "Details for:"
+
+        context = {"c": c}
 
         # create an object container (entity.oc) where for each string-keys the real object is available
         core.resolve_keys(entity)
@@ -58,21 +65,33 @@ class CheckSolutionView(View):
     def get(self, request, key):
 
         try:
-            entity = core.get_entity(key)
+            sol_entity = core.get_entity(key)
         except ValueError as ve:
             raise Http404(ve)
 
         # TODO: spawn a new container and shown some status updates while the user is waiting
 
+        core.resolve_keys(sol_entity)
+
+        c = core.Container()
+        ts1 = timezone.now()
         cs_result = core.check_solution(key)
+        c.diff_time_str = util.smooth_timedelta(ts1)
 
-        context = {"entity": entity,
-                   "check-solution": True,
-                   "cs_result": cs_result,
-                   }
+        c.entity = sol_entity
+        c.view_type = "check-solution"
+        c.view_type_title = "Check Solution for:"
+        c.cs_result = cs_result
 
-        # create an object container (entity.oc) where for each string-keys the real object is available
-        core.resolve_keys(entity)
+        if cs_result.returncode == 0:
+            c.cs_result_css_class = "cs_success"
+            c.cs_verbal_result = "Success"
+        else:
+            c.cs_verbal_result = "Fail"
+
+        context = {"c": c}
+
+        # create an object container (entity.oc) where for each string-key the real object is available
 
         return render(request, "ackrep_web/entity_detail.html", context)
 

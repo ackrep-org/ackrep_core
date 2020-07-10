@@ -60,3 +60,11 @@ class TestCases2(DjangoTestCase):
 
         self.assertContains(response, "utc_entity_full")
 
+    def test_check_solution(self):
+        url = reverse('check-solution', kwargs={"key": "UKJZI"})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, "utc_entity_full")
+        self.assertContains(response, "utc_check_solution")
+

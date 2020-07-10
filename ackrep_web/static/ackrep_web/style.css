@@ -28,6 +28,31 @@ footer {
     border-color:hsl(10, 0%, 80%);
 }
 
+.entity pre {
+    font-size: 8pt;
+
+}
+
+/*style the result of check-solution (success or fail)*/
+.cs_result {
+
+    font-size: 10pt;
+    padding-left:3px;
+    padding-right:3px;
+    background-color:hsl(10, 10%, 90%);
+
+    border-radius:2px;
+    border: solid 1px;
+    border-color:hsl(10, 0%, 80%);
+}
+.cs_success {
+    color:hsl(120, 60%, 30%);
+}
+
+.cs_fail {
+    color:hsl(0, 60%, 30%);
+}
+
 .footer_link_menu {
 
     margin-top: 2em;
