@@ -5,6 +5,7 @@ import time
 import subprocess
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
+from .util import *
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS  # for debugging only
@@ -187,6 +188,10 @@ def load_repo_to_db(startdir):
     print("Clearing DB...")
     clear_db()
 
+    crawl_files_and_load_to_db(startdir)
+
+
+def crawl_files_and_load_to_db(startdir, warn_duplicate_key=True):
     print("Searching '%s' and subdirectories for 'metadata.yml'..." % (os.path.abspath(startdir)))
     meta_data_files = list(get_files_by_pattern(startdir, lambda fn: fn == "metadata.yml"))
     entity_list = []
@@ -199,6 +204,13 @@ def load_repo_to_db(startdir):
         md = get_metadata_from_file(md_path)
         e = models.create_entity_from_metadata(md)
         e.base_path = os.path.abspath(os.path.split(md_path)[0])
+
+        # check DB if key already exists, if so, skip entity
+        duplicates = get_entities_with_key(e.key)
+        if duplicates:
+            if (warn_duplicate_key):
+                print(yellow("Warning: key %s already used in '%s', skipping entity" % (e.key, duplicates[0].base_path)))
+            next
 
         # store to db
         e.save()
@@ -220,6 +232,19 @@ def get_entity_dict_from_db():
         entity_dict[et.__name__] = object_list
 
     return entity_dict
+
+
+def get_entities_with_key(key):
+    """
+    get all entities in the database that have a specific key
+    """
+    entity_types = models.get_entities()
+    entities_with_key = []
+
+    for et in entity_types:
+        entities_with_key += list(et.objects.filter(key=key))
+
+    return entities_with_key
 
 
 def clone_git_repo(giturl):
