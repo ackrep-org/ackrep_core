@@ -1,10 +1,10 @@
 import os
 import argparse
 from . import core, models
+from .util import *
 import pprint
 import subprocess
 
-from colorama import Style, Fore
 import questionary
 
 from ipydex import IPS, activate_ips_on_exception
@@ -204,22 +204,3 @@ def dialoge_field_values(entity_class):
         res_dict[f.name] = qres
 
     return res_dict
-
-
-# helper functions
-
-
-def bright(txt):
-    return f"{Style.BRIGHT}{txt}{Style.RESET_ALL}"
-
-
-def bgreen(txt):
-    return f"{Fore.GREEN}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
-
-
-def bred(txt):
-    return f"{Fore.RED}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
-
-
-def yellow(txt):
-    return f"{Fore.YELLOW}{txt}{Style.RESET_ALL}"
