@@ -61,7 +61,7 @@ required_generic_meta_data = {
     }
 
 
-def gen_random_key():
+def gen_random_entity_key():
     return "".join([c for c in secrets.token_urlsafe(10).upper() if c.isalnum()])[:5]
 
 

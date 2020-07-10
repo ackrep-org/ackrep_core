@@ -62,6 +62,9 @@ def main():
         pprint.pprint(data, indent=1)
         print("")
         return
+    elif args.key:
+            print("Random entity-key: ", core.gen_random_entity_key())
+            return
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -127,7 +130,7 @@ def dialoge_field_values(entity_class):
 
     fields = entity_class.get_fields()
 
-    entity = entity_class(key=core.gen_random_key())
+    entity = entity_class(key=core.gen_random_entity_key())
 
     res_dict = dict()
 

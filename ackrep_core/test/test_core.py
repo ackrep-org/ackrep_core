@@ -114,12 +114,17 @@ class TestCases2(DjangoTestCase):
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = subprocess.run(["ackrep", "-cs", "playground/acrobot_solution/metadata.yml"], capture_output=False)
+        res = subprocess.run(["ackrep", "-cs", "playground/acrobot_solution/metadata.yml"], capture_output=True)
         res.exited = res.returncode
         res.stdout = utf8decode(res.stdout)
         res.stderr = utf8decode(res.stderr)
 
         self.assertEqual(res.returncode, 0)
+
+    def test_check_solution(self):
+        res = subprocess.run(["ackrep", "--key"], capture_output=True)
+        self.assertEqual(res.returncode, 0)
+        self.assertTrue(utf8decode(res.stdout).lower().startswith("random entity-key:"))
 
 
 def utf8decode(obj):
