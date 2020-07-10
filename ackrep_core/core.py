@@ -191,6 +191,12 @@ def load_repo_to_db(startdir):
     crawl_files_and_load_to_db(startdir)
 
 
+def extend_db(startdir):
+    print("Extending database with entities in repository")
+
+    crawl_files_and_load_to_db(startdir, warn_duplicate_key=False)
+
+
 def crawl_files_and_load_to_db(startdir, warn_duplicate_key=True):
     print("Searching '%s' and subdirectories for 'metadata.yml'..." % (os.path.abspath(startdir)))
     meta_data_files = list(get_files_by_pattern(startdir, lambda fn: fn == "metadata.yml"))
@@ -209,12 +215,16 @@ def crawl_files_and_load_to_db(startdir, warn_duplicate_key=True):
         duplicates = get_entities_with_key(e.key)
         if duplicates:
             if (warn_duplicate_key):
-                print(yellow("Warning: key %s already used in '%s', skipping entity" % (e.key, duplicates[0].base_path)))
-            next
+                print(yellow("Warning: key %s already used in '%s'" % (e.key, duplicates[0].base_path)))
+            print("Skipping...")
+            continue
 
         # store to db
         e.save()
         entity_list.append(e)
+
+    print("Added %d new entities to DB" % (len(entity_list)))
+    return entity_list
 
 
 def get_entity_dict_from_db():

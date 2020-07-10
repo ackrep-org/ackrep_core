@@ -19,6 +19,7 @@ def main():
                            help="check solution (specified by metadata file)")
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
+    argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
     argparser.add_argument("--qq", help="create new metada.yml based on interactive questionnaire", action="store_true")
 
     # for development only
@@ -36,6 +37,10 @@ def main():
     elif args.load_repo_to_db:
         startdir = args.load_repo_to_db
         core.load_repo_to_db(startdir)
+        print(bgreen("Done"))
+    elif args.extend:
+        startdir = args.extend
+        core.extend_db(startdir)
         print(bgreen("Done"))
     elif args.qq:
 
