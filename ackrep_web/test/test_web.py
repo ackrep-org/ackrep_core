@@ -1,6 +1,5 @@
 
-from django.test import TestCase as DjangoTestCase, St
-testing.StaticLiveServerTestCase
+from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
 import re
 
