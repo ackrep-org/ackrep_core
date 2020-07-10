@@ -1,6 +1,8 @@
 
-from django.test import TestCase as DjangoTestCase
+from django.test import TestCase as DjangoTestCase, St
+testing.StaticLiveServerTestCase
 from django.urls import reverse
+import re
 
 from ackrep_core import core
 from ipydex import IPS
@@ -9,7 +11,7 @@ from ipydex import IPS
 This module contains the tests for the web application module (not ackrep_core)
 
 
-python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_web:TestCases1
+python3 manage.py test --nocapture --rednose --ips ackrep_web.test.test_web:TestCases1
 
 For more infos see doc/devdoc/README.md.
 """
@@ -67,4 +69,13 @@ class TestCases2(DjangoTestCase):
 
         self.assertContains(response, "utc_entity_full")
         self.assertContains(response, "utc_check_solution")
+        self.assertContains(response, "utc_img_url")
+
+        regex = re.compile("utc_img_url:<(.*?)>")
+        img_url = regex.findall(response.content.decode("utf8"))
+
+        response = self.client.get(img_url)
+
+        # TODO test that this url returns a file
+
 

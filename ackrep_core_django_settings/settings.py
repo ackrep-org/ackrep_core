@@ -128,6 +128,9 @@ STATIC_URL = '/static/'
 # The absolute path to the directory where collectstatic will collect static files for deployment.
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # path where db-backups are dumped to
 BACKUP_PATH = os.path.join(BASE_DIR, "db_backups")
 

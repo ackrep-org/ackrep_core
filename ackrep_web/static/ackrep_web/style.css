@@ -30,7 +30,10 @@ footer {
 
 .entity pre {
     font-size: 8pt;
+}
 
+.entity img {
+   max-width: 100%;
 }
 
 /*style the result of check-solution (success or fail)*/
@@ -50,7 +53,7 @@ footer {
 }
 
 .cs_fail {
-    color:hsl(0, 60%, 30%);
+    color:hsl(0, 90%, 45%);
 }
 
 .footer_link_menu {

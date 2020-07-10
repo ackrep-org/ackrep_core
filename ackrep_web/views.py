@@ -83,10 +83,13 @@ class CheckSolutionView(View):
         c.view_type_title = "Check Solution for:"
         c.cs_result = cs_result
 
+        c.image_list = core.get_solution_data_files(sol_entity.base_path, endswith_str=".png", create_media_links=True)
+
         if cs_result.returncode == 0:
             c.cs_result_css_class = "cs_success"
             c.cs_verbal_result = "Success"
         else:
+            c.cs_result_css_class = "cs_fail"
             c.cs_verbal_result = "Fail"
 
         context = {"c": c}
