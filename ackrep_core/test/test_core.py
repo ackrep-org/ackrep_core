@@ -1,5 +1,7 @@
 import os
+import subprocess
 
+from unittest import skipUnless
 from django.test import TestCase as DjangoTestCase
 from git import Repo, InvalidGitRepositoryError
 
@@ -65,6 +67,9 @@ class TestCases1(DjangoTestCase):
 
         self.assertEqual(len(entity_dict), len(core.models.get_entities()))
 
+        # TODO: load repo and assess the content
+        # core.load_repo_to_db(core.data_path)
+
 
 class TestCases2(DjangoTestCase):
     """
@@ -97,4 +102,28 @@ class TestCases2(DjangoTestCase):
             self.assertTrue(isinstance(entity.oc.compatible_environment, core.models.EnvironmentSpecification))
             self.assertTrue(entity.oc.compatible_environment, default_env)
 
+    @skipUnless(os.environ.get('DJANGO_TESTS_INCLUDE_SLOW') == "True", "skipping slow test. Run with --include-slow")
+    def test_check_solution(self):
 
+        # first: run directly
+
+        res = core.check_solution("UKJZI")
+        self.assertEqual(res.returncode, 0)
+
+        # second: run via commandline
+        os.chdir(ackrep_data_test_repo_path)
+
+        # this assumes the acrep script to be available in $PATH
+        res = subprocess.run(["ackrep", "-cs", "playground/acrobot_solution/metadata.yml"], capture_output=False)
+        res.exited = res.returncode
+        res.stdout = utf8decode(res.stdout)
+        res.stderr = utf8decode(res.stderr)
+
+        self.assertEqual(res.returncode, 0)
+
+
+def utf8decode(obj):
+    if hasattr(obj, "decode"):
+        return obj.decode("utf8")
+    else:
+        return obj

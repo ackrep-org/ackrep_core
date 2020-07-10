@@ -1,8 +1,10 @@
 import secrets
 import yaml
 import os
+import pathlib
 import time
 import subprocess
+import shutil
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from .util import *
@@ -275,6 +277,39 @@ def resolve_keys(entity):
             setattr(entity.oc, f.name, entity_list)
 
 
+def make_method_build(method_package, accept_existing=True):
+    """
+    Assumption: the method is inside the repo only with its source code. In general there is a build step necessary
+    (e.g. compiling source files), which is triggered by this function.
+
+    Currently the build-step consist only of copying the source to _build/
+
+    :param method_package:
+    :param accept_existing:
+
+    :return: full_build_path
+    """
+
+    full_base_path = os.path.join(root_path, method_package.base_path)
+    full_build_path = os.path.join(full_base_path, "_build")
+    full_source_path = os.path.join(full_base_path, "src")
+
+    if os.path.isdir(full_build_path):
+        if not accept_existing:
+            msg = f"The path {full_build_path} does already exist, which is not expected!"
+            raise ValueError(msg)
+        else:
+            return full_build_path
+
+    # TODO: test for and run makescript here
+
+    # For now just copy the source:
+
+    shutil.copytree(full_source_path, full_build_path)
+
+    return full_build_path
+
+
 def get_entity_dict_from_db():
     """
     get all entities which are currently in the database
@@ -305,7 +340,76 @@ def get_entities_with_key(key):
     return entities_with_key
 
 
+def check_solution(key):
+    """
+
+    :param key:                 entity key of the ProblemSolution
+    :return:
+    """
+
+    sol_entity = get_entity(key)
+    resolve_keys(sol_entity)
+
+    assert isinstance(sol_entity, models.ProblemSolution)
+
+    # get path for solution
+    solution_file = sol_entity.solution_file
+
+    if solution_file != "solution.py":
+        msg = "Arbitrary filename will be supported in the future"
+        raise NotImplementedError(msg)
+
+    c = Container()  # this will be our easily accessible context dict for the template
+
+    # TODO: handle the filename (see also template)
+    c.solution_path = os.path.join(root_path, sol_entity.base_path)
+
+    # currently we expect exactly one solution
+    assert len(sol_entity.oc.solved_problem_list) == 1
+    problem_spec = sol_entity.oc.solved_problem_list[0]
+
+    if problem_spec.problem_file != "problem.py":
+        msg = "Arbitrary filename will be supported in the future"
+        raise NotImplementedError(msg)
+
+    # TODO: handle the filename (see also template)
+    c.problem_spec_path = os.path.join(root_path, problem_spec.base_path)
+
+    # list of the build_paths
+    c.method_package_list = []
+    for mp in sol_entity.oc.method_package_list:
+        full_build_path = make_method_build(mp, accept_existing=True)
+        assert os.path.isdir(full_build_path)
+        c.method_package_list.append(full_build_path)
+
+    context = dict(c.item_list())
+
+    print("  ... Creating exec-script ... ")
+
+    scriptname = "execscript.py"
+
+    assert not sol_entity.base_path.startswith(os.path.sep)
+
+    # determine whether the entity comes from ackrep_data or ackrep_data_for_unittests ore ackrep_data_import
+    data_repo_path = pathlib.Path(sol_entity.base_path).parts[0]
+    scriptpath = os.path.join(root_path, data_repo_path, scriptname)
+    render_template("templates/execscript.py.template", context, target_path=scriptpath)
+
+    print(f"  ... running exec-script {scriptpath} ... ")
+
+    # TODO: plug in containerization here:
+    # Note: this hangs on any interactive element inside the script (such as IPS)
+    res = subprocess.run(["python", scriptpath], capture_output=True)
+    res.exited = res.returncode
+    res.stdout = res.stdout.decode("utf8")
+    res.stderr = res.stderr.decode("utf8")
+
+    return res
+
+
 def clone_git_repo(giturl):
+
+    raise NotImplementedError ("just a dummy, not yet tested")
     res = subprocess.run(["git", "clone", giturl], capture_output=True)
     res.exited = res.returncode
     res.stdout = res.stdout.decode("utf8")

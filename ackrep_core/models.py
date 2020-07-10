@@ -5,6 +5,7 @@ import inspect
 from django.db import models
 import django
 from django.conf import settings
+from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -13,19 +14,17 @@ This module uses the django model engine to specify models.
 However, they are used also outside the web application, i.e. for the command line application.  
 """
 
-
-# from ipydex import IPS, activate_ips_on_exception
-# IPS()
-# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_settings.settings')
-
-# if 1 and not os.environ.get('DJANGO_SETTINGS_MODULE'):
-
+# The following is necessary to let us use django functionality without accessing via manage.py
 try:
     hasattr(settings, "BASE_DIR")
 except ImproperlyConfigured:
     settings_configured_flag = False
 else:
     settings_configured_flag = True
+
+
+if not apps.apps_ready:
+    settings_configured_flag = False
 
 if not settings_configured_flag:
     mod_path = os.path.dirname(os.path.abspath(__file__))

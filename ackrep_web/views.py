@@ -53,6 +53,30 @@ class EntityDetailView(View):
         return render(request, "ackrep_web/entity_detail.html", context)
 
 
+class CheckSolutionView(View):
+    # noinspection PyMethodMayBeStatic
+    def get(self, request, key):
+
+        try:
+            entity = core.get_entity(key)
+        except ValueError as ve:
+            raise Http404(ve)
+
+        # TODO: spawn a new container and shown some status updates while the user is waiting
+
+        cs_result = core.check_solution(key)
+
+        context = {"entity": entity,
+                   "check-solution": True,
+                   "cs_result": cs_result,
+                   }
+
+        # create an object container (entity.oc) where for each string-keys the real object is available
+        core.resolve_keys(entity)
+
+        return render(request, "ackrep_web/entity_detail.html", context)
+
+
 class ImportRepoView(View):
 
     # noinspection PyMethodMayBeStatic

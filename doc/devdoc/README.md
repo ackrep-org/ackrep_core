@@ -13,6 +13,8 @@ There are several options to run the tests. The following is recommended (`--red
 - `python3 manage.py test --nocapture --rednose ackrep_core.test.test_core:TestCases1` (all tests of one class)
 - `python3 manage.py test --nocapture --rednose ackrep_core.test.test_core:TestCases1.test_00` (one specific test)
 
+Slow tests are skipped by default. Enable them with `python3 manage.py test --include-slow ...`.
+
 
 Usual test execution with  `python -m unittest <path>` will not work because django is needed to create an empty test-database etc.
 
