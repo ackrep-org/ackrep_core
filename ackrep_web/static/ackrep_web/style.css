@@ -56,6 +56,16 @@ footer {
     color:hsl(0, 90%, 45%);
 }
 
+
+.debug_output {
+    padding: 5px;
+    font-size: 8pt;
+    font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
+    background-color: hsl(0, 15%, 95%);;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
 .footer_link_menu {
 
     margin-top: 2em;

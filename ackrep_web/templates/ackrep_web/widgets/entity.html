@@ -39,6 +39,12 @@
         <img src="{{c.image_list.0}}"><!--utc_img_url:<{{c.image_list.0}}> -->
 
         {% endif %}
+        {% if c.debug %}
+        <b>Debug:</b>
+        <div class="debug_output">
+        {{c.debug}}
+        </div>
+        {% endif %}
     <b>Output:</b><br>
     <pre>{{c.cs_result.stdout}}</pre>
     {% endif %}

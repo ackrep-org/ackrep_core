@@ -88,9 +88,11 @@ class CheckSolutionView(View):
         if cs_result.returncode == 0:
             c.cs_result_css_class = "cs_success"
             c.cs_verbal_result = "Success"
+            # c.debug = cs_result
         else:
             c.cs_result_css_class = "cs_fail"
             c.cs_verbal_result = "Fail"
+            c.debug = cs_result
 
         context = {"c": c}
 
