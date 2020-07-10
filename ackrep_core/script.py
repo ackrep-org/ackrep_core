@@ -36,6 +36,7 @@ def main():
     elif args.load_repo_to_db:
         startdir = args.load_repo_to_db
         core.load_repo_to_db(startdir)
+        print(bgreen("Done"))
     elif args.qq:
 
         entity = dialoge_entity_type()

@@ -182,12 +182,17 @@ def clear_db():
 
 
 def load_repo_to_db(startdir):
+    print("Completely rebuilding DB from file system")
 
+    print("Clearing DB...")
     clear_db()
 
-    meta_data_files = get_files_by_pattern(startdir, lambda fn: fn == "metadata.yml")
+    print("Searching '%s' and subdirectories for 'metadata.yml'..." % (os.path.abspath(startdir)))
+    meta_data_files = list(get_files_by_pattern(startdir, lambda fn: fn == "metadata.yml"))
     entity_list = []
+    print("Found %d entity metadata files" % (len(meta_data_files)))
 
+    print("Creating DB objects...")
     for md_path in meta_data_files:
         print(md_path)
 
