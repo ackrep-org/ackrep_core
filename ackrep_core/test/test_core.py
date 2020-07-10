@@ -21,7 +21,7 @@ For more infos see doc/devdoc/README.md.
 
 
 ackrep_data_test_repo_path = core.data_test_repo_path
-default_repo_head_hash = "f8be6de4e850139e9366d321ef044e11c156991b"
+default_repo_head_hash = "9e4beb7f73676ac83855fd11706c9f55acd96441"
 
 
 class TestCases1(DjangoTestCase):
@@ -43,9 +43,10 @@ class TestCases1(DjangoTestCase):
             self.assertTrue(False, msg=msg)
             repo = None
 
-        self.assertFalse(repo.is_dirty())
+        msg = f"There are uncommited changes in the repo {ackrep_data_test_repo_path}"
+        self.assertFalse(repo.is_dirty(), msg=msg)
 
-        # Ensure that the repository is in the expected state. This actual state (and its hash) might change in the
+        # Ensure that the repository is in the expected state. This actual state (and its hash) will change in the
         # future. This test prevents that this happens without intention.
         msg = f"Repo is in the wrong state. Expected HEAD to be {default_repo_head_hash[:7]}."
         self.assertEqual(repo.head.commit.hexsha, default_repo_head_hash, msg=msg)
@@ -121,10 +122,28 @@ class TestCases2(DjangoTestCase):
 
         self.assertEqual(res.returncode, 0)
 
-    def test_check_solution(self):
+    def test_check_key(self):
         res = subprocess.run(["ackrep", "--key"], capture_output=True)
         self.assertEqual(res.returncode, 0)
         self.assertTrue(utf8decode(res.stdout).lower().startswith("random entity-key:"))
+
+    def test_get_solution_data_files(self):
+        res = core.check_solution("UKJZI")
+        self.assertEqual(res.returncode, 0, msg=utf8decode(res.stderr))
+        sol_entity = core.get_entity("UKJZI")
+
+        all_files = core.get_solution_data_files(sol_entity.base_path)
+        png_files = core.get_solution_data_files(sol_entity.base_path, endswith_str=".png")
+        txt_files = core.get_solution_data_files(sol_entity.base_path, endswith_str=".txt")
+
+        self.assertEqual(len(all_files), 1)
+        self.assertEqual(len(png_files), 1)
+        self.assertEqual(len(txt_files), 0)
+
+        plot_file_path = png_files[0]
+        self.assertTrue(plot_file_path.endswith("plot.png"))
+
+        self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
 
 
 def utf8decode(obj):

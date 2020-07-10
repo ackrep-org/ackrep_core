@@ -277,6 +277,34 @@ def resolve_keys(entity):
             setattr(entity.oc, f.name, entity_list)
 
 
+def get_solution_data_files(sol_base_path, endswith_str=None):
+    """
+    walk through <base_path>/_solution_data and return the path of all matching files
+
+    :param sol_base_path:
+    :param endswith_str:
+    :return:
+    """
+
+    startdir = os.path.join(root_path, sol_base_path, "_solution_data")
+
+    if not os.path.isdir(startdir):
+        return []
+
+    if endswith_str is None:
+        def matchfunc(fn): return True
+    else:
+        def matchfunc(fn): return fn.endswith(endswith_str)
+
+    abs_solution_files = get_files_by_pattern(startdir, matchfunc)  # returns a generator
+
+    # convert absolute paths into relative paths (w.r.t. `root_path`)
+
+    solution_files = [f.replace(f"{root_path}{os.path.sep}", "") for f in abs_solution_files]
+
+    return solution_files
+
+
 def make_method_build(method_package, accept_existing=True):
     """
     Assumption: the method is inside the repo only with its source code. In general there is a build step necessary
