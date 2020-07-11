@@ -27,12 +27,15 @@
     {% endfor %}
 
     {% if c.view_type == "detail" %}
+<!--utc_entity_detial -->
+    <br>
+    <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
     <br>
     <a href="{% url 'check-solution' entity.key %}">check this solution</a> (this might take some time)<br>
     {% elif c.view_type == "check-solution"%}
 <!--utc_check_solution -->
     <br>
-    <b>Runtime:</b> {{c.diff_time_str}}<br>
+    <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
     <b>Result:</b> <span class="cs_result {{c.cs_result_css_class}}">{{c.cs_verbal_result}}</span><br>
         {% if c.image_list %}
         <b>Plot:</b><br>
