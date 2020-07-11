@@ -75,8 +75,6 @@ class GenericEntity(models.Model):
     editor_list = models.CharField(max_length=500, null=True, blank=True,)
     creation_date = models.CharField(max_length=500, null=True, blank=True,)
 
-    # TODO: remove this (the doc entities will hold the references)
-    related_doc_list = EntityKeyListField(max_length=500, null=True, blank=True,)
     external_references = models.CharField(max_length=500, null=True, blank=True,)
     notes = models.CharField(max_length=5000, null=True, blank=True,)
 

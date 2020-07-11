@@ -35,6 +35,10 @@ data_test_repo_path = os.path.join(root_path, "ackrep_data_for_unittests")
 class ResultContainer(Container):
     pass
 
+class InconsistentMetaDataError(ValueError):
+    """Raised when an entity with inconsistent metadata is loaded."""
+    pass
+
 
 valid_types = [
     "problem_class",
@@ -257,27 +261,32 @@ def resolve_keys(entity):
 
     entity.oc = Container()
 
-    for f in fields:
-        if isinstance(f, models.EntityKeyField):
+    for field in fields:
+        if isinstance(field, models.EntityKeyField):
 
             # example: get the content of entity.predecessor_key
-            refkey = getattr(entity, f.name)
+            refkey = getattr(entity, field.name)
             if refkey:
                 ref_entity = get_entity(refkey)
             else:
                 ref_entity = None
 
             # save the real object to the object container (allow later access)
-            setattr(entity.oc, f.name, ref_entity)
+            setattr(entity.oc, field.name, ref_entity)
 
-        elif isinstance(f, models.EntityKeyListField):
-            refkeylist_str = getattr(entity, f.name)
+        elif isinstance(field, models.EntityKeyListField):
+            refkeylist_str = getattr(entity, field.name)
+
+            if refkeylist_str is None:
+                msg = f"There is a problem with the field {field.name} in entity {entity.key}."
+                raise InconsistentMetaDataError(msg)
+
             refkeylist = yaml.load(refkeylist_str, Loader=yaml.FullLoader)
             if refkeylist in (None, [], [""]):
                 refkeylist = []
 
             entity_list = [get_entity(refkey) for refkey in refkeylist]
-            setattr(entity.oc, f.name, entity_list)
+            setattr(entity.oc, field.name, entity_list)
 
 
 def get_solution_data_files(sol_base_path, endswith_str=None, create_media_links=False):

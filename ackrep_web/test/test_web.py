@@ -78,3 +78,17 @@ class TestCases2(DjangoTestCase):
         # TODO test that this url returns a file
 
 
+class TestBugs(DjangoTestCase):
+    """
+    Test for specific bugs
+    """
+
+    def setUp(self):
+        core.load_repo_to_db(core.data_test_repo_path)
+
+    def test_entity_detail(self):
+        url = reverse('entity-detail', kwargs={"key": "YJBOX"})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, "utc_entity_full")
