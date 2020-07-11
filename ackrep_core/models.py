@@ -106,6 +106,12 @@ class GenericEntity(models.Model):
 
         return final_fields
 
+    def __repr__(self):
+        return f"<{type(self).__name__} (pk: {self.pk}, key: {self.key})>"
+
+    def __str__(self):
+        return repr(self)
+
 
 class ProblemSpecification(GenericEntity):
     problemclass_list = EntityKeyListField(max_length=500, null=True, blank=True,)

@@ -208,7 +208,7 @@ def load_repo_to_db(startdir, check_consistency=True):
     crawl_files_and_load_to_db(startdir)
 
     if check_consistency:
-    # TODO: this should be disabled during unittest to save time
+        # TODO: this should be disabled during unittest to save time
         print("Create internal links between entities (only for consistency checking) ...")
         entity_dict = get_entity_dict_from_db()
 
@@ -276,7 +276,12 @@ def resolve_keys(entity):
             # example: get the content of entity.predecessor_key
             refkey = getattr(entity, field.name)
             if refkey:
-                ref_entity = get_entity(refkey)
+                try:
+                    ref_entity = get_entity(refkey)
+                except ValueError as ve:
+                    msg = f"Bad refkey detected when processing field {field.name} of {entity}. " \
+                        f"Original error: {ve.args[0]}"
+                    raise InconsistentMetaDataError(msg)
             else:
                 ref_entity = None
 
@@ -294,7 +299,12 @@ def resolve_keys(entity):
             if refkeylist in (None, [], [""]):
                 refkeylist = []
 
-            entity_list = [get_entity(refkey) for refkey in refkeylist]
+            try:
+                entity_list = [get_entity(refkey) for refkey in refkeylist]
+            except ValueError as ve:
+                msg = f"Bad refkey detected when processing field {field.name} of {entity}. "\
+                      f"Original error: {ve.args[0]}"
+                raise InconsistentMetaDataError(msg)
             setattr(entity.oc, field.name, entity_list)
 
 
