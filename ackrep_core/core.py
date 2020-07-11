@@ -199,13 +199,22 @@ def clear_db():
         e.objects.all().delete()
 
 
-def load_repo_to_db(startdir):
+def load_repo_to_db(startdir, check_consistency=True):
     print("Completely rebuilding DB from file system")
 
     print("Clearing DB...")
     clear_db()
 
     crawl_files_and_load_to_db(startdir)
+
+    if check_consistency:
+    # TODO: this should be disabled during unittest to save time
+        print("Create internal links between entities (only for consistency checking) ...")
+        entity_dict = get_entity_dict_from_db()
+
+        for etype, elist in entity_dict.items():
+            for entity in elist:
+                resolve_keys(entity)
 
 
 def extend_db(startdir):
