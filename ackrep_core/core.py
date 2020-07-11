@@ -18,8 +18,11 @@ from django.conf import settings
 
 from . import models
 
-# path of this module
+# path of this module (i.e. the file core.py)
 mod_path = os.path.dirname(os.path.abspath(__file__))
+
+# path of this package (i.e. the directory ackrep_core)
+core_pkg_path = os.path.dirname(mod_path)
 
 # path of the general project root (expedted to contain ackrep_data, ackrep_core, ackrep_deployment, ...)
 root_path = os.path.abspath(os.path.join(mod_path, "..", ".."))
@@ -404,6 +407,8 @@ def check_solution(key):
 
     # TODO: handle the filename (see also template)
     c.solution_path = os.path.join(root_path, sol_entity.base_path)
+
+    c.ackrep_core_path = core_pkg_path
 
     # currently we expect exactly one solution
     assert len(sol_entity.oc.solved_problem_list) == 1

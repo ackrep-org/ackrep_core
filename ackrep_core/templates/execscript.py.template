@@ -3,6 +3,10 @@
 # {{context.warning}}
 
 import sys
+
+# ackrep_core path
+sys.path.insert(0, r"{{context.ackrep_core_path}}")
+
 import ackrep_core
 
 from ipydex import IPS
@@ -19,6 +23,8 @@ sys.path.insert(0, r"{{context.problem_spec_path}}")
 sys.path.insert(0, r"{{context.solution_path}}")
 
 # IPS() # uncomment for debugging
+
+# these statements assume standard filenames (`problem.py` and `solution.py`)
 
 import problem as ps
 import solution
