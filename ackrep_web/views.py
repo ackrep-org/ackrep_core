@@ -16,7 +16,9 @@ class LandingPageView(View):
     # noinspection PyMethodMayBeStatic
     def get(self, request):
 
-        context = {}
+        entity_dict = core.get_entity_dict_from_db()
+        nr_of_entities = sum(len(entity_list) for type_name, entity_list in entity_dict.items())
+        context = {"nr_of_entities": nr_of_entities}
 
         return render(request, "ackrep_web/landing.html", context)
 
@@ -25,7 +27,7 @@ class EntityListView(View):
     # noinspection PyMethodMayBeStatic
     def get(self, request):
 
-        core.load_repo_to_db(core.data_path)
+        #core.load_repo_to_db(core.data_path)
 
         entity_dict = core.get_entity_dict_from_db()
 
