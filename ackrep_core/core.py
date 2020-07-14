@@ -234,7 +234,12 @@ def crawl_files_and_load_to_db(startdir, warn_duplicate_key=True):
 
         md = get_metadata_from_file(md_path)
         e = models.create_entity_from_metadata(md)
-        e.base_path = os.path.abspath(os.path.dirname(md_path)).replace(f"{root_path}/", "")
+        # absolute path of directory containing metadata.yml
+        base_path_abs = os.path.abspath(os.path.dirname(md_path))
+        # make path relative to ackrep root path, meaning the directory that contains 'ackrep_core' and 'ackrep_data'
+        # example: C:\dev\ackrep\ackrep_data\problem_solutions\solution1 --> ackrep_data\problem_solutions\solution1
+        base_path_rel = os.path.relpath(base_path_abs, root_path)
+        e.base_path = base_path_rel
         print(e.key, e.base_path)
 
         # check DB if key already exists, if so, skip entity
