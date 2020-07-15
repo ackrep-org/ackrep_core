@@ -31,6 +31,8 @@ root_path = os.path.abspath(os.path.join(mod_path, "..", ".."))
 data_path = os.path.join(root_path, "ackrep_data")
 data_test_repo_path = os.path.join(root_path, "ackrep_data_for_unittests")
 
+last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
+
 
 class ResultContainer(Container):
     pass
@@ -205,7 +207,7 @@ def load_repo_to_db(startdir, check_consistency=True):
     print("Clearing DB...")
     clear_db()
 
-    crawl_files_and_load_to_db(startdir)
+    entity_list = crawl_files_and_load_to_db(startdir)
 
     if check_consistency:
         # TODO: this should be disabled during unittest to save time
@@ -216,11 +218,20 @@ def load_repo_to_db(startdir, check_consistency=True):
             for entity in elist:
                 resolve_keys(entity)
 
+    global last_loaded_entities
+    last_loaded_entities = entity_list
+    
+    return entity_list
+
 
 def extend_db(startdir):
     print("Extending database with entities in repository")
 
-    crawl_files_and_load_to_db(startdir, warn_duplicate_key=False)
+    entity_list = crawl_files_and_load_to_db(startdir, warn_duplicate_key=False)
+    global last_loaded_entities
+    last_loaded_entities = entity_list
+
+    return entity_list
 
 
 def crawl_files_and_load_to_db(startdir, warn_duplicate_key=True):

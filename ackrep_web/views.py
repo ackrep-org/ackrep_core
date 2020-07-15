@@ -1,7 +1,8 @@
 import time
 import pprint
 from django.views import View
-from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render, redirect, reverse
 from django.http import Http404
 from django.utils import timezone
 from ackrep_core import util
@@ -37,6 +38,34 @@ class EntityListView(View):
                    }
 
         return render(request, "ackrep_web/entity_list.html", context)
+
+
+class ImportCanonicalView(View):
+    # noinspection PyMethodMayBeStatic
+    def post(self, request):
+        entity_list = core.load_repo_to_db(core.data_path)
+
+        return redirect("imported-entities")
+
+
+class ImportedEntitiesView(View):
+    # noinspection PyMethodMayBeStatic
+    def get(self, request):
+        entity_list = core.last_loaded_entities
+
+        context = {"entity_list": entity_list}
+
+        return render(request, "ackrep_web/imported_entities.html", context)
+
+
+class ClearDatabaseView(View):
+    # noinspection PyMethodMayBeStatic
+    def post(self, request):
+        core.clear_db()
+
+        print("Cleared DB")
+
+        return redirect("landing-page")
 
 
 class EntityDetailView(View):

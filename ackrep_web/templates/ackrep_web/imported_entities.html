@@ -1,0 +1,14 @@
+{% extends "ackrep_web/base.html" %}
+
+{% block content %}
+
+<h3>Imported entities</h3>
+
+<h4>{{ entity_list|length }} entities successfully imported!</h4>
+
+{% for entity in entity_list %}
+    {% include "ackrep_web/widgets/entity.html" with entity=entity c=c display="short" only %}
+{% endfor %}
+
+
+{% endblock  %}
