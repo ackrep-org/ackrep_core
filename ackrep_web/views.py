@@ -5,8 +5,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, redirect, reverse
 from django.http import Http404
 from django.utils import timezone
+from django.contrib import messages
 from ackrep_core import util
 from ackrep_core import core
+from git.exc import GitCommandError
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
@@ -66,6 +68,27 @@ class ClearDatabaseView(View):
         print("Cleared DB")
 
         return redirect("landing-page")
+
+
+class ExtendDatabaseView(View):
+    def get(self, request):
+        context = {}
+
+        return render(request, "ackrep_web/extend_database.html", context)
+
+    def post(self, request):
+        url = request.POST.get("external_repo_url", "")
+
+        try:
+            core.last_loaded_entities = []  # HACK!
+            local_dir = core.clone_external_data_repo(url)
+            core.extend_db(local_dir)
+            messages.success(request, f"Repository at '{url}' imported")
+        except GitCommandError as e:
+            git_error = e.args[2].decode("utf-8")
+            messages.error(request, f"An error occurred: {git_error}")
+
+        return redirect("imported-entities")
 
 
 class EntityDetailView(View):

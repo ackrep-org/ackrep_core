@@ -1,0 +1,21 @@
+{% extends "ackrep_web/base.html" %}
+
+{% block content %}
+
+<h3>Extend database with external repository</h3>
+
+<form action="{% url 'extend-database' %}" method="post" class="styled_form">
+    <ul>
+        <li>
+            <label for="url">External repository URL:</label>
+            <input type="text" id="url" name="external_repo_url">
+        </li>
+        <li>
+            <button type="submit">Import</button>
+        </li>
+    </ul>
+</form>
+
+
+
+{% endblock  %}
