@@ -7,6 +7,8 @@ import subprocess
 import shutil
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
+from git import Repo
+import hashlib
 from .util import *
 
 # noinspection PyUnresolvedReferences
@@ -495,6 +497,26 @@ def check_solution(key):
     res.stderr = res.stderr.decode("utf8")
 
     return res
+
+
+def clone_external_data_repo(url, remove_existing=True):
+    m = hashlib.sha1()
+    m.update(url.encode())
+    url_hash = m.hexdigest()
+
+    external_repo_dir = os.path.join(root_path, "external_repos")
+    if not os.path.isdir(external_repo_dir):
+        os.mkdir(external_repo_dir)
+
+    target_dir = os.path.join(external_repo_dir, url_hash)
+
+    if remove_existing and os.path.isdir(target_dir):
+        shutil.rmtree(target_dir, ignore_errors=True)
+
+    repo = Repo.clone_from(url, target_dir)
+    repo.close()
+
+    return target_dir
 
 
 def clone_git_repo(giturl):
