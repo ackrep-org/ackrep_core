@@ -1,10 +1,22 @@
 
-from django.test import TestCase as DjangoTestCase
+from django.test import TestCase as DjangoTestCase, LiveServerTestCase
 from django.urls import reverse
+from unittest import skipUnless
 import re
+import json
+
+try:
+    # noinspection PyPackageRequirements
+    from splinter import Browser
+except ImportError:
+    Browser = None
+    splinter_available = False
+else:
+    splinter_available = True
 
 from ackrep_core import core
 from ipydex import IPS
+
 
 """
 This module contains the tests for the web application module (not ackrep_core)
@@ -92,3 +104,77 @@ class TestBugs(DjangoTestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, "utc_entity_full")
+
+
+@skipUnless(splinter_available, reason="browser automation is not installed")
+class TestUI(LiveServerTestCase):
+    """
+    Itegration tests via browser automation (package: splinter)
+    """
+
+    # live_server_url = "http://localhost:8082/"
+
+    def setUp(self):
+        d = dict()
+        d['loggingPrefs'] = {'browser': 'ALL'}
+        self.options_for_browser = dict(driver_name='chrome', headless=False, desired_capabilities=d)
+
+        self.browsers = []
+
+    def tearDown(self):
+        # quit all browser instances (also those which where not created by setUp)
+        for browser in self.browsers:
+            browser.quit()
+
+    def local_reverse(self, *args, **kwargs):
+        return f"{self.live_server_url}{reverse(*args, **kwargs)}"
+
+    def get_status_code(self, browser):
+        """
+        for design reasons splinter does not grant access to http-status-codes.
+        Thus, we write them to the base-template via a middleware, fetch them from the html source in the test
+
+        :return:
+        """
+
+        elt_list = browser.find_by_xpath('//script[@id="http_status_code"]')
+        if len(elt_list) == 0:
+            # the http_status_code was not in the recieved page
+            return None
+        elif len(elt_list) == 1:
+            raw_data = elt_list.first.html
+            return json.loads(raw_data)
+        else:
+            msg = "Multiple http_status_code-tags were found unexpectedly. Check template!"
+            raise ValueError(msg)
+
+    @staticmethod
+    def get_browser_log(browser):
+        res = browser.driver.get_log("browser")
+        browser.logs.append(res)
+        return res
+
+    def new_browser(self):
+        """
+        create and register a new browser
+
+        :return: browser object and its index
+        """
+        browser = Browser(**self.options_for_browser)
+        browser.logs = []
+        self.browsers.append(browser)
+
+        return browser
+
+    def test_fill_and_clear_db(self):
+
+        b = self.new_browser()
+        url1 = self.local_reverse('landing-page')
+        b.visit(url1)
+        status_code = self.get_status_code(b)
+        self.assertEqual(status_code, "400")
+
+        button1 = b.find_by_id("btn_submit_clear_db")
+        self.assertTrue("clear" in button1.html.lower())
+        button1.click()
+        status_code = self.get_status_code(b)
