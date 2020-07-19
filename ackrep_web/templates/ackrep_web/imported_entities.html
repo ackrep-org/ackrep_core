@@ -2,6 +2,9 @@
 
 {% block content %}
 
+{# for unit and integration testing: write the actual number of imported entities into the html code #}
+{{ entity_list|length|json_script:"nr_of_imported_entities" }}
+
 <h3>Imported entities</h3>
 
 {% if messages %}

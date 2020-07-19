@@ -18,6 +18,8 @@ from ackrep_core import core
 from ipydex import IPS
 
 
+url_of_external_test_repo = "https://codeberg.org/cknoll/ackrep_data_demo_fork.git"
+
 """
 This module contains the tests for the web application module (not ackrep_core)
 
@@ -177,7 +179,34 @@ class TestUI(LiveServerTestCase):
         self.assertEqual(status_code, 200)
 
         button1 = b.find_by_id("btn_submit_clear_db")
-        self.assertTrue("clear" in button1.html.lower())
+        self.assertTrue("run" in button1.html.lower())
         button1.click()
         status_code = self.get_status_code(b)
         self.assertEqual(status_code, 200)
+
+    def test_import_external_repo(self):
+
+        b = self.new_browser()
+        url1 = self.local_reverse('landing-page')
+        b.visit(url1)
+        nr_of_entities = b.find_by_xpath('//script[@id="nr_of_entities"]').first.html
+        self.assertEqual(nr_of_entities, "0")
+
+        button = b.find_by_id("btn_submit_import_canonoical_repo")
+        button.click()
+
+        # go back to landing page
+        b.visit(url1)
+        nr_of_entities = b.find_by_xpath('//script[@id="nr_of_entities"]').first.html
+
+        # this will change in the futue
+        self.assertEqual(nr_of_entities, "9")
+
+        link = b.find_by_id("lnk_extend_with_external_repo")
+        link.click()
+        b.fill_form(dict(external_repo_url=url_of_external_test_repo))
+        b.find_by_id("btn_import_submit").click()
+
+        nr_of_imported_entities = b.find_by_xpath('//script[@id="nr_of_imported_entities"]').first.html
+        self.assertEqual(nr_of_imported_entities, "2")
+
