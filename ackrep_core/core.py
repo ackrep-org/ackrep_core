@@ -456,9 +456,17 @@ def check_solution(key):
 
     c.ackrep_core_path = core_pkg_path
 
-    # currently we expect exactly one solution
-    assert len(sol_entity.oc.solved_problem_list) == 1
-    problem_spec = sol_entity.oc.solved_problem_list[0]
+    assert len(sol_entity.oc.solved_problem_list) >= 1
+
+    if sol_entity.oc.solved_problem_list == 0:
+        msg = f"{sol_entity}: Expected at least one solved problem."
+        raise InconsistentMetaDataError(msg)
+
+    elif sol_entity.oc.solved_problem_list == 1:
+        problem_spec = sol_entity.oc.solved_problem_list[0]
+    else:
+        print("Applying a solution to multiple problems is not yet supported. Taking the last one.")
+        problem_spec = sol_entity.oc.solved_problem_list[-1]
 
     if problem_spec.problem_file != "problem.py":
         msg = "Arbitrary filename will be supported in the future"
