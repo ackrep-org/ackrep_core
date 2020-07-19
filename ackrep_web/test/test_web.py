@@ -54,7 +54,9 @@ class TestCases1(DjangoTestCase):
         # this should be an standard response for successful HTTP requests
         self.assertEqual(response.status_code, 200)
 
-        self.assertContains(response, "utc_entity_short")
+        # no entities in database yet
+        self.assertNotContains(response, "utc_entity_short")
+
         self.assertNotContains(response, "utc_entity_full")
 
 
