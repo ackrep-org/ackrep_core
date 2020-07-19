@@ -3,17 +3,20 @@
 {% block content %}
 
 <h3>Extend database with external repository</h3>
+<br>
+Example url: <pre>https://codeberg.org/cknoll/ackrep_data_demo_fork.git</pre>
 
 <form action="{% url 'extend-database' %}" method="post" class="styled_form">
-    <ul>
-        <li>
+    {% csrf_token %}
+    <div>
+        <div class="pseudocol w69">
             <label for="url">External repository URL:</label>
             <input type="text" id="url" name="external_repo_url">
-        </li>
-        <li>
-            <button type="submit">Import</button>
-        </li>
-    </ul>
+        </div>
+        <div class="pseudocol w30">
+            <button id="btn_import_submit" type="submit">Import</button>
+        </div>
+    </div>
 </form>
 
 
