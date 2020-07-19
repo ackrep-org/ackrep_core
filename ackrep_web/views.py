@@ -2,7 +2,8 @@ import time
 import pprint
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render, redirect, reverse
+from django.template.response import TemplateResponse
+from django.shortcuts import redirect, reverse
 from django.http import Http404
 from django.utils import timezone
 from django.contrib import messages
@@ -23,7 +24,7 @@ class LandingPageView(View):
         nr_of_entities = sum(len(entity_list) for type_name, entity_list in entity_dict.items())
         context = {"nr_of_entities": nr_of_entities}
 
-        return render(request, "ackrep_web/landing.html", context)
+        return TemplateResponse(request, "ackrep_web/landing.html", context)
 
 
 class EntityListView(View):
@@ -39,7 +40,7 @@ class EntityListView(View):
                    "entity_dict": entity_dict
                    }
 
-        return render(request, "ackrep_web/entity_list.html", context)
+        return TemplateResponse(request, "ackrep_web/entity_list.html", context)
 
 
 class ImportCanonicalView(View):
@@ -57,7 +58,7 @@ class ImportedEntitiesView(View):
 
         context = {"entity_list": entity_list}
 
-        return render(request, "ackrep_web/imported_entities.html", context)
+        return TemplateResponse(request, "ackrep_web/imported_entities.html", context)
 
 
 class ClearDatabaseView(View):
@@ -74,7 +75,7 @@ class ExtendDatabaseView(View):
     def get(self, request):
         context = {}
 
-        return render(request, "ackrep_web/extend_database.html", context)
+        return TemplateResponse(request, "ackrep_web/extend_database.html", context)
 
     def post(self, request):
         url = request.POST.get("external_repo_url", "")
@@ -111,7 +112,7 @@ class EntityDetailView(View):
         # create an object container (entity.oc) where for each string-keys the real object is available
         core.resolve_keys(entity)
 
-        return render(request, "ackrep_web/entity_detail.html", context)
+        return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
 class CheckSolutionView(View):
@@ -152,7 +153,7 @@ class CheckSolutionView(View):
 
         # create an object container (entity.oc) where for each string-key the real object is available
 
-        return render(request, "ackrep_web/entity_detail.html", context)
+        return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
 class ImportRepoView(View):
@@ -166,4 +167,4 @@ class ImportRepoView(View):
         # import into database
         #
 
-        return render(request, "ackrep_web/landing.html", context)
+        return TemplateResponse(request, "ackrep_web/landing.html", context)

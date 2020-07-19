@@ -13,7 +13,8 @@
 
     <link rel="icon" type="image/png"       href="{% static 'ackrep_web/img/favicon.png' %}">
 
-    {{ "475"|json_script:"http_status_code" }}
+    {# assume that the http status code is available in the context_data (there is a middleware for this) #}
+    {{ http_status_code|json_script:"http_status_code" }}
 
     <title>Automatic Control Knowledge Repository</title>
 </head>

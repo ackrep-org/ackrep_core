@@ -117,7 +117,7 @@ class TestUI(LiveServerTestCase):
     def setUp(self):
         d = dict()
         d['loggingPrefs'] = {'browser': 'ALL'}
-        self.options_for_browser = dict(driver_name='chrome', headless=False, desired_capabilities=d)
+        self.options_for_browser = dict(driver_name='chrome', headless=True, desired_capabilities=d)
 
         self.browsers = []
 
@@ -172,9 +172,10 @@ class TestUI(LiveServerTestCase):
         url1 = self.local_reverse('landing-page')
         b.visit(url1)
         status_code = self.get_status_code(b)
-        self.assertEqual(status_code, "400")
+        self.assertEqual(status_code, 200)
 
         button1 = b.find_by_id("btn_submit_clear_db")
         self.assertTrue("clear" in button1.html.lower())
         button1.click()
         status_code = self.get_status_code(b)
+        self.assertEqual(status_code, 200)
