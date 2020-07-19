@@ -36,6 +36,7 @@ class StatusCodeWriterMiddleware(object):
         :return:
         """
 
-        response.context_data.update({"http_status_code": response.status_code})
+        response.context_data.update({"http_status_code": response.status_code,
+                                     "template_name": response.template_name})
 
         return response
