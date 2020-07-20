@@ -2,6 +2,9 @@
 
 {% block content %}
 
+{# for unit and integration testing: write the actual number of imported entities into the html code #}
+{{ entity_list|length|json_script:"nr_of_imported_entities" }}
+
 <h3>Imported entities</h3>
 
 {% if messages %}
@@ -18,5 +21,6 @@
     {% include "ackrep_web/widgets/entity.html" with entity=entity c=c display="short" only %}
 {% endfor %}
 
+<br> <a href="/">Go back to main page.</a>
 
 {% endblock  %}
