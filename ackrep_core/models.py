@@ -114,9 +114,14 @@ class GenericEntity(models.Model):
 
 
 class ProblemSpecification(GenericEntity):
+    _type = "problem_specification"
     problemclass_list = EntityKeyListField(max_length=500, null=True, blank=True,)
     problem_file = models.CharField(max_length=500, null=True, blank=True, default="problem.py")
-    _type = "problem_specification"
+
+    @property
+    def available_solutions_list(self):
+        from . import core
+        return core.get_available_solutions(self)
 
 
 class ProblemSolution(GenericEntity):

@@ -50,19 +50,26 @@
         {% endif %}
     <b>Output:</b><br>
     <pre>{{c.cs_result.stdout}}</pre>
-    {% endif %}
-{% endif %}
+    {% endif %} {#viewtype#}
+{% elif entity.type == "problem_specification" %}
+    <b>Available solutions:</b>
+    {% for e in entity.available_solutions_list %}
+    {# TODO: add more information in mouseover #}
+    <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a>
+    {% endfor %}
+    <br>
+{% endif %} {#entity.type#}
 {#--------------------------------------------------------------------------------------------------------------------#}
 
 
-{% else %}
+{% else %} {#display full#}
 <!--utc_entity_short -->
 {% if entity.type == "problem_solution"%}
 <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
 <br>
 <a href="{% url 'check-solution' entity.key %}">check this solution</a> (this might take some time)
 {% endif %}
-{% endif %}
+{% endif %} {#display full#}
 </div>
 
 
