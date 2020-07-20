@@ -51,12 +51,17 @@
     <b>Output:</b><br>
     <pre>{{c.cs_result.stdout}}</pre>
     {% endif %}
-{% endif %} {# end if display == "full" #}
+{% endif %}
 {#--------------------------------------------------------------------------------------------------------------------#}
 
 
 {% else %}
 <!--utc_entity_short -->
+{% if entity.type == "problem_solution"%}
+<b>Estimated Runtime:</b> {{entity.estimated_runtime}}
+<br>
+<a href="{% url 'check-solution' entity.key %}">check this solution</a> (this might take some time)
+{% endif %}
 {% endif %}
 </div>
 
