@@ -17,7 +17,7 @@
     <b>Solved Problems:</b>
     {% for e in entity.oc.solved_problem_list %}
     {# TODO: add more information in mouseover #}
-    <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a>
+    <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a> &nbsp; |  &nbsp;
     {% endfor %}
     <br>
     <b>Used Methods:</b>
@@ -55,7 +55,7 @@
     <b>Available solutions:</b>
     {% for e in entity.available_solutions_list %}
     {# TODO: add more information in mouseover #}
-    <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a>
+    <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a> &nbsp; |  &nbsp;
     {% endfor %}
     <br>
 {% endif %} {#entity.type#}
