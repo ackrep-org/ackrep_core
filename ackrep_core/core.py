@@ -431,6 +431,9 @@ def get_entities_with_key(key):
     return entities_with_key
 
 
+# TODO: this function is affacted by the necessary model-refactoring (issue #1)
+# TODO: consider to move this function to models.ProblemSolution (instance-method)
+# this would prevent the semi-circular import which we have now
 def get_available_solutions(problem):
     all_solutions = models.ProblemSolution.objects.all()
 
@@ -438,7 +441,7 @@ def get_available_solutions(problem):
     for sol in all_solutions:
         resolve_keys(sol)
         solved_problem_keys = [prob.key for prob in sol.oc.solved_problem_list]
-        if (problem.key in solved_problem_keys):
+        if problem.key in solved_problem_keys:
             available_solutions.append(sol)
 
     return available_solutions

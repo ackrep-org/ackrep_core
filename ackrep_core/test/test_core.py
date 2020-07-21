@@ -145,6 +145,14 @@ class TestCases2(DjangoTestCase):
 
         self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
 
+    def test_get_available_solutions(self):
+        problem_spec = core.get_entity("4ZZ9J")
+        problem_sol1 = core.get_entity("UKJZI")
+
+        res = problem_spec.available_solutions_list
+
+        self.assertEqual(res, [problem_sol1])
+
 
 def utf8decode(obj):
     if hasattr(obj, "decode"):
