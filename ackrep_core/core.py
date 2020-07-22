@@ -536,18 +536,10 @@ def clone_external_data_repo(url, remove_existing=True):
     target_dir = os.path.join(external_repo_dir, url_hash)
 
     if remove_existing and os.path.isdir(target_dir):
+        # TODO: This might fail under windows, -> manual deletion necessary. Tolerable for now.
         shutil.rmtree(target_dir, ignore_errors=True)
 
     repo = Repo.clone_from(url, target_dir)
     repo.close()
 
     return target_dir
-
-
-def clone_git_repo(giturl):
-
-    raise NotImplementedError ("just a dummy, not yet tested")
-    res = subprocess.run(["git", "clone", giturl], capture_output=True)
-    res.exited = res.returncode
-    res.stdout = res.stdout.decode("utf8")
-    res.stderr = res.stderr.decode("utf8")
