@@ -8,6 +8,8 @@ from django.conf import settings
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured
 
+from . import core
+
 
 """
 This module uses the django model engine to specify models.
@@ -118,10 +120,18 @@ class ProblemSpecification(GenericEntity):
     problemclass_list = EntityKeyListField(max_length=500, null=True, blank=True,)
     problem_file = models.CharField(max_length=500, null=True, blank=True, default="problem.py")
 
-    @property
+    # TODO: this function is affacted by the necessary model-refactoring (issue #1)
     def available_solutions_list(self):
-        from . import core
-        return core.get_available_solutions(self)
+        all_solutions = ProblemSolution.objects.all()
+
+        available_solutions = []
+        for sol in all_solutions:
+            core.resolve_keys(sol)
+            solved_problem_keys = [prob.key for prob in sol.oc.solved_problem_list]
+            if self.key in solved_problem_keys:
+                available_solutions.append(sol)
+
+        return available_solutions
 
 
 class ProblemSolution(GenericEntity):
