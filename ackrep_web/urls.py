@@ -8,7 +8,6 @@ urlpatterns = [
   path('clear-database', views.ClearDatabaseView.as_view(), name='clear-database'),
   path('import-canonical', views.ImportCanonicalView.as_view(), name='import-canonical'),
   path('imported', views.ImportedEntitiesView.as_view(), name='imported-entities'),
-  path('extend', views.ExtendDatabaseView.as_view(), name='extend-database'),
   path('login', views.LandingPageView.as_view(), name='login'),
   re_path('e/(?P<key>[A-Z0-9_]{5})', views.EntityDetailView.as_view(), name='entity-detail'),
   re_path('check-solution/(?P<key>[A-Z0-9_]{5})', views.CheckSolutionView.as_view(), name='check-solution'),
