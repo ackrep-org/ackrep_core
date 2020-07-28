@@ -1,0 +1,32 @@
+{% extends "ackrep_web/base.html" %}
+
+{% block content %}
+
+<h3>New merge request</h3>
+
+{% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<br>
+Example url: <pre>https://codeberg.org/cknoll/ackrep_data_demo_fork.git</pre>
+
+<form action="{% url 'new-merge-request' %}" method="post" class="styled_form">
+    {% csrf_token %}
+    <label for="title">Title:</label>
+    <input type="text" id="title" name="title">
+    <br>
+    <label for="repo_url">Repository URL:</label>
+    <input type="text" id="repo_url" name="repo_url">
+    <br>
+    <label for="description">Description:</label>
+    <textarea id="description" name="description" placeholder="optional"></textarea>
+    <br>
+    <button id="btn_mr_submit" type="submit">Import</button>
+</form>
+
+{% endblock  %}

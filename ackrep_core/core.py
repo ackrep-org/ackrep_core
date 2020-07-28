@@ -250,6 +250,8 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
 
         md = get_metadata_from_file(md_path)
         e = models.create_entity_from_metadata(md)
+        e.merge_request = merge_request
+
         # absolute path of directory containing metadata.yml
         base_path_abs = os.path.abspath(os.path.dirname(md_path))
         # make path relative to ackrep root path, meaning the directory that contains 'ackrep_core' and 'ackrep_data'
@@ -402,7 +404,7 @@ def make_method_build(method_package, accept_existing=True):
     return full_build_path
 
 
-def get_entity_dict_from_db():
+def get_entity_dict_from_db(only_merged=True):
     """
     get all entities which are currently in the database
     :return:
@@ -412,7 +414,10 @@ def get_entity_dict_from_db():
     entity_dict = {}
 
     for et in entity_type_list:
-        object_list = list(et.objects.all())
+        if only_merged:
+            object_list = list(e for e in et.objects.all() if e.status() == models.MergeRequest.STATUS_MERGED)
+        else:
+            object_list = list(et.objects.all())
 
         entity_dict[et.__name__] = object_list
 
@@ -544,7 +549,13 @@ def create_merge_request(repo_url, title, description):
 
     last_update = current_time_str()
 
-    mr = models.MergeRequest(key, title, repo_url, last_update, description, commit, None)
+    mr = models.MergeRequest(key=key,
+                             title=title,
+                             repo_url=repo_url,
+                             last_update=last_update,
+                             description=description,
+                             fork_commit=commit,
+                             status=models.MergeRequest.STATUS_OPEN)
     mr.save()
 
     return mr

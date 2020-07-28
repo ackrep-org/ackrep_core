@@ -10,6 +10,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 from . import core
 
+from ipydex import IPS
+
 
 """
 This module uses the django model engine to specify models.
@@ -51,11 +53,13 @@ class MergeRequest(models.Model):
     STATUS_OPEN = "STATUS_OPEN"
     STATUS_MERGED = "STATUS_MERGED"
 
+    STATUS_CHOICES = ((STATUS_OPEN, "open"), (STATUS_MERGED, "merged"))
+
     id = models.AutoField(primary_key=True)
     key = models.CharField(max_length=5, null=False, blank=False)
     title = models.CharField(max_length=500, null=False, blank=False)
     repo_url = models.CharField(max_length=500, null=False, blank=False)
-    status = ((STATUS_OPEN, "open"), (STATUS_MERGED, "merged"))
+    status = models.CharField(max_length=13, choices=STATUS_CHOICES, default=STATUS_OPEN)
     last_update = models.CharField(max_length=500, null=False, blank=False)
     description = models.CharField(max_length=5000, null=False, blank=False)
     fork_commit = models.CharField(max_length=40, null=False, blank=False)
@@ -70,7 +74,7 @@ class GenericEntity(models.Model):
     key = models.CharField(max_length=5, null=False, blank=False, )
 
     # TODO: Better data type for referencing merge request
-    merge_request = models.CharField(max_length=5, null=False, blank=False)
+    merge_request = models.CharField(max_length=5, null=True, blank=False)
 
     # TODO: this field should be renamed to `predecessor`
     predecessor_key = EntityKeyField(max_length=5, null=True, blank=False, )
@@ -123,9 +127,11 @@ class GenericEntity(models.Model):
 
     def status(self):
         """Return merge status based on associated merge request"""
-        if self.merge_request is None:
+        if not self.merge_request:
             # Manually added to DB
             return MergeRequest.STATUS_MERGED
+
+        #IPS()
         
         merge_requests_with_key = list(MergeRequest.objects.filter(key=self.merge_request))
         assert len(merge_requests_with_key) == 1, "Associated merge request is either missing or duplicated"

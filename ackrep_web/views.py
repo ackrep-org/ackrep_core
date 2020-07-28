@@ -156,15 +156,26 @@ class CheckSolutionView(View):
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
-class ImportRepoView(View):
+class NewMergeRequestView(View):
 
     # noinspection PyMethodMayBeStatic
     def get(self, request):
 
         context = {}
 
-        # clone git repo
-        # import into database
-        #
+        return TemplateResponse(request, "ackrep_web/new_merge_request.html", context)
 
-        return TemplateResponse(request, "ackrep_web/landing.html", context)
+    def post(self, request):
+        title = request.POST.get("title", "")
+        repo_url = request.POST.get("repo_url", "")
+        description = request.POST.get("description", "")
+
+        try:
+            mr = core.create_merge_request(repo_url, title, description)
+
+            return redirect("landing-page")
+        except Exception as e:
+           error_str = str(e)
+           messages.error(request, f"An error occurred: {error_str}")
+
+           return redirect("new-merge-request")
