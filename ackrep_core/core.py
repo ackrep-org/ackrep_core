@@ -44,7 +44,8 @@ class InconsistentMetaDataError(ValueError):
 
 class DuplicateKeyError(Exception):
     """Raised when a duplicate key is found in the database."""
-    pass
+    def __init__(self, dup_key):
+        super().__init__(f"Duplicate key in database '{dup_key}'")
 
 
 valid_types = [
@@ -541,6 +542,8 @@ def get_latest_commit(repo_dir):
 
 
 def create_merge_request(repo_url, title, description):
+    assert title, "Merge request title can't be empty"
+
     key = gen_random_entity_key()
     mr_dir = clone_external_data_repo(repo_url, key)
     commit = get_latest_commit(mr_dir)
@@ -559,3 +562,10 @@ def create_merge_request(repo_url, title, description):
     mr.save()
 
     return mr
+
+
+def get_merge_request(key):
+    mrs_with_key = list(models.MergeRequest.objects.filter(key=key))
+    assert len(mrs_with_key) == 1, f"No or more than one merge request with key '{key}' found"
+
+    return mrs_with_key[0]

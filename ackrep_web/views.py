@@ -173,9 +173,17 @@ class NewMergeRequestView(View):
         try:
             mr = core.create_merge_request(repo_url, title, description)
 
-            return redirect("landing-page")
+            return redirect("merge-request", key=mr.key)
         except Exception as e:
            error_str = str(e)
            messages.error(request, f"An error occurred: {error_str}")
 
            return redirect("new-merge-request")
+
+
+class MergeRequestDetailView(View):
+    def get(self, request, key):
+        mr = core.get_merge_request(key)
+        context = {'mr': mr}
+
+        return TemplateResponse(request, "ackrep_web/merge_request_detail.html", context)

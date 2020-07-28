@@ -115,6 +115,27 @@ footer {
     margin-top: 20px;
 }
 
+.layout_horizontal {
+    display: flex;
+}
+
+.layout_horizontal > * {
+    flex: 1 1 auto;
+}
+
+.mr_description {
+    display: block;
+    width: 90%;
+    resize: none;
+    height: 10em;
+    margin: auto;
+}
+
+.mr_info > * {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
 form ul {
     list-style: none;
     padding: 0;

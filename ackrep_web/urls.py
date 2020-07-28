@@ -10,6 +10,7 @@ urlpatterns = [
   path('imported', views.ImportedEntitiesView.as_view(), name='imported-entities'),
   path('new-mr', views.NewMergeRequestView.as_view(), name='new-merge-request'),
   path('login', views.LandingPageView.as_view(), name='login'),
+  re_path('mr/(?P<key>[A-Z0-9_]{5})', views.MergeRequestDetailView.as_view(), name='merge-request'),
   re_path('e/(?P<key>[A-Z0-9_]{5})', views.EntityDetailView.as_view(), name='entity-detail'),
   re_path('check-solution/(?P<key>[A-Z0-9_]{5})', views.CheckSolutionView.as_view(), name='check-solution'),
 

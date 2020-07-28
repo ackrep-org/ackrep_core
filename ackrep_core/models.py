@@ -65,6 +65,14 @@ class MergeRequest(models.Model):
     fork_commit = models.CharField(max_length=40, null=False, blank=False)
     merge_commit = models.CharField(max_length=40, null=False, blank=False)
 
+    def entity_list(self):
+        entity_dict = core.get_entity_dict_from_db(only_merged=False)
+        entity_list = []
+        for _, val in entity_dict.items():
+            entity_list += [e for e in val if e.merge_request == self.key]
+
+        return entity_list
+
 
 class GenericEntity(models.Model):
     """
