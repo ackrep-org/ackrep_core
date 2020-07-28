@@ -187,3 +187,13 @@ class MergeRequestDetailView(View):
         context = {'mr': mr}
 
         return TemplateResponse(request, "ackrep_web/merge_request_detail.html", context)
+
+
+class UpdateMergeRequestView(View):
+    def post(self, request):
+        return redirect('landing-page')
+
+
+class DeleteMergeRequestView(View):
+    def post(self, request):
+        return redirect('landing-page')

@@ -113,10 +113,13 @@ footer {
     width: min-content;
     justify-self: right;
     margin-top: 20px;
+    padding-left: 50px;
+    padding-right: 50px;
 }
 
 .layout_horizontal {
     display: flex;
+    align-items: center;
 }
 
 .layout_horizontal > * {
@@ -131,9 +134,19 @@ footer {
     margin: auto;
 }
 
+.mr_info {
+    border: 1px solid #CCC;
+    border-radius: 4px;
+    padding: 5px;
+}
+
 .mr_info > * {
     margin-top: 10px;
     margin-bottom: 10px;
+}
+
+#btn_delete_mr {
+    color: red;
 }
 
 form ul {

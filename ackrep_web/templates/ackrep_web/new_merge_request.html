@@ -18,10 +18,10 @@ Example url: <pre>https://codeberg.org/cknoll/ackrep_data_demo_fork.git</pre>
 <form action="{% url 'new-merge-request' %}" method="post" class="styled_form">
     {% csrf_token %}
     <label for="title">Title:</label>
-    <input type="text" id="title" name="title">
+    <input type="text" id="title" name="title" required="required">
     <br>
     <label for="repo_url">Repository URL:</label>
-    <input type="text" id="repo_url" name="repo_url">
+    <input type="text" id="repo_url" name="repo_url" required="required">
     <br>
     <label for="description">Description:</label>
     <textarea id="description" name="description" placeholder="optional"></textarea>
