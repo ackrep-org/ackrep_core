@@ -516,14 +516,14 @@ def check_solution(key):
     return res
 
 
-def clone_external_data_repo(url, merge_request):
+def clone_external_data_repo(url, mr_key):
     """Clone git repository from url into external_repos/[MERGE_REQUEST_KEY], return path"""
     
     external_repo_dir = os.path.join(root_path, "external_repos")
     if not os.path.isdir(external_repo_dir):
         os.mkdir(external_repo_dir)
 
-    target_dir = os.path.join(external_repo_dir, merge_request)
+    target_dir = os.path.join(external_repo_dir, mr_key)
 
     repo = Repo.clone_from(url, target_dir)
     repo.close()
@@ -562,6 +562,26 @@ def create_merge_request(repo_url, title, description):
     mr.save()
 
     return mr
+
+
+def delete_merge_request(mr):
+    assert mr.status == models.MergeRequest.STATUS_OPEN, "Merged merge requests may not be deleted"
+
+    # delete associated entities from database
+    delete_merge_request_entities(mr)
+
+    try:
+        mr_dir = os.path.join(root_path, "external_repos", mr.key)
+        shutil.rmtree(mr_dir)
+    except Exception as e:
+        pass # TODO: deleting a git repository sometimes doesn't work under Windows, but isn't that important
+
+    mr.delete()
+
+
+def delete_merge_request_entities(mr):
+    for e in mr.entity_list():
+        e.delete()
 
 
 def get_merge_request(key):

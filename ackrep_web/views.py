@@ -196,7 +196,11 @@ class UpdateMergeRequestView(View):
 
 class DeleteMergeRequestView(View):
     def post(self, request):
-        return redirect('landing-page')
+        mr_key = request.POST.get("mr_key", "")
+
+        core.delete_merge_request(core.get_merge_request(mr_key))
+
+        return redirect('merge-request-list')
 
 
 class MergeRequestListView(View):
