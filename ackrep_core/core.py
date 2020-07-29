@@ -557,8 +557,12 @@ def create_merge_request(repo_url, title, description):
                              repo_url=repo_url,
                              last_update=last_update,
                              description=description,
-                             fork_commit=commit,
                              status=models.MergeRequest.STATUS_OPEN)
+
+    with mr.repo() as repo:
+        current_commit_hash = str(repo.commit())
+        mr.fork_commit = current_commit_hash
+
     mr.save()
 
     return mr
@@ -571,7 +575,7 @@ def delete_merge_request(mr):
     delete_merge_request_entities(mr)
 
     try:
-        mr_dir = os.path.join(root_path, "external_repos", mr.key)
+        mr_dir = mr.repo_dir()
         shutil.rmtree(mr_dir)
     except Exception as e:
         pass # TODO: deleting a git repository sometimes doesn't work under Windows, but isn't that important

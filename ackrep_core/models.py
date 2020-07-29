@@ -8,6 +8,8 @@ from django.conf import settings
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured
 
+import git
+
 from . import core
 
 from ipydex import IPS
@@ -72,6 +74,12 @@ class MergeRequest(models.Model):
             entity_list += [e for e in val if e.merge_request == self.key]
 
         return entity_list
+
+    def repo_dir(self):
+        return os.path.join(core.root_path, "external_repos", self.key)
+
+    def repo(self):
+        return git.Repo(self.repo_dir())
 
 
 class GenericEntity(models.Model):
