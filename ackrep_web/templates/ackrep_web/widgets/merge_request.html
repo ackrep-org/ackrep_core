@@ -1,0 +1,11 @@
+<div class="entity">
+    <b>Title:</b> {{mr.title}}
+    (Key: <a href="{% url 'merge-request' mr.key %}" title="show details">{{mr.key}}</a>)<br>
+    <b>Repository URL:</b> <tt>{{mr.repo_url}}</tt><br>
+    <b>Last update:</b> {{mr.last_update}}<br>
+    {% if mr.status == 'STATUS_OPEN' %}
+    <b>Status:</b> open<br>
+    {% else %}
+    <b>Status:</b> merged<br>
+    {% endif %}
+</div>

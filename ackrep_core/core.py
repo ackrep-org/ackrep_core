@@ -569,3 +569,9 @@ def get_merge_request(key):
     assert len(mrs_with_key) == 1, f"No or more than one merge request with key '{key}' found"
 
     return mrs_with_key[0]
+
+
+def get_merge_request_dict():
+    mr_dict = {status: list(models.MergeRequest.objects.filter(status=status)) for status, _ in models.MergeRequest.STATUS_CHOICES}
+
+    return mr_dict

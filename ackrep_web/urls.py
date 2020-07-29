@@ -9,6 +9,7 @@ urlpatterns = [
   path('import-canonical', views.ImportCanonicalView.as_view(), name='import-canonical'),
   path('imported', views.ImportedEntitiesView.as_view(), name='imported-entities'),
   path('new-mr', views.NewMergeRequestView.as_view(), name='new-merge-request'),
+  path('merge-requests', views.MergeRequestListView.as_view(), name='merge-request-list'),
   path('login', views.LandingPageView.as_view(), name='login'),
   path('update-mr', views.UpdateMergeRequestView.as_view(), name='update-merge-request'),
   path('delete-mr', views.DeleteMergeRequestView.as_view(), name='delete-merge-request'),

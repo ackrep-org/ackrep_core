@@ -197,3 +197,12 @@ class UpdateMergeRequestView(View):
 class DeleteMergeRequestView(View):
     def post(self, request):
         return redirect('landing-page')
+
+
+class MergeRequestListView(View):
+    def get(self, request):
+        mr_dict = core.get_merge_request_dict()
+
+        context = {'mr_dict': mr_dict}
+
+        return TemplateResponse(request, "ackrep_web/merge_request_list.html", context)
