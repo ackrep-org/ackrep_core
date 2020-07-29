@@ -536,17 +536,11 @@ def current_time_str():
     return time_string
 
 
-def get_latest_commit(repo_dir):
-    # TODO
-    return "a123456789b123456789c123456789d123456789"
-
-
 def create_merge_request(repo_url, title, description):
     assert title, "Merge request title can't be empty"
 
     key = gen_random_entity_key()
     mr_dir = clone_external_data_repo(repo_url, key)
-    commit = get_latest_commit(mr_dir)
 
     crawl_files_and_load_to_db(mr_dir, merge_request=key)
 
