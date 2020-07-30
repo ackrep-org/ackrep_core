@@ -191,7 +191,7 @@ class MergeRequestDetailView(View):
 
 class UpdateMergeRequestView(View):
     def post(self, request):
-        return redirect('landing-page')
+        return redirect('not-yet-implemented')
 
 
 class DeleteMergeRequestView(View):
@@ -210,3 +210,10 @@ class MergeRequestListView(View):
         context = {'mr_dict': mr_dict}
 
         return TemplateResponse(request, "ackrep_web/merge_request_list.html", context)
+
+
+class NotYetImplementedView(View):
+    def get(self, request):
+        context = {}
+
+        return TemplateResponse(request, "ackrep_web/not_yet_implemented.html", context)
