@@ -71,6 +71,13 @@ class ClearDatabaseView(View):
         return redirect("landing-page")
 
 
+class UpdateDatabaseView(View):
+    # noinspection PyMethodMayBeStatic
+    def post(self, request):
+
+        return redirect("not-yet-implemented")
+
+
 class ExtendDatabaseView(View):
     def get(self, request):
         context = {}

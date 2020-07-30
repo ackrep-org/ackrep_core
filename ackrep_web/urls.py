@@ -8,6 +8,7 @@ urlpatterns = [
   path('not-yet-implemented', views.NotYetImplementedView.as_view(), name='not-yet-implemented'),
   path('clear-database', views.ClearDatabaseView.as_view(), name='clear-database'),
   path('import-canonical', views.ImportCanonicalView.as_view(), name='import-canonical'),
+  path('update-db', views.UpdateDatabaseView.as_view(), name='update-database'),
   path('imported', views.ImportedEntitiesView.as_view(), name='imported-entities'),
   path('new-mr', views.NewMergeRequestView.as_view(), name='new-merge-request'),
   path('merge-requests', views.MergeRequestListView.as_view(), name='merge-request-list'),
