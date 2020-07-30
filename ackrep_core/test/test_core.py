@@ -149,7 +149,7 @@ class TestCases2(DjangoTestCase):
         problem_spec = core.get_entity("4ZZ9J")
         problem_sol1 = core.get_entity("UKJZI")
 
-        res = problem_spec.available_solutions_list
+        res = problem_spec.available_solutions_list()
 
         self.assertEqual(res, [problem_sol1])
 
