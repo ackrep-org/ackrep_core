@@ -170,43 +170,54 @@ class TestUI(LiveServerTestCase):
 
         return browser
 
-    def test_fill_and_clear_db(self):
-
+    def test_list_entities(self):
         b = self.new_browser()
         url1 = self.local_reverse('landing-page')
         b.visit(url1)
         status_code = self.get_status_code(b)
         self.assertEqual(status_code, 200)
 
-        button1 = b.find_by_id("btn_submit_clear_db")
-        self.assertTrue("run" in button1.html.lower())
-        button1.click()
+        link = b.find_by_id('link_entity_list')
+        link.click()
+
         status_code = self.get_status_code(b)
         self.assertEqual(status_code, 200)
 
-    def test_import_external_repo(self):
-
+    def test_list_merge_requests(self):
         b = self.new_browser()
         url1 = self.local_reverse('landing-page')
         b.visit(url1)
-        nr_of_entities = b.find_by_xpath('//script[@id="nr_of_entities"]').first.html
-        self.assertEqual(nr_of_entities, "0")
+        status_code = self.get_status_code(b)
+        self.assertEqual(status_code, 200)
 
-        button = b.find_by_id("btn_submit_import_canonoical_repo")
+        link = b.find_by_id('link_merge_request_list')
+        link.click()
+
+        status_code = self.get_status_code(b)
+        self.assertEqual(status_code, 200)
+
+    def test_open_new_merge_request_form(self):
+        b = self.new_browser()
+        url1 = self.local_reverse('landing-page')
+        b.visit(url1)
+        status_code = self.get_status_code(b)
+        self.assertEqual(status_code, 200)
+
+        link = b.find_by_id('link_new_merge_request')
+        link.click()
+
+        status_code = self.get_status_code(b)
+        self.assertEqual(status_code, 200)
+
+    def test_update_db_button(self):
+        b = self.new_browser()
+        url1 = self.local_reverse('landing-page')
+        b.visit(url1)
+        status_code = self.get_status_code(b)
+        self.assertEqual(status_code, 200)
+
+        button = b.find_by_id('btn_submit_update_db')
         button.click()
 
-        # go back to landing page
-        b.visit(url1)
-        nr_of_entities = b.find_by_xpath('//script[@id="nr_of_entities"]').first.html
-
-        # this will change in the futue
-        self.assertEqual(nr_of_entities, "9")
-
-        link = b.find_by_id("lnk_extend_with_external_repo")
-        link.click()
-        b.fill_form(dict(external_repo_url=url_of_external_test_repo))
-        b.find_by_id("btn_import_submit").click()
-
-        nr_of_imported_entities = b.find_by_xpath('//script[@id="nr_of_imported_entities"]').first.html
-        self.assertEqual(nr_of_imported_entities, "2")
-
+        status_code = self.get_status_code(b)
+        self.assertEqual(status_code, 200)
