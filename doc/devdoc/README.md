@@ -24,3 +24,20 @@ At the current stage frontend testing does not happen. However the backend intro
 
 #### Entity Key
 To each entity there is an associated entity-key (matching regex: `[A-Z0-9]{5}`). This key identifies an entity in the repository. This is **not** the primary key for the database. 
+
+## Windows
+
+When running ackrep_web under Windows, several small issues may occur.
+
+#### Symbolic links
+
+Symbolic links are used to make images generated at runtime available as static files. Windows does support symbolic links, but only under the following circumstances:
+- Running the webserver with administrator privileges
+- Starting from Windows 10 Creators Update, creating symbolic links is possible as an unprivileged user after enabling [Developer Mode](https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/). To use this feature from Python, a Python version >= 3.8 is required.
+
+#### Removal of Git-directories
+
+The "merge request" feature automatically clones Git repositories into local directories.
+These are supposed to be automatically removed, e.g. when deleting the merge request.
+This may fail silently because the GitPython module locks some files.
+If this happens you can always remove the directory manually.
