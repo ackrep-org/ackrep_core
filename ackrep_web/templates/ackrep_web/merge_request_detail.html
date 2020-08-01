@@ -1,0 +1,47 @@
+{% extends "ackrep_web/base.html" %}
+
+{% block content %}
+
+<h3>Merge request {{ mr.key }}: {{ mr.title }}</h3>
+
+<div class="mr_info">
+
+{% if mr.status == 'STATUS_OPEN' %}
+<div class="layout_horizontal">
+    <div class="mr_status"><b>Status:</b> open</div>
+    <form action="{%url 'update-merge-request' %}" method="POST">
+        {% csrf_token %}
+        <input hidden name="mr_key" value="{{ mr.key }}" />
+        <button id="btn_update_mr" type="submit">Update</button>
+    </form>
+    <form action="{%url 'delete-merge-request' %}" method="POST">
+        {% csrf_token %}
+        <input hidden name="mr_key" value="{{ mr.key }}" />
+        <button id="btn_delete_mr" type="submit">Delete</button>
+    </form>
+</div>
+{% else %}
+<div class="mr_status"><b>Status:</b> merged</div>
+{% endif %}
+
+<pre>{{ mr.repo_url }}</pre>
+
+<div class="layout_horizontal">
+<div class="mr_last_update"><b>Last update:</b> {{ mr.last_update }}</div>
+<div class="mr_fork_commit"><b>Commit:</b> {{ mr.fork_commit }}</div>
+</div>
+
+<div>
+    <b>Description:</b>
+    <textarea class="mr_description" disabled>{{ mr.description }}</textarea>
+</div>
+
+</div>
+
+<h4>Contains {{ mr.entity_list | length }} new entities:</h4>
+
+{% for entity in mr.entity_list %}
+    {% include "ackrep_web/widgets/entity.html" with entity=entity c=c display="short" only %}
+{% endfor %}
+
+{% endblock  %}

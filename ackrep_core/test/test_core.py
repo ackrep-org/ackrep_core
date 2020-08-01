@@ -21,7 +21,7 @@ For more infos see doc/devdoc/README.md.
 
 
 ackrep_data_test_repo_path = core.data_test_repo_path
-default_repo_head_hash = "f333321e03239ebe15bbabe080cdc5bb06960438"
+default_repo_head_hash = "768914e1a4f99a098f0e056e302e77dd131dcbb0"
 
 
 class TestCases1(DjangoTestCase):
@@ -48,8 +48,11 @@ class TestCases1(DjangoTestCase):
 
         # Ensure that the repository is in the expected state. This actual state (and its hash) will change in the
         # future. This test prevents that this happens without intention.
-        msg = f"Repo is in the wrong state. Expected HEAD to be {default_repo_head_hash[:7]}."
-        self.assertEqual(repo.head.commit.hexsha, default_repo_head_hash, msg=msg)
+        repo_head_hash = repo.head.commit.hexsha
+        msg = f"Repository {ackrep_data_test_repo_path} is in the wrong state. "\
+              f"HEAD is {repo_head_hash[:7]} but should be {default_repo_head_hash[:7]}."
+
+        self.assertEqual(repo_head_hash, default_repo_head_hash, msg=msg)
 
     def test_import_repo(self):
         """
@@ -144,6 +147,14 @@ class TestCases2(DjangoTestCase):
         self.assertTrue(plot_file_path.endswith("plot.png"))
 
         self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
+
+    def test_get_available_solutions(self):
+        problem_spec = core.get_entity("4ZZ9J")
+        problem_sol1 = core.get_entity("UKJZI")
+
+        res = problem_spec.available_solutions_list()
+
+        self.assertEqual(res, [problem_sol1])
 
 
 def utf8decode(obj):

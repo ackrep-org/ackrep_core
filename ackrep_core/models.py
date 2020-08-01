@@ -8,6 +8,12 @@ from django.conf import settings
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured
 
+import git
+
+from . import core
+
+from ipydex import IPS
+
 
 """
 This module uses the django model engine to specify models.
@@ -45,15 +51,35 @@ class EntityKeyListField(models.CharField):
     pass
 
 
-class UsedKey(models.Model):
-    """
-    adhoc solution to track ackrep-keys which are in use.
-    """
-    # TODO: find a django query to make this class obsolete:
+class MergeRequest(models.Model):
+    STATUS_OPEN = "STATUS_OPEN"
+    STATUS_MERGED = "STATUS_MERGED"
+
+    STATUS_CHOICES = ((STATUS_OPEN, "open"), (STATUS_MERGED, "merged"))
 
     id = models.AutoField(primary_key=True)
-    key = models.CharField(max_length=5, null=False, blank=False,)
-    entity_type = models.CharField(max_length=20, null=False, blank=False,)
+    key = models.CharField(max_length=5, null=False, blank=False)
+    title = models.CharField(max_length=500, null=False, blank=False)
+    repo_url = models.CharField(max_length=500, null=False, blank=False)
+    status = models.CharField(max_length=13, choices=STATUS_CHOICES, default=STATUS_OPEN)
+    last_update = models.CharField(max_length=500, null=False, blank=False)
+    description = models.CharField(max_length=5000, null=False, blank=False)
+    fork_commit = models.CharField(max_length=40, null=False, blank=False)
+    merge_commit = models.CharField(max_length=40, null=False, blank=False)
+
+    def entity_list(self):
+        entity_dict = core.get_entity_dict_from_db(only_merged=False)
+        entity_list = []
+        for _, val in entity_dict.items():
+            entity_list += [e for e in val if e.merge_request == self.key]
+
+        return entity_list
+
+    def repo_dir(self):
+        return os.path.join(core.root_path, "external_repos", self.key)
+
+    def repo(self):
+        return git.Repo(self.repo_dir())
 
 
 class GenericEntity(models.Model):
@@ -62,6 +88,9 @@ class GenericEntity(models.Model):
     """
     id = models.AutoField(primary_key=True)
     key = models.CharField(max_length=5, null=False, blank=False, )
+
+    # TODO: Better data type for referencing merge request
+    merge_request = models.CharField(max_length=5, null=True, blank=False)
 
     # TODO: this field should be renamed to `predecessor`
     predecessor_key = EntityKeyField(max_length=5, null=True, blank=False, )
@@ -112,11 +141,38 @@ class GenericEntity(models.Model):
     def __str__(self):
         return repr(self)
 
+    def status(self):
+        """Return merge status based on associated merge request"""
+        if not self.merge_request:
+            # Manually added to DB
+            return MergeRequest.STATUS_MERGED
+
+        #IPS()
+        
+        merge_requests_with_key = list(MergeRequest.objects.filter(key=self.merge_request))
+        assert len(merge_requests_with_key) == 1, "Associated merge request is either missing or duplicated"
+        mr = merge_requests_with_key[0]
+        
+        return mr.status
+
 
 class ProblemSpecification(GenericEntity):
+    _type = "problem_specification"
     problemclass_list = EntityKeyListField(max_length=500, null=True, blank=True,)
     problem_file = models.CharField(max_length=500, null=True, blank=True, default="problem.py")
-    _type = "problem_specification"
+
+    # TODO: this function is affacted by the necessary model-refactoring (issue #1)
+    def available_solutions_list(self):
+        all_solutions = ProblemSolution.objects.all()
+
+        available_solutions = []
+        for sol in all_solutions:
+            core.resolve_keys(sol)
+            solved_problem_keys = [prob.key for prob in sol.oc.solved_problem_list]
+            if self.key in solved_problem_keys:
+                available_solutions.append(sol)
+
+        return available_solutions
 
 
 class ProblemSolution(GenericEntity):

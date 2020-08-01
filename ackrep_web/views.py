@@ -71,6 +71,13 @@ class ClearDatabaseView(View):
         return redirect("landing-page")
 
 
+class UpdateDatabaseView(View):
+    # noinspection PyMethodMayBeStatic
+    def post(self, request):
+
+        return redirect("not-yet-implemented")
+
+
 class ExtendDatabaseView(View):
     def get(self, request):
         context = {}
@@ -156,15 +163,64 @@ class CheckSolutionView(View):
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
-class ImportRepoView(View):
+class NewMergeRequestView(View):
 
     # noinspection PyMethodMayBeStatic
     def get(self, request):
 
         context = {}
 
-        # clone git repo
-        # import into database
-        #
+        return TemplateResponse(request, "ackrep_web/new_merge_request.html", context)
 
-        return TemplateResponse(request, "ackrep_web/landing.html", context)
+    def post(self, request):
+        title = request.POST.get("title", "")
+        repo_url = request.POST.get("repo_url", "")
+        description = request.POST.get("description", "")
+
+        try:
+            mr = core.create_merge_request(repo_url, title, description)
+
+            return redirect("merge-request", key=mr.key)
+        except Exception as e:
+           error_str = str(e)
+           messages.error(request, f"An error occurred: {error_str}")
+
+           return redirect("new-merge-request")
+
+
+class MergeRequestDetailView(View):
+    def get(self, request, key):
+        mr = core.get_merge_request(key)
+        context = {'mr': mr}
+
+        return TemplateResponse(request, "ackrep_web/merge_request_detail.html", context)
+
+
+class UpdateMergeRequestView(View):
+    def post(self, request):
+        return redirect('not-yet-implemented')
+
+
+class DeleteMergeRequestView(View):
+    def post(self, request):
+        mr_key = request.POST.get("mr_key", "")
+
+        core.delete_merge_request(core.get_merge_request(mr_key))
+
+        return redirect('merge-request-list')
+
+
+class MergeRequestListView(View):
+    def get(self, request):
+        mr_dict = core.get_merge_request_dict()
+
+        context = {'mr_dict': mr_dict}
+
+        return TemplateResponse(request, "ackrep_web/merge_request_list.html", context)
+
+
+class NotYetImplementedView(View):
+    def get(self, request):
+        context = {}
+
+        return TemplateResponse(request, "ackrep_web/not_yet_implemented.html", context)

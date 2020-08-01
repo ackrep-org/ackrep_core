@@ -1,0 +1,19 @@
+{% extends "ackrep_web/base.html" %}
+
+{% block content %}
+
+<h3>Merge requests</h3>
+
+<h4>Open ({{ mr_dict.STATUS_OPEN | length }}):</h4>
+
+{% for mr in mr_dict.STATUS_OPEN %}
+    {% include "ackrep_web/widgets/merge_request.html" with mr=mr %}
+{% endfor %}
+
+<h4>Merged ({{ mr_dict.STATUS_MERGED | length }}):</h4>
+
+{% for mr in mr_dict.STATUS_MERGED %}
+    {% include "ackrep_web/widgets/merge_request.html" with mr=mr %}
+{% endfor %}
+
+{% endblock  %}

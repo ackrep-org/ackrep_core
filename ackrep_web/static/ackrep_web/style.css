@@ -88,6 +88,65 @@ footer {
     padding: 1em;
     border: 1px solid #CCC;
     border-radius: 4px;
+
+    display: grid;
+    grid-template-columns: 1fr 4fr;
+    column-gap: 20px;
+}
+
+.styled_form label {
+    grid-column: 1;
+    justify-self: right;
+}
+
+.styled_form input, textarea {
+    grid-column: 2;
+}
+
+.styled_form textarea {
+    resize: none;
+    height: 10em;
+}
+
+.styled_form button {
+    grid-column: 2;
+    width: min-content;
+    justify-self: right;
+    margin-top: 20px;
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+.layout_horizontal {
+    display: flex;
+    align-items: center;
+}
+
+.layout_horizontal > * {
+    flex: 1 1 auto;
+}
+
+.mr_description {
+    display: block;
+    width: 90%;
+    resize: none;
+    height: 10em;
+    margin: auto;
+}
+
+.mr_info {
+    border: 1px solid #CCC;
+    border-radius: 4px;
+    padding: 5px;
+}
+
+.mr_info > * {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#btn_delete_mr {
+    color: red;
 }
 
 form ul {
@@ -98,17 +157,6 @@ form ul {
   
 form li + li {
     margin-top: 1em;
-}
-
-  
-input, 
-textarea {  
-    /* Uniform text field size */
-    width: 400px;
-    box-sizing: border-box;
-  
-    /* Match form field borders */
-    border: 1px solid #999;
 }
 
 .button {

@@ -17,24 +17,16 @@
 <h3>Available Functions</h3>
 
 <ul class="list-group">
-<li class="list-group-item"><a href="{%url 'entity-list'%}">List all entities in database (currently: {{ nr_of_entities }})</a></li>
-<li class="list-group-item"><a id="lnk_extend_with_external_repo" href="{%url 'extend-database'%}">Extend database with external repository</a></li>
-<li class="list-group-item">
-    <div class="pseudocol w69">Import canonical data repository (source: local clone)</div>
-    <div class="pseudocol w30">
-    <form action="{%url 'import-canonical'%}" method="POST">
-        {% csrf_token %}
-        <button id="btn_submit_import_canonoical_repo" type="submit">Run</button>
-    </form>
-    </div>
-</li>
+<li class="list-group-item"><a id="link_entity_list" href="{%url 'entity-list'%}">List all entities in database (currently: {{ nr_of_entities }})</a></li>
+<li class="list-group-item"><a id="link_merge_request_list" href="{%url 'merge-request-list'%}">List all merge requests</a></li>
+<li class="list-group-item"><a id="link_new_merge_request" href="{%url 'new-merge-request'%}">New merge request</a></li>
 <li class="list-group-item">
 
-    <div class="pseudocol w69">Clear entity database</div>
+    <div class="pseudocol w69">Update database from canonical repo</div>
     <div class="pseudocol w30">
-    <form action="{%url 'clear-database'%}" method="POST">
+    <form action="{%url 'update-database'%}" method="POST">
         {% csrf_token %}
-            <button id="btn_submit_clear_db" class="button100" type="submit">Run</button>
+        <button id="btn_submit_update_db" class="button100" type="submit">Run</button>
     </form>
     </div>
 
