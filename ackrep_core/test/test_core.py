@@ -48,8 +48,11 @@ class TestCases1(DjangoTestCase):
 
         # Ensure that the repository is in the expected state. This actual state (and its hash) will change in the
         # future. This test prevents that this happens without intention.
-        msg = f"Repo is in the wrong state. Expected HEAD to be {default_repo_head_hash[:7]}."
-        self.assertEqual(repo.head.commit.hexsha, default_repo_head_hash, msg=msg)
+        repo_head_hash = repo.head.commit.hexsha
+        msg = f"Repository {ackrep_data_test_repo_path} is in the wrong state. "\
+              f"HEAD is {repo_head_hash[:7]} but should be {default_repo_head_hash[:7]}."
+
+        self.assertEqual(repo_head_hash, default_repo_head_hash, msg=msg)
 
     def test_import_repo(self):
         """
