@@ -20,8 +20,8 @@ class StatusCodeWriterMiddleware(object):
         response = self.get_response(request)
         return response
 
-    @staticmethod
-    def process_template_response(request, response):
+    # noinspection PyMethodMayBeStatic
+    def process_template_response(self, request, response):
         """
         Inject the status code of the response into the contex-data. This allows to render it directly to the
         final html (see base.html).
