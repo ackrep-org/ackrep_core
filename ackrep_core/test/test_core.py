@@ -6,7 +6,7 @@ from django.test import TestCase as DjangoTestCase
 from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core
-from ipydex import IPS
+# from ipydex import IPS  # only for debugging
 
 """
 This module contains the tests of the core module (not ackrep_web)
@@ -25,6 +25,9 @@ default_repo_head_hash = "768914e1a4f99a098f0e056e302e77dd131dcbb0"
 
 
 class TestCases1(DjangoTestCase):
+
+    def setUp(self):
+        core.clear_db()
 
     def test_00_unittest_repo(self):
         """

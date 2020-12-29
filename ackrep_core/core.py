@@ -8,16 +8,16 @@ import shutil
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
-import hashlib
-from .util import *
-from . import models
-
-# noinspection PyUnresolvedReferences
-from ipydex import IPS  # for debugging only
-
 # settings might be accessd from other modules which import this one (core)
 # noinspection PyUnresolvedReferences
 from django.conf import settings
+from django.core import management
+from . import models
+
+# noinspection PyUnresolvedReferences
+from ipydex import IPS, activate_ips_on_exception  # for debugging only
+# activate_ips_on_exception()
+
 
 # path of this module (i.e. the file core.py)
 mod_path = os.path.dirname(os.path.abspath(__file__))
@@ -189,9 +189,9 @@ def render_template(tmpl_path, context, target_path=None, base_path=None, specia
 def get_files_by_pattern(directory, match_func):
     """
     source:  https://stackoverflow.com/questions/8505457/how-to-crawl-folders-to-index-files
-    :param directory: 
+    :param directory:
     :param match_func:      example: `lambda fn: fn == "metadata.yml"`
-    :return: 
+    :return:
     """
     for path, dirs, files in os.walk(directory):
         # TODO: this should be made more robust
@@ -202,14 +202,14 @@ def get_files_by_pattern(directory, match_func):
 
 
 def clear_db():
-    for e in models.all_entities:
-        e.objects.all().delete()
+
+    print("Clearing DB...")
+    management.call_command("flush", "--no-input")
 
 
 def load_repo_to_db(startdir, check_consistency=True):
     print("Completely rebuilding DB from file system")
 
-    print("Clearing DB...")
     clear_db()
 
     entity_list = crawl_files_and_load_to_db(startdir)
@@ -225,7 +225,7 @@ def load_repo_to_db(startdir, check_consistency=True):
 
     global last_loaded_entities
     last_loaded_entities = entity_list
-    
+
     return entity_list
 
 
@@ -518,7 +518,7 @@ def check_solution(key):
 
 def clone_external_data_repo(url, mr_key):
     """Clone git repository from url into external_repos/[MERGE_REQUEST_KEY], return path"""
-    
+
     external_repo_dir = os.path.join(root_path, "external_repos")
     if not os.path.isdir(external_repo_dir):
         os.mkdir(external_repo_dir)
