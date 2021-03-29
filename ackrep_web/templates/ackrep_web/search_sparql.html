@@ -1,0 +1,19 @@
+{% extends "ackrep_web/base.html" %}
+
+{% block content %}
+
+<h3>Search entities in ontology</h3>
+
+<form action="{% url 'search-sparql' %}" method="GET" class="styled_form">
+    {% csrf_token %}
+    <label for="query">SPARQL query:</label>
+    <textarea id="query" name="query">{{ query }}</textarea>
+    <br>
+    <button id="btn_mr_submit" type="submit">Search</button>
+</form>
+
+{% if query %}
+    {{ query }}
+{% endif %}
+
+{% endblock  %}

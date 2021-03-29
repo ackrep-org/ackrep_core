@@ -219,6 +219,16 @@ class MergeRequestListView(View):
         return TemplateResponse(request, "ackrep_web/merge_request_list.html", context)
 
 
+class SearchSparqlView(View):
+    def get(self, request):
+        context = {}
+
+        context['query'] = request.GET.get('query', '')
+        # TODO: actually run search
+
+        return TemplateResponse(request, "ackrep_web/search_sparql.html", context)
+
+
 class NotYetImplementedView(View):
     def get(self, request):
         context = {}
