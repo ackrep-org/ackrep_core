@@ -12,6 +12,9 @@ from git import Repo
 # noinspection PyUnresolvedReferences
 from django.conf import settings
 from django.core import management
+
+from yamlpyowl import core as ypo
+
 from . import models
 
 # noinspection PyUnresolvedReferences
@@ -34,13 +37,17 @@ data_test_repo_path = os.path.join(root_path, "ackrep_data_for_unittests")
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
 
+OM = None  # this will hold the ontology manager
+
 
 class ResultContainer(Container):
     pass
 
+
 class InconsistentMetaDataError(ValueError):
     """Raised when an entity with inconsistent metadata is loaded."""
     pass
+
 
 class DuplicateKeyError(Exception):
     """Raised when a duplicate key is found in the database."""
@@ -207,6 +214,33 @@ def clear_db():
     management.call_command("flush", "--no-input")
 
 
+def load_ontology(startdir, entitiy_list):
+    """
+    load the yml file of the ontology and create instances based on entity_list
+    :param startdir:
+    :param entitiy_list:    list of ackrep entities
+    :return:
+    """
+
+    path = os.path.join(startdir, "ontology", "ocse-prototype-01.owl.yml")
+    global OM
+    OM = ypo.OntologyManager(path)
+
+    mapping = {}
+    for cls in OM.n.ACKREP_Entity.subclasses():
+        mapping[cls.name.replace("ACKREP_", "")] = cls
+
+    for e in entitiy_list:
+        cls = mapping.get(type(e).__name__)
+        if cls:
+            # instanciation of owlready classes has sideeffects -> instances are tracked 
+            instance = cls()
+        else:
+            print("unknown entity type:", e)
+
+    # IPS(print_tb=0)
+
+
 def load_repo_to_db(startdir, check_consistency=True):
     print("Completely rebuilding DB from file system")
 
@@ -225,6 +259,8 @@ def load_repo_to_db(startdir, check_consistency=True):
 
     global last_loaded_entities
     last_loaded_entities = entity_list
+
+    load_ontology(startdir, entity_list)
 
     return entity_list
 

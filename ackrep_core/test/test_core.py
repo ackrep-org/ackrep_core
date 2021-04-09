@@ -159,6 +159,12 @@ class TestCases2(DjangoTestCase):
 
         self.assertEqual(res, [problem_sol1])
 
+    def test_ontology(self):
+
+        # check the ontology manager
+        self.assertFalse(core.OM is None)
+        self.assertTrue(len(core.OM.n.ACKREP_ProblemSpecification.instances()) > 0)
+
 
 def utf8decode(obj):
     if hasattr(obj, "decode"):
