@@ -21,7 +21,7 @@ For more infos see doc/devdoc/README.md.
 
 
 ackrep_data_test_repo_path = core.data_test_repo_path
-default_repo_head_hash = "768914e1a4f99a098f0e056e302e77dd131dcbb0"
+default_repo_head_hash = "cf1cf667358fc2a9bee7e3a5911fa819bbb30096"  # 2021-04-09 19:02:37
 
 
 class TestCases1(DjangoTestCase):
@@ -166,16 +166,31 @@ class TestCases2(DjangoTestCase):
         self.assertFalse(OM is None)
         self.assertTrue(len(core.OM.n.ACKREP_ProblemSpecification.instances()) > 0)
 
-        qq = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_entity_key "4ZZ9J".}}'
-        res = OM.make_query(qq)
+        qsrc = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_entity_key "4ZZ9J".}}'
+        res = OM.make_query(qsrc)
         self.assertEqual(len(res), 1)
         ps_double_integrator_transition = res.pop()
 
-        qq = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_ontological_tag P:iLinear_State_Space_System.}}'
-        res = OM.make_query(qq)
-        self.assertEqual(len(res), 1)
-
+        qsrc = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_ontology_based_tag P:iLinear_State_Space_System.}}'
+        res = OM.make_query(qsrc)
         self.assertTrue(ps_double_integrator_transition in res)
+
+        # get list of all possible tags (instances of OCSE_Entity and its subclasses)
+        qsrc = f"""PREFIX P: <{OM.iri}>
+            SELECT ?entity
+            WHERE {{
+              ?entity rdf:type ?type.
+              ?type rdfs:subClassOf* P:OCSE_Entity.
+            }}
+        """
+        res = OM.make_query(qsrc)
+        self.assertTrue(len(res) > 40)
+
+        res2 = core.get_list_of_all_ontology_based_tags()
+
+        from ipydex import IPS
+        IPS(print_tb=-1)
+
 
 
 def utf8decode(obj):

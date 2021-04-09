@@ -225,7 +225,9 @@ def load_ontology(startdir, entitiy_list: List[models.GenericEntity]):
 
     path = os.path.join(startdir, "ontology", "ocse-prototype-01.owl.yml")
     global OM
-    OM = ypo.OntologyManager(path)
+    OM = ypo.OntologyManager(path, world=ypo.owl2.World())
+
+    create_generic_individuals(OM.n.OCSE_Entity)
 
     mapping = {}
     for cls in OM.n.ACKREP_Entity.subclasses():
@@ -241,16 +243,50 @@ def load_ontology(startdir, entitiy_list: List[models.GenericEntity]):
                 if tag.startswith("ocse:"):
                     ocse_concept_name = tag.replace("ocse:", "")
 
-                    # Note: Tags are represented in the ontology by classes
-                    # However, to associate them to individuals via a property, another individual (instance)
-                    # is needed. Therefore we use "generic individuals"
+                    # see docstring of create_generic_individuals
                     generic_individual_name = f"i{ocse_concept_name}"
                     res = OM.onto.search(iri=f"*{generic_individual_name}")
-                    assert len(res) == 1
+                    if not len(res) == 1:
+                        msg = f"Unknown tag: {tag}. Maybe a spelling error?"
+                        raise NameError(msg)
                     generic_individual = res[0]
-                    instance.has_ontological_tag.append(generic_individual)
+                    instance.has_ontology_based_tag.append(generic_individual)
         else:
             print("unknown entity type:", e)
+
+
+def create_generic_individuals(cls: ypo.owl2.ThingClass, recursive=True):
+    """
+    Tags are represented in the ontology by concepts (classes). However, to associate them to
+    individuals (instances) via a property, another individual is needed. Therefore we use "generic individuals",
+    which represent the class as a whole. This is necessary, because metaclasses and punning is not supported by
+    owlready.
+
+    :param cls:         owl concept (class) for which this should be done
+    :param recursive:
+    :return:
+    """
+
+    instances = cls.instances()
+    assert len(instances) == 0
+    instance = cls(name=f"i{cls.name}")
+    print(instance)
+    if recursive:
+        for scls in cls.subclasses():
+            create_generic_individuals(scls, recursive=recursive)
+
+
+def get_list_of_all_ontology_based_tags():
+    assert isinstance(OM, ypo.OntologyManager)
+    qsrc = f"""PREFIX P: <{OM.iri}>
+        SELECT ?entity
+        WHERE {{
+          ?entity rdf:type ?type.
+          ?type rdfs:subClassOf* P:OCSE_Entity.
+        }}
+    """
+    res = list(OM.make_query(qsrc))
+    return res
 
 
 def load_repo_to_db(startdir, check_consistency=True):
