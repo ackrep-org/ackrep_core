@@ -133,6 +133,7 @@ class TestUI(LiveServerTestCase):
     def local_reverse(self, *args, **kwargs):
         return f"{self.live_server_url}{reverse(*args, **kwargs)}"
 
+    # noinspection PyMethodMayBeStatic
     def get_status_code(self, browser):
         """
         for design reasons splinter does not grant access to http-status-codes.

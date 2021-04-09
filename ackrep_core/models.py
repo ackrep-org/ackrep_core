@@ -1,6 +1,5 @@
 import os
 import sys
-import inspect
 
 from django.db import models
 import django
@@ -10,9 +9,11 @@ from django.core.exceptions import ImproperlyConfigured
 
 import git
 
-from . import core
+from . import utils
+from . import model_utils
 
-from ipydex import IPS
+# noinspection PyUnresolvedReferences
+from ipydex import IPS  # only for debugging
 
 
 """
@@ -41,7 +42,7 @@ else:
     pass
 
 
-# define two type to distinguish charfields which will hold (foreign) entity-keys or a list of entity-keys
+# define two type to distinguish char-fields which will hold (foreign) entity-keys or a list of entity-keys
 # see core.resolve_keys(...) for more info
 class EntityKeyField(models.CharField):
     pass
@@ -51,7 +52,19 @@ class EntityKeyListField(models.CharField):
     pass
 
 
-class MergeRequest(models.Model):
+class BaseModel(models.Model):
+    """
+    prevent PyCharm from complaining on .objects-attribute
+    source: https://stackoverflow.com/a/56845199/333403
+    """
+
+    objects = models.Manager()
+
+    class Meta:
+        abstract = True
+
+
+class MergeRequest(BaseModel):
     STATUS_OPEN = "STATUS_OPEN"
     STATUS_MERGED = "STATUS_MERGED"
 
@@ -68,7 +81,7 @@ class MergeRequest(models.Model):
     merge_commit = models.CharField(max_length=40, null=False, blank=False)
 
     def entity_list(self):
-        entity_dict = core.get_entity_dict_from_db(only_merged=False)
+        entity_dict = model_utils.get_entity_dict_from_db(only_merged=False)
         entity_list = []
         for _, val in entity_dict.items():
             entity_list += [e for e in val if e.merge_request == self.key]
@@ -76,15 +89,15 @@ class MergeRequest(models.Model):
         return entity_list
 
     def repo_dir(self):
-        return os.path.join(core.root_path, "external_repos", self.key)
+        return os.path.join(utils.root_path, "external_repos", str(self.key))
 
     def repo(self):
         return git.Repo(self.repo_dir())
 
 
-class GenericEntity(models.Model):
+class GenericEntity(BaseModel):
     """
-    This is the base class for all other acrep-entities
+    This is the base class for all other ackrep-entities
     """
     id = models.AutoField(primary_key=True)
     key = models.CharField(max_length=5, null=False, blank=False, )
@@ -110,6 +123,8 @@ class GenericEntity(models.Model):
     # this is automatically filled when importing .yml files into the db
     # should not be specified inside the .yml file
     base_path = models.CharField(max_length=5000, null=True, blank=True,)
+
+    oc = utils.ObjectContainer()
 
     class Meta:
         abstract = True
@@ -147,12 +162,10 @@ class GenericEntity(models.Model):
             # Manually added to DB
             return MergeRequest.STATUS_MERGED
 
-        #IPS()
-        
         merge_requests_with_key = list(MergeRequest.objects.filter(key=self.merge_request))
         assert len(merge_requests_with_key) == 1, "Associated merge request is either missing or duplicated"
         mr = merge_requests_with_key[0]
-        
+
         return mr.status
 
 
@@ -161,13 +174,13 @@ class ProblemSpecification(GenericEntity):
     problemclass_list = EntityKeyListField(max_length=500, null=True, blank=True,)
     problem_file = models.CharField(max_length=500, null=True, blank=True, default="problem.py")
 
-    # TODO: this function is affacted by the necessary model-refactoring (issue #1)
+    # TODO: this function is affected by the necessary model-refactoring (issue #1)
     def available_solutions_list(self):
         all_solutions = ProblemSolution.objects.all()
 
         available_solutions = []
         for sol in all_solutions:
-            core.resolve_keys(sol)
+            model_utils.resolve_keys(sol)
             solved_problem_keys = [prob.key for prob in sol.oc.solved_problem_list]
             if self.key in solved_problem_keys:
                 available_solutions.append(sol)
@@ -206,31 +219,3 @@ class EnvironmentSpecification(GenericEntity):
 class MethodPackage(GenericEntity):
     _type = "method_package"
     compatible_environment_list = EntityKeyListField(max_length=500, null=True, blank=True,)
-
-
-# TODO: rename this to get_entity_types
-def get_entities():
-    """
-    Return a list of all defined entities
-
-    :return:
-    """
-    clsmembers = inspect.getmembers(sys.modules[__name__], inspect.isclass)
-
-    res = [c[1] for c in clsmembers if issubclass(c[1], GenericEntity) and not c[1] is GenericEntity]
-    return res
-
-
-all_entities = get_entities()
-# noinspection PyProtectedMember
-entity_mapping = dict([(e._type, e) for e in all_entities])
-
-
-def create_entity_from_metadata(md):
-    """
-    :param md:  dict (from yml-file)
-    :return:
-    """
-
-    entity = entity_mapping[md["type"]](**md)
-    return entity

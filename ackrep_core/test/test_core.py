@@ -72,7 +72,7 @@ class TestCases1(DjangoTestCase):
 
         # the number of key should be the same as the number of entity types
 
-        self.assertEqual(len(entity_dict), len(core.models.get_entities()))
+        self.assertEqual(len(entity_dict), len(core.model_utils.get_entities()))
 
         # TODO: load repo and assess the content
         # core.load_repo_to_db(core.data_path)
@@ -87,14 +87,13 @@ class TestCases2(DjangoTestCase):
         core.load_repo_to_db(core.data_test_repo_path)
 
     def test_resolve_keys(self):
-        entity = core.get_entity("UKJZI")
+        entity = core.model_utils.get_entity("UKJZI")
 
-        # ensure that the object container does not yet exist
-        self.assertFalse(hasattr(entity, "oc"))
+        # ensure that the object container is yet empty
+        self.assertTrue(len(entity.oc.item_list()) == 0)
 
-        core.resolve_keys(entity)
-
-        self.assertTrue(hasattr(entity, "oc"))
+        core.model_utils.resolve_keys(entity)
+        self.assertTrue(len(entity.oc.item_list()) > 0)
 
         self.assertTrue(isinstance(entity.oc.solved_problem_list, list))
         self.assertEquals(len(entity.oc.solved_problem_list), 1)
@@ -103,7 +102,7 @@ class TestCases2(DjangoTestCase):
         self.assertEquals(entity.oc.method_package_list[0].key, "UENQQ")
         self.assertTrue(entity.oc.predecessor_key is None)
 
-        default_env = core.get_entity("YJBOX")
+        default_env = core.model_utils.get_entity("YJBOX")
         # TODO: this should be activated when ackrep_data is fixed
         if 0:
             self.assertTrue(isinstance(entity.oc.compatible_environment, core.models.EnvironmentSpecification))
@@ -136,7 +135,7 @@ class TestCases2(DjangoTestCase):
     def test_get_solution_data_files(self):
         res = core.check_solution("UKJZI")
         self.assertEqual(res.returncode, 0, msg=utf8decode(res.stderr))
-        sol_entity = core.get_entity("UKJZI")
+        sol_entity = core.model_utils.get_entity("UKJZI")
 
         all_files = core.get_solution_data_files(sol_entity.base_path)
         png_files = core.get_solution_data_files(sol_entity.base_path, endswith_str=".png")
@@ -152,8 +151,8 @@ class TestCases2(DjangoTestCase):
         self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
 
     def test_get_available_solutions(self):
-        problem_spec = core.get_entity("4ZZ9J")
-        problem_sol1 = core.get_entity("UKJZI")
+        problem_spec = core.model_utils.get_entity("4ZZ9J")
+        problem_sol1 = core.model_utils.get_entity("UKJZI")
 
         res = problem_spec.available_solutions_list()
 
@@ -187,10 +186,6 @@ class TestCases2(DjangoTestCase):
         self.assertTrue(len(res) > 40)
 
         res2 = core.get_list_of_all_ontology_based_tags()
-
-        from ipydex import IPS
-        IPS(print_tb=-1)
-
 
 
 def utf8decode(obj):

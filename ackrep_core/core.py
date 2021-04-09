@@ -9,51 +9,29 @@ from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
-# settings might be accessd from other modules which import this one (core)
+# settings might be accessed from other modules which import this one (core)
 # noinspection PyUnresolvedReferences
 from django.conf import settings
 from django.core import management
 
 from yamlpyowl import core as ypo
-
-from . import models
-
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception  # for debugging only
 # activate_ips_on_exception()
 
+from . import models
+from . import model_utils
 
-# path of this module (i.e. the file core.py)
-mod_path = os.path.dirname(os.path.abspath(__file__))
+# noinspection PyUnresolvedReferences
+from .model_utils import get_entity_dict_from_db, get_entities, resolve_keys, get_entity
 
-# path of this package (i.e. the directory ackrep_core)
-core_pkg_path = os.path.dirname(mod_path)
-
-# path of the general project root (expedted to contain ackrep_data, ackrep_core, ackrep_deployment, ...)
-root_path = os.path.abspath(os.path.join(mod_path, "..", ".."))
-
-# paths for (ackrep_data and its test-related clone)
-data_path = os.path.join(root_path, "ackrep_data")
-data_test_repo_path = os.path.join(root_path, "ackrep_data_for_unittests")
+# noinspection PyUnresolvedReferences
+from .utils import (mod_path, core_pkg_path, root_path, data_path, data_test_repo_path, ObjectContainer,
+                    ResultContainer, InconsistentMetaDataError, DuplicateKeyError)
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
 
 OM = None  # this will hold the ontology manager
-
-
-class ResultContainer(Container):
-    pass
-
-
-class InconsistentMetaDataError(ValueError):
-    """Raised when an entity with inconsistent metadata is loaded."""
-    pass
-
-
-class DuplicateKeyError(Exception):
-    """Raised when a duplicate key is found in the database."""
-    def __init__(self, dup_key):
-        super().__init__(f"Duplicate key in database '{dup_key}'")
 
 
 valid_types = [
@@ -128,29 +106,6 @@ def convert_dict_to_yaml(data, target_path=None):
     return yml_txt
 
 
-def get_entity(key, hint=None):
-    # TODO: remove argument `hint`
-
-    assert hint is None, "the path-hint in the caller must be removed now"
-
-    results = []
-    for entity_type in models.all_entities:
-        res = entity_type.objects.filter(key=key)
-        results.extend(res)
-
-    if len(results) == 0:
-        msg = f"No entity with key '{key}' could be found. Make sure that the database is in sync with repo."
-        # TODO: this should be a 404 Error in the future
-        raise ValueError(msg)
-    elif len(results) > 1:
-        msg = f"There have been multiple entities with key '{key}'. "
-        raise ValueError(msg)
-
-    entity = results[0]
-
-    return entity
-
-
 def render_template(tmpl_path, context, target_path=None, base_path=None, special_str="template_"):
     """
     Render a jinja2 template and save it to target_path. If target_path ist `None` (default),
@@ -215,11 +170,11 @@ def clear_db():
     management.call_command("flush", "--no-input")
 
 
-def load_ontology(startdir, entitiy_list: List[models.GenericEntity]):
+def load_ontology(startdir, entity_list: List[models.GenericEntity]):
     """
     load the yml file of the ontology and create instances based on entity_list
     :param startdir:
-    :param entitiy_list:    list of ackrep entities
+    :param entity_list:    list of ackrep entities
     :return:
     """
 
@@ -233,10 +188,10 @@ def load_ontology(startdir, entitiy_list: List[models.GenericEntity]):
     for cls in OM.n.ACKREP_Entity.subclasses():
         mapping[cls.name.replace("ACKREP_", "")] = cls
 
-    for e in entitiy_list:
+    for e in entity_list:
         cls = mapping.get(type(e).__name__)
         if cls:
-            # instanciation of owlready classes has sideeffects -> instances are tracked
+            # instantiation of owlready classes has side effects -> instances are tracked
             # noinspection PyUnusedLocal
             instance = cls(has_entity_key=e.key, name=e.name)
             for tag in e.tag_list:
@@ -270,7 +225,6 @@ def create_generic_individuals(cls: ypo.owl2.ThingClass, recursive=True):
     instances = cls.instances()
     assert len(instances) == 0
     instance = cls(name=f"i{cls.name}")
-    print(instance)
     if recursive:
         for scls in cls.subclasses():
             create_generic_individuals(scls, recursive=recursive)
@@ -299,7 +253,7 @@ def load_repo_to_db(startdir, check_consistency=True):
     if check_consistency:
         # TODO: this should be disabled during unittest to save time
         print("Create internal links between entities (only for consistency checking) ...")
-        entity_dict = get_entity_dict_from_db()
+        entity_dict = model_utils.get_entity_dict_from_db()
 
         for etype, elist in entity_dict.items():
             for entity in elist:
@@ -334,7 +288,7 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
     for md_path in meta_data_files:
 
         md = get_metadata_from_file(md_path)
-        e = models.create_entity_from_metadata(md)
+        e = model_utils.create_entity_from_metadata(md)
         e.merge_request = merge_request
 
         # absolute path of directory containing metadata.yml
@@ -361,60 +315,6 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
     return entity_list
 
 
-# This function is needed during the prototype phase due to some design simplification
-# once the models have stabilized this should be deprecated
-def resolve_keys(entity):
-    """
-    For quick progress almost all model fields are strings. This function converts those fields, which contains keys
-    to contain the real reference (or list of references).
-    :param entity:
-    :return:
-    """
-
-    entity_type = type(entity)
-    fields = entity_type.get_fields()
-
-    # endow every entity with an object container:
-
-    entity.oc = Container()
-
-    for field in fields:
-        if isinstance(field, models.EntityKeyField):
-
-            # example: get the content of entity.predecessor_key
-            refkey = getattr(entity, field.name)
-            if refkey:
-                try:
-                    ref_entity = get_entity(refkey)
-                except ValueError as ve:
-                    msg = f"Bad refkey detected when processing field {field.name} of {entity}. " \
-                        f"Original error: {ve.args[0]}"
-                    raise InconsistentMetaDataError(msg)
-            else:
-                ref_entity = None
-
-            # save the real object to the object container (allow later access)
-            setattr(entity.oc, field.name, ref_entity)
-
-        elif isinstance(field, models.EntityKeyListField):
-            refkeylist_str = getattr(entity, field.name)
-
-            if refkeylist_str is None:
-                msg = f"There is a problem with the field {field.name} in entity {entity.key}."
-                raise InconsistentMetaDataError(msg)
-
-            refkeylist = yaml.load(refkeylist_str, Loader=yaml.FullLoader)
-            if refkeylist in (None, [], [""]):
-                refkeylist = []
-
-            try:
-                entity_list = [get_entity(refkey) for refkey in refkeylist]
-            except ValueError as ve:
-                msg = f"Bad refkey detected when processing field {field.name} of {entity}. "\
-                      f"Original error: {ve.args[0]}"
-                raise InconsistentMetaDataError(msg)
-            setattr(entity.oc, field.name, entity_list)
-
 
 def get_solution_data_files(sol_base_path, endswith_str=None, create_media_links=False):
     """
@@ -432,6 +332,7 @@ def get_solution_data_files(sol_base_path, endswith_str=None, create_media_links
         return []
 
     if endswith_str is None:
+        # noinspection PyUnusedLocal
         def matchfunc(fn): return True
     else:
         def matchfunc(fn): return fn.endswith(endswith_str)
@@ -489,32 +390,12 @@ def make_method_build(method_package, accept_existing=True):
     return full_build_path
 
 
-def get_entity_dict_from_db(only_merged=True):
-    """
-    get all entities which are currently in the database
-    :return:
-    """
-    entity_type_list = models.get_entities()
-
-    entity_dict = {}
-
-    for et in entity_type_list:
-        if only_merged:
-            object_list = list(e for e in et.objects.all() if e.status() == models.MergeRequest.STATUS_MERGED)
-        else:
-            object_list = list(et.objects.all())
-
-        entity_dict[et.__name__] = object_list
-
-    return entity_dict
-
-
 # TODO: merge with `get_entity_dict_from_db`
 def get_entities_with_key(key):
     """
     get all entities in the database that have a specific key
     """
-    entity_types = models.get_entities()
+    entity_types = model_utils.get_entities()
     entities_with_key = []
 
     for et in entity_types:
@@ -548,6 +429,9 @@ def check_solution(key):
     c.solution_path = os.path.join(root_path, sol_entity.base_path)
 
     c.ackrep_core_path = core_pkg_path
+
+    # noinspection PyUnresolvedReferences
+    assert isinstance(sol_entity.oc, ObjectContainer)
 
     assert len(sol_entity.oc.solved_problem_list) >= 1
 
@@ -652,11 +536,12 @@ def delete_merge_request(mr):
     # delete associated entities from database
     delete_merge_request_entities(mr)
 
+    # noinspection PyBroadException,PyUnusedLocal
     try:
         mr_dir = mr.repo_dir()
         shutil.rmtree(mr_dir)
     except Exception as e:
-        pass # TODO: deleting a git repository sometimes doesn't work under Windows, but isn't that important
+        pass  # TODO: deleting a git repository sometimes doesn't work under Windows, but isn't that important
 
     mr.delete()
 
@@ -674,6 +559,9 @@ def get_merge_request(key):
 
 
 def get_merge_request_dict():
-    mr_dict = {status: list(models.MergeRequest.objects.filter(status=status)) for status, _ in models.MergeRequest.STATUS_CHOICES}
+    mr_dict = {
+        status: list(models.MergeRequest.objects.filter(status=status))
+        for status, _ in models.MergeRequest.STATUS_CHOICES
+    }
 
     return mr_dict
