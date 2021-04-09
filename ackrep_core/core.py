@@ -9,14 +9,17 @@ from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
+
 # settings might be accessed from other modules which import this one (core)
 # noinspection PyUnresolvedReferences
 from django.conf import settings
 from django.core import management
 
 from yamlpyowl import core as ypo
+
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception  # for debugging only
+
 # activate_ips_on_exception()
 
 from . import models
@@ -26,8 +29,17 @@ from . import model_utils
 from .model_utils import get_entity_dict_from_db, get_entities, resolve_keys, get_entity
 
 # noinspection PyUnresolvedReferences
-from .utils import (mod_path, core_pkg_path, root_path, data_path, data_test_repo_path, ObjectContainer,
-                    ResultContainer, InconsistentMetaDataError, DuplicateKeyError)
+from .utils import (
+    mod_path,
+    core_pkg_path,
+    root_path,
+    data_path,
+    data_test_repo_path,
+    ObjectContainer,
+    ResultContainer,
+    InconsistentMetaDataError,
+    DuplicateKeyError,
+)
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
 
@@ -42,7 +54,7 @@ valid_types = [
     "doc",
     "dataset",
     "comment",
-    ]
+]
 
 
 required_generic_meta_data = {
@@ -59,7 +71,7 @@ required_generic_meta_data = {
     "related_datasets": None,
     "external_references": None,
     "notes": None,
-    }
+}
 
 
 def gen_random_entity_key():
@@ -87,7 +99,6 @@ def get_metadata_from_file(path, check_sanity=False):
 
 
 def convert_dict_to_yaml(data, target_path=None):
-
     class MyDumper(yaml.Dumper):
         """
         This class results in the preferred indentation style
@@ -300,9 +311,11 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
         print(e.key, e.base_path)
 
         duplicates = get_entities_with_key(e.key)
-        if merge_request is None \
-           or not duplicates \
-           or all([d.status() == models.MergeRequest.STATUS_OPEN for d in duplicates]):
+        if (
+            merge_request is None
+            or not duplicates
+            or all([d.status() == models.MergeRequest.STATUS_OPEN for d in duplicates])
+        ):
             # try to import entity
             if duplicates:
                 raise DuplicateKeyError(e.key)
@@ -313,7 +326,6 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
 
     print("Added %d new entities to DB" % (len(entity_list)))
     return entity_list
-
 
 
 def get_solution_data_files(sol_base_path, endswith_str=None, create_media_links=False):
@@ -333,9 +345,13 @@ def get_solution_data_files(sol_base_path, endswith_str=None, create_media_links
 
     if endswith_str is None:
         # noinspection PyUnusedLocal
-        def matchfunc(fn): return True
+        def matchfunc(fn):
+            return True
+
     else:
-        def matchfunc(fn): return fn.endswith(endswith_str)
+
+        def matchfunc(fn):
+            return fn.endswith(endswith_str)
 
     abs_solution_files = list(get_files_by_pattern(startdir, matchfunc))
 
@@ -514,12 +530,14 @@ def create_merge_request(repo_url, title, description):
 
     last_update = current_time_str()
 
-    mr = models.MergeRequest(key=key,
-                             title=title,
-                             repo_url=repo_url,
-                             last_update=last_update,
-                             description=description,
-                             status=models.MergeRequest.STATUS_OPEN)
+    mr = models.MergeRequest(
+        key=key,
+        title=title,
+        repo_url=repo_url,
+        last_update=last_update,
+        description=description,
+        status=models.MergeRequest.STATUS_OPEN,
+    )
 
     with mr.repo() as repo:
         current_commit_hash = str(repo.commit())

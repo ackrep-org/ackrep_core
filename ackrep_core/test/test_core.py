@@ -6,6 +6,7 @@ from django.test import TestCase as DjangoTestCase
 from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core
+
 # from ipydex import IPS  # only for debugging
 
 """
@@ -25,7 +26,6 @@ default_repo_head_hash = "cf1cf667358fc2a9bee7e3a5911fa819bbb30096"  # 2021-04-0
 
 
 class TestCases1(DjangoTestCase):
-
     def setUp(self):
         core.clear_db()
 
@@ -52,8 +52,10 @@ class TestCases1(DjangoTestCase):
         # Ensure that the repository is in the expected state. This actual state (and its hash) will change in the
         # future. This test prevents that this happens without intention.
         repo_head_hash = repo.head.commit.hexsha
-        msg = f"Repository {ackrep_data_test_repo_path} is in the wrong state. "\
-              f"HEAD is {repo_head_hash[:7]} but should be {default_repo_head_hash[:7]}."
+        msg = (
+            f"Repository {ackrep_data_test_repo_path} is in the wrong state. "
+            f"HEAD is {repo_head_hash[:7]} but should be {default_repo_head_hash[:7]}."
+        )
 
         self.assertEqual(repo_head_hash, default_repo_head_hash, msg=msg)
 
@@ -108,7 +110,7 @@ class TestCases2(DjangoTestCase):
             self.assertTrue(isinstance(entity.oc.compatible_environment, core.models.EnvironmentSpecification))
             self.assertTrue(entity.oc.compatible_environment, default_env)
 
-    @skipUnless(os.environ.get('DJANGO_TESTS_INCLUDE_SLOW') == "True", "skipping slow test. Run with --include-slow")
+    @skipUnless(os.environ.get("DJANGO_TESTS_INCLUDE_SLOW") == "True", "skipping slow test. Run with --include-slow")
     def test_check_solution(self):
 
         # first: run directly
@@ -170,7 +172,7 @@ class TestCases2(DjangoTestCase):
         self.assertEqual(len(res), 1)
         ps_double_integrator_transition = res.pop()
 
-        qsrc = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_ontology_based_tag P:iLinear_State_Space_System.}}'
+        qsrc = f"PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_ontology_based_tag P:iLinear_State_Space_System.}}"
         res = OM.make_query(qsrc)
         self.assertTrue(ps_double_integrator_transition in res)
 

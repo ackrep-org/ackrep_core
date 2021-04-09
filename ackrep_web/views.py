@@ -31,14 +31,11 @@ class EntityListView(View):
     # noinspection PyMethodMayBeStatic
     def get(self, request):
 
-        #core.load_repo_to_db(core.data_path)
+        # core.load_repo_to_db(core.data_path)
 
         entity_dict = core.get_entity_dict_from_db()
 
-        context = {"title": "Entity List",
-                   "entity_list": pprint.pformat(entity_dict),
-                   "entity_dict": entity_dict
-                   }
+        context = {"title": "Entity List", "entity_list": pprint.pformat(entity_dict), "entity_dict": entity_dict}
 
         return TemplateResponse(request, "ackrep_web/entity_list.html", context)
 
@@ -182,23 +179,23 @@ class NewMergeRequestView(View):
 
             return redirect("merge-request", key=mr.key)
         except Exception as e:
-           error_str = str(e)
-           messages.error(request, f"An error occurred: {error_str}")
+            error_str = str(e)
+            messages.error(request, f"An error occurred: {error_str}")
 
-           return redirect("new-merge-request")
+            return redirect("new-merge-request")
 
 
 class MergeRequestDetailView(View):
     def get(self, request, key):
         mr = core.get_merge_request(key)
-        context = {'mr': mr}
+        context = {"mr": mr}
 
         return TemplateResponse(request, "ackrep_web/merge_request_detail.html", context)
 
 
 class UpdateMergeRequestView(View):
     def post(self, request):
-        return redirect('not-yet-implemented')
+        return redirect("not-yet-implemented")
 
 
 class DeleteMergeRequestView(View):
@@ -207,14 +204,14 @@ class DeleteMergeRequestView(View):
 
         core.delete_merge_request(core.get_merge_request(mr_key))
 
-        return redirect('merge-request-list')
+        return redirect("merge-request-list")
 
 
 class MergeRequestListView(View):
     def get(self, request):
         mr_dict = core.get_merge_request_dict()
 
-        context = {'mr_dict': mr_dict}
+        context = {"mr_dict": mr_dict}
 
         return TemplateResponse(request, "ackrep_web/merge_request_list.html", context)
 
@@ -223,7 +220,7 @@ class SearchSparqlView(View):
     def get(self, request):
         context = {}
 
-        context['query'] = request.GET.get('query', '')
+        context["query"] = request.GET.get("query", "")
         # TODO: actually run search
 
         return TemplateResponse(request, "ackrep_web/search_sparql.html", context)

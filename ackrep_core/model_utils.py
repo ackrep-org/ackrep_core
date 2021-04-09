@@ -100,8 +100,10 @@ def resolve_keys(entity):
                 try:
                     ref_entity = get_entity(refkey)
                 except ValueError as ve:
-                    msg = f"Bad refkey detected when processing field {field.name} of {entity}. " \
+                    msg = (
+                        f"Bad refkey detected when processing field {field.name} of {entity}. "
                         f"Original error: {ve.args[0]}"
+                    )
                     raise InconsistentMetaDataError(msg)
             else:
                 ref_entity = None
@@ -123,8 +125,10 @@ def resolve_keys(entity):
             try:
                 entity_list = [get_entity(refkey) for refkey in refkeylist]
             except ValueError as ve:
-                msg = f"Bad refkey detected when processing field {field.name} of {entity}. "\
-                      f"Original error: {ve.args[0]}"
+                msg = (
+                    f"Bad refkey detected when processing field {field.name} of {entity}. "
+                    f"Original error: {ve.args[0]}"
+                )
                 raise InconsistentMetaDataError(msg)
             setattr(entity.oc, field.name, entity_list)
 
@@ -153,4 +157,3 @@ def entity_mapping():
         tmp = dict([(e._type, e) for e in all_entities()])
         entity_mapping_dict.update(tmp)
     return entity_mapping_dict
-

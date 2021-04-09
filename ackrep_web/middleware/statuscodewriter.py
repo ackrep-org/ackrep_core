@@ -6,7 +6,6 @@ from ipydex import IPS
 
 
 class StatusCodeWriterMiddleware(object):
-
     def __init__(self, get_response):
         self.get_response = get_response
         # One-time configuration and initialization.
@@ -36,7 +35,8 @@ class StatusCodeWriterMiddleware(object):
         :return:
         """
 
-        response.context_data.update({"http_status_code": response.status_code,
-                                     "template_name": response.template_name})
+        response.context_data.update(
+            {"http_status_code": response.status_code, "template_name": response.template_name}
+        )
 
         return response

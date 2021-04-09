@@ -2,6 +2,7 @@ import os
 import argparse
 
 from ipydex import IPS, activate_ips_on_exception
+
 activate_ips_on_exception()
 
 from . import core, models
@@ -15,8 +16,9 @@ import questionary
 def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("--key", help="print a random key and exit", action="store_true")
-    argparser.add_argument("-cs", "--check-solution", metavar="metadatafile",
-                           help="check solution (specified by metadata file)")
+    argparser.add_argument(
+        "-cs", "--check-solution", metavar="metadatafile", help="check solution (specified by metadata file)"
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -63,8 +65,8 @@ def main():
         print("")
         return
     elif args.key:
-            print("Random entity-key: ", core.gen_random_entity_key())
-            return
+        print("Random entity-key: ", core.gen_random_entity_key())
+        return
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -73,6 +75,7 @@ def main():
 
 
 # worker functions
+
 
 def create_new_entity():
 
@@ -121,7 +124,7 @@ def dialoge_entity_type():
     res = questionary.select(
         "\nWhich entity do you want to create?\n(Use `..` to answer all remaining questions with default values).",
         choices=choices,
-        ).ask()  # returns value of selection
+    ).ask()  # returns value of selection
 
     return type_map[res]
 

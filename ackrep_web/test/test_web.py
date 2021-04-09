@@ -1,4 +1,3 @@
-
 from django.test import TestCase as DjangoTestCase, LiveServerTestCase
 from django.urls import reverse
 from unittest import skipUnless
@@ -31,14 +30,13 @@ For more infos see doc/devdoc/README.md.
 
 
 class TestCases1(DjangoTestCase):
-
     def test_00(self):
         # for debugging
         pass
         # IPS()
 
     def test_landing_page(self):
-        url = reverse('landing-page')
+        url = reverse("landing-page")
         response = self.client.get(url)
         self.assertEqual(url, "/")
 
@@ -50,7 +48,7 @@ class TestCases1(DjangoTestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_entity_list(self):
-        url = reverse('entity-list')
+        url = reverse("entity-list")
         response = self.client.get(url)
 
         # this should be an standard response for successful HTTP requests
@@ -71,14 +69,14 @@ class TestCases2(DjangoTestCase):
         core.load_repo_to_db(core.data_test_repo_path)
 
     def test_entity_detail(self):
-        url = reverse('entity-detail', kwargs={"key": "UKJZI"})
+        url = reverse("entity-detail", kwargs={"key": "UKJZI"})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, "utc_entity_full")
 
     def test_check_solution(self):
-        url = reverse('check-solution', kwargs={"key": "UKJZI"})
+        url = reverse("check-solution", kwargs={"key": "UKJZI"})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -103,7 +101,7 @@ class TestBugs(DjangoTestCase):
         core.load_repo_to_db(core.data_test_repo_path)
 
     def test_entity_detail(self):
-        url = reverse('entity-detail', kwargs={"key": "YJBOX"})
+        url = reverse("entity-detail", kwargs={"key": "YJBOX"})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -120,8 +118,8 @@ class TestUI(LiveServerTestCase):
 
     def setUp(self):
         d = dict()
-        d['loggingPrefs'] = {'browser': 'ALL'}
-        self.options_for_browser = dict(driver_name='chrome', headless=True, desired_capabilities=d)
+        d["loggingPrefs"] = {"browser": "ALL"}
+        self.options_for_browser = dict(driver_name="chrome", headless=True, desired_capabilities=d)
 
         self.browsers = []
 
@@ -173,12 +171,12 @@ class TestUI(LiveServerTestCase):
 
     def test_list_entities(self):
         b = self.new_browser()
-        url1 = self.local_reverse('landing-page')
+        url1 = self.local_reverse("landing-page")
         b.visit(url1)
         status_code = self.get_status_code(b)
         self.assertEqual(status_code, 200)
 
-        link = b.find_by_id('link_entity_list')
+        link = b.find_by_id("link_entity_list")
         link.click()
 
         status_code = self.get_status_code(b)
@@ -186,12 +184,12 @@ class TestUI(LiveServerTestCase):
 
     def test_list_merge_requests(self):
         b = self.new_browser()
-        url1 = self.local_reverse('landing-page')
+        url1 = self.local_reverse("landing-page")
         b.visit(url1)
         status_code = self.get_status_code(b)
         self.assertEqual(status_code, 200)
 
-        link = b.find_by_id('link_merge_request_list')
+        link = b.find_by_id("link_merge_request_list")
         link.click()
 
         status_code = self.get_status_code(b)
@@ -199,12 +197,12 @@ class TestUI(LiveServerTestCase):
 
     def test_open_new_merge_request_form(self):
         b = self.new_browser()
-        url1 = self.local_reverse('landing-page')
+        url1 = self.local_reverse("landing-page")
         b.visit(url1)
         status_code = self.get_status_code(b)
         self.assertEqual(status_code, 200)
 
-        link = b.find_by_id('link_new_merge_request')
+        link = b.find_by_id("link_new_merge_request")
         link.click()
 
         status_code = self.get_status_code(b)
@@ -212,12 +210,12 @@ class TestUI(LiveServerTestCase):
 
     def test_update_db_button(self):
         b = self.new_browser()
-        url1 = self.local_reverse('landing-page')
+        url1 = self.local_reverse("landing-page")
         b.visit(url1)
         status_code = self.get_status_code(b)
         self.assertEqual(status_code, 200)
 
-        button = b.find_by_id('btn_submit_update_db')
+        button = b.find_by_id("btn_submit_update_db")
         button.click()
 
         status_code = self.get_status_code(b)

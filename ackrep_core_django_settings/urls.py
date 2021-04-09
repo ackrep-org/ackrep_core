@@ -21,8 +21,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    url(r'', include('ackrep_web.urls')),
+    path("admin/", admin.site.urls),
+    url(r"", include("ackrep_web.urls")),
 ]
 
 if settings.DEBUG:
