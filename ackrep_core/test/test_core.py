@@ -162,8 +162,20 @@ class TestCases2(DjangoTestCase):
     def test_ontology(self):
 
         # check the ontology manager
-        self.assertFalse(core.OM is None)
+        OM = core.OM
+        self.assertFalse(OM is None)
         self.assertTrue(len(core.OM.n.ACKREP_ProblemSpecification.instances()) > 0)
+
+        qq = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_entity_key "4ZZ9J".}}'
+        res = OM.make_query(qq)
+        self.assertEqual(len(res), 1)
+        ps_double_integrator_transition = res.pop()
+
+        qq = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_ontological_tag P:iLinear_State_Space_System.}}'
+        res = OM.make_query(qq)
+        self.assertEqual(len(res), 1)
+
+        self.assertTrue(ps_double_integrator_transition in res)
 
 
 def utf8decode(obj):

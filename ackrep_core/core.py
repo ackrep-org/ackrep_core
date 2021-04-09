@@ -5,6 +5,7 @@ import pathlib
 import time
 import subprocess
 import shutil
+from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
@@ -214,7 +215,7 @@ def clear_db():
     management.call_command("flush", "--no-input")
 
 
-def load_ontology(startdir, entitiy_list):
+def load_ontology(startdir, entitiy_list: List[models.GenericEntity]):
     """
     load the yml file of the ontology and create instances based on entity_list
     :param startdir:
@@ -233,12 +234,23 @@ def load_ontology(startdir, entitiy_list):
     for e in entitiy_list:
         cls = mapping.get(type(e).__name__)
         if cls:
-            # instanciation of owlready classes has sideeffects -> instances are tracked 
-            instance = cls()
+            # instanciation of owlready classes has sideeffects -> instances are tracked
+            # noinspection PyUnusedLocal
+            instance = cls(has_entity_key=e.key, name=e.name)
+            for tag in e.tag_list:
+                if tag.startswith("ocse:"):
+                    ocse_concept_name = tag.replace("ocse:", "")
+
+                    # Note: Tags are represented in the ontology by classes
+                    # However, to associate them to individuals via a property, another individual (instance)
+                    # is needed. Therefore we use "generic individuals"
+                    generic_individual_name = f"i{ocse_concept_name}"
+                    res = OM.onto.search(iri=f"*{generic_individual_name}")
+                    assert len(res) == 1
+                    generic_individual = res[0]
+                    instance.has_ontological_tag.append(generic_individual)
         else:
             print("unknown entity type:", e)
-
-    # IPS(print_tb=0)
 
 
 def load_repo_to_db(startdir, check_consistency=True):
