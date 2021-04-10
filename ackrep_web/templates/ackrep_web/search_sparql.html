@@ -4,8 +4,14 @@
 
 <h3>Search entities in ontology</h3>
 
+{% if err %}
+<div class="errorbox">
+    <pre>{{ err }}</pre>
+</div>
+{% endif %}
+
 <form action="{% url 'search-sparql' %}" method="GET" class="styled_form">
-    {% csrf_token %}
+<!--    {% csrf_token %}-->
     <label for="query">SPARQL query:</label>
     <textarea id="query" name="query">{{ query }}</textarea>
     <br>
@@ -14,6 +20,13 @@
 
 {% if query %}
     {{ query }}
+{% endif %}
+
+{% if search_result %}
+    {% for e in search_result %}
+        <pre>{{ e }}</pre>
+
+    {% endfor %}
 {% endif %}
 
 {% endblock  %}

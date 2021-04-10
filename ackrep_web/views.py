@@ -1,4 +1,5 @@
 import time
+from textwrap import dedent as twdd
 import pprint
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
@@ -220,8 +221,26 @@ class SearchSparqlView(View):
     def get(self, request):
         context = {}
 
-        context["query"] = request.GET.get("query", "")
-        # TODO: actually run search
+        # PREFIX P: <{OM.iri}>
+        example_query = twdd(f"""
+        # example query: select all possible tags
+
+        PREFIX P: <https://ackrep.org/draft/ocse-prototype01#>
+        SELECT ?entity
+        WHERE {{
+          ?entity rdf:type ?type.
+          ?type rdfs:subClassOf* P:OCSE_Entity.
+        }}
+        """)
+        qsrc = context["query"] = request.GET.get("query", example_query)
+
+        try:
+            res = core.run_sparql_query_and_translate_result(qsrc)
+        except Exception as e:
+            context["err"] = f"The following error occurred: {str(e)}"
+            res = []
+
+        context["search_result"] = res
 
         return TemplateResponse(request, "ackrep_web/search_sparql.html", context)
 

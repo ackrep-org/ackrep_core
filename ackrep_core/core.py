@@ -583,3 +583,26 @@ def get_merge_request_dict():
     }
 
     return mr_dict
+
+
+def run_sparql_query_and_translate_result(qsrc, raw=False):
+
+    load_ontology(data_path, entity_list=model_utils.all_entities())
+
+    assert isinstance(OM, ypo.OntologyManager)
+    res = list(OM.make_query(qsrc))
+
+    res2 = []
+    for onto_nty in res:
+        res2.append(wrap_onto_entity(onto_nty))
+    return res2
+
+
+def wrap_onto_entity(onto_nty):
+    """
+
+    :param onto_nty:    class or instance from the ontology
+    :return:            template-compatibe representation
+    """
+
+    return str(onto_nty)
