@@ -9,7 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 import git
 
-from . import utils
+from . import util
 from . import model_utils
 
 # noinspection PyUnresolvedReferences
@@ -89,7 +89,7 @@ class MergeRequest(BaseModel):
         return entity_list
 
     def repo_dir(self):
-        return os.path.join(utils.root_path, "external_repos", str(self.key))
+        return os.path.join(util.root_path, "external_repos", str(self.key))
 
     def repo(self):
         return git.Repo(self.repo_dir())
@@ -173,7 +173,7 @@ class GenericEntity(BaseModel):
         blank=True,
     )
 
-    oc = utils.ObjectContainer()
+    oc = util.ObjectContainer()
 
     class Meta:
         abstract = True

@@ -1,8 +1,7 @@
 import inspect
-import sys
 import yaml
 from . import models
-from .utils import ObjectContainer, InconsistentMetaDataError
+from .util import ObjectContainer, InconsistentMetaDataError
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS  # only for debugging

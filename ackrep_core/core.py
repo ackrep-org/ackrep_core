@@ -29,7 +29,7 @@ from . import model_utils
 from .model_utils import get_entity_dict_from_db, get_entities, resolve_keys, get_entity
 
 # noinspection PyUnresolvedReferences
-from .utils import (
+from .util import (
     mod_path,
     core_pkg_path,
     root_path,
