@@ -43,8 +43,6 @@ from .util import (
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
 
-OM = None  # this will hold the ontology manager
-
 
 valid_types = [
     "problem_class",
@@ -181,77 +179,117 @@ def clear_db():
     management.call_command("flush", "--no-input")
 
 
-def load_ontology(startdir, entity_list: List[models.GenericEntity]):
+class ACKREP_OntologyManager(object):
     """
-    load the yml file of the ontology and create instances based on entity_list
-    :param startdir:
-    :param entity_list:    list of ackrep entities
-    :return:
+    Manages the ontology related tasks in ackrep-core
     """
 
-    path = os.path.join(startdir, "ontology", "ocse-prototype-01.owl.yml")
-    global OM
-    OM = ypo.OntologyManager(path, world=ypo.owl2.World())
+    def __init__(self):
+        self.OM: ypo.OntologyManager = None
+        self.ocse_entity_mapping = {}
 
-    create_generic_individuals(OM.n.OCSE_Entity)
+    def load_ontology(self, startdir, entity_list: List[models.GenericEntity]):
+        """
+        load the yml file of the ontology and create instances based on entity_list
+        :param startdir:
+        :param entity_list:    list of ackrep entities
+        :return:
+        """
 
-    mapping = {}
-    for cls in OM.n.ACKREP_Entity.subclasses():
-        mapping[cls.name.replace("ACKREP_", "")] = cls
+        path = os.path.join(startdir, "ontology", "ocse-prototype-01.owl.yml")
+        self.OM = ypo.OntologyManager(path, world=ypo.owl2.World())
 
-    for e in entity_list:
-        cls = mapping.get(type(e).__name__)
-        if cls:
-            # instantiation of owlready classes has side effects -> instances are tracked
-            # noinspection PyUnusedLocal
-            instance = cls(has_entity_key=e.key, name=e.name)
-            for tag in e.tag_list:
-                if tag.startswith("ocse:"):
-                    ocse_concept_name = tag.replace("ocse:", "")
+        mapping = {}
+        for cls in self.OM.n.ACKREP_Entity.subclasses():
+            mapping[cls.name.replace("ACKREP_", "")] = cls
 
-                    # see docstring of create_generic_individuals
-                    generic_individual_name = f"i{ocse_concept_name}"
-                    res = OM.onto.search(iri=f"*{generic_individual_name}")
-                    if not len(res) == 1:
-                        msg = f"Unknown tag: {tag}. Maybe a spelling error?"
-                        raise NameError(msg)
-                    generic_individual = res[0]
-                    instance.has_ontology_based_tag.append(generic_individual)
-        else:
-            print("unknown entity type:", e)
+        for e in entity_list:
+            cls = mapping.get(type(e).__name__)
+            if cls:
+                # instantiation of owlready classes has side effects -> instances are tracked
+                # noinspection PyUnusedLocal
+                instance = cls(has_entity_key=e.key, name=e.name)
+                for tag in e.tag_list:
+                    if tag.startswith("ocse:"):
+                        ocse_concept_name = tag.replace("ocse:", "")
 
+                        # see docstring of create_generic_individuals
+                        generic_individual_name = f"i{ocse_concept_name}"
+                        res = self.OM.onto.search(iri=f"*{generic_individual_name}")
+                        if not len(res) == 1:
+                            msg = f"Unknown tag: {tag}. Maybe a spelling error?"
+                            raise NameError(msg)
+                        generic_individual = res[0]
+                        instance.has_ontology_based_tag.append(generic_individual)
+            else:
+                print("unknown entity type:", e)
 
-def create_generic_individuals(cls: ypo.owl2.ThingClass, recursive=True):
-    """
-    Tags are represented in the ontology by concepts (classes). However, to associate them to
-    individuals (instances) via a property, another individual is needed. Therefore we use "generic individuals",
-    which represent the class as a whole. This is necessary, because metaclasses and punning is not supported by
-    owlready.
+        for ocse_entity in self.OM.n.OCSE_Entity.instances():
+            self.ocse_entity_mapping[ocse_entity.name] = ocse_entity
 
-    :param cls:         owl concept (class) for which this should be done
-    :param recursive:
-    :return:
-    """
+        self.generate_bottom_up_tag_relations()
 
-    instances = cls.instances()
-    assert len(instances) == 0
-    instance = cls(name=f"i{cls.name}")
-    if recursive:
-        for scls in cls.subclasses():
-            create_generic_individuals(scls, recursive=recursive)
+    def generate_bottom_up_tag_relations(self) -> None:
+        """
+        Tags should be as specific as possible, e.g. if applicable `Linear_State_Space_System` is prefererred over
+        `State_Space_System`. However, as every Linear_State_Space_System also is a State_Space_System, a search for the
+        latter (more general tag) should also contain entities which are tagged with the former (more special tag).
 
+        This is achieved by this function which automatically adds tags of superclasses.
 
-def get_list_of_all_ontology_based_tags():
-    assert isinstance(OM, ypo.OntologyManager)
-    qsrc = f"""PREFIX P: <{OM.iri}>
-        SELECT ?entity
-        WHERE {{
-          ?entity rdf:type ?type.
-          ?type rdfs:subClassOf* P:OCSE_Entity.
-        }}
-    """
-    res = list(OM.make_query(qsrc))
-    return res
+        :return:    None
+        """
+
+        for ackrep_entity, ocse_entity in self.OM.n.has_ontology_based_tag.get_relations():
+            ocse_class = ocse_entity.is_a[0]
+            self._recursively_add_tags(ackrep_entity, ocse_class)
+
+    def _recursively_add_tags(self, ackrep_entity: ypo.Thing, ocse_class: ypo.owl2.ThingClass) -> None:
+
+        final_class = self.OM.n.OCSE_Entity
+        if ocse_class == final_class:
+            return
+
+        parent_classes = ocse_class.is_a
+        assert len(parent_classes) == 1  # ensure asserted single inheritance (otherwise things get more complicated)
+        parent_class = parent_classes[0]
+        # this is faster then access via the ontology
+        proxy_individual = self.ocse_entity_mapping.get(f"i{parent_class.name}")
+        ackrep_entity.has_ontology_based_tag.append(proxy_individual)
+
+        self._recursively_add_tags(ackrep_entity, parent_class)
+
+    def get_list_of_all_ontology_based_tags(self):
+        qsrc = f"""PREFIX P: <{self.OM.iri}>
+            SELECT ?entity
+            WHERE {{
+              ?entity rdf:type ?type.
+              ?type rdfs:subClassOf* P:OCSE_Entity.
+            }}
+        """
+        res = list(self.OM.make_query(qsrc))
+        return res
+
+    def run_sparql_query_and_translate_result(self, qsrc, raw=False):
+
+        self.load_ontology(data_path, entity_list=model_utils.all_entities())
+
+        assert isinstance(self.OM, ypo.OntologyManager)
+        res = list(self.OM.make_query(qsrc))
+
+        res2 = []
+        for onto_nty in res:
+            res2.append(self.wrap_onto_entity(onto_nty))
+        return res2
+
+    @staticmethod
+    def wrap_onto_entity(onto_nty):
+        """
+
+        :param onto_nty:    class or instance from the ontology
+        :return:            template-compatible representation
+        """
+        return str(onto_nty)
 
 
 def load_repo_to_db(startdir, check_consistency=True):
@@ -273,7 +311,7 @@ def load_repo_to_db(startdir, check_consistency=True):
     global last_loaded_entities
     last_loaded_entities = entity_list
 
-    load_ontology(startdir, entity_list)
+    AOM.load_ontology(startdir, entity_list)
 
     return entity_list
 
@@ -585,24 +623,4 @@ def get_merge_request_dict():
     return mr_dict
 
 
-def run_sparql_query_and_translate_result(qsrc, raw=False):
-
-    load_ontology(data_path, entity_list=model_utils.all_entities())
-
-    assert isinstance(OM, ypo.OntologyManager)
-    res = list(OM.make_query(qsrc))
-
-    res2 = []
-    for onto_nty in res:
-        res2.append(wrap_onto_entity(onto_nty))
-    return res2
-
-
-def wrap_onto_entity(onto_nty):
-    """
-
-    :param onto_nty:    class or instance from the ontology
-    :return:            template-compatibe representation
-    """
-
-    return str(onto_nty)
+AOM = ACKREP_OntologyManager()

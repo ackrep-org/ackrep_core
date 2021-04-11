@@ -7,7 +7,7 @@ from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core
 
-# from ipydex import IPS  # only for debugging
+from ipydex import IPS  # only for debugging
 
 """
 This module contains the tests of the core module (not ackrep_web)
@@ -22,7 +22,7 @@ For more infos see doc/devdoc/README.md.
 
 
 ackrep_data_test_repo_path = core.data_test_repo_path
-default_repo_head_hash = "cf1cf667358fc2a9bee7e3a5911fa819bbb30096"  # 2021-04-09 19:02:37
+default_repo_head_hash = "7a4a2e8bef30b1751e77ce4d1765363a30822228"  # 2021-04-09 19:02:37
 
 
 class TestCases1(DjangoTestCase):
@@ -163,9 +163,9 @@ class TestCases2(DjangoTestCase):
     def test_ontology(self):
 
         # check the ontology manager
-        OM = core.OM
+        OM = core.AOM.OM
         self.assertFalse(OM is None)
-        self.assertTrue(len(core.OM.n.ACKREP_ProblemSpecification.instances()) > 0)
+        self.assertTrue(len(OM.n.ACKREP_ProblemSpecification.instances()) > 0)
 
         qsrc = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_entity_key "4ZZ9J".}}'
         res = OM.make_query(qsrc)
@@ -187,7 +187,7 @@ class TestCases2(DjangoTestCase):
         res = OM.make_query(qsrc)
         self.assertTrue(len(res) > 40)
 
-        res2 = core.get_list_of_all_ontology_based_tags()
+        res2 = core.AOM.get_list_of_all_ontology_based_tags()
 
 
 def utf8decode(obj):

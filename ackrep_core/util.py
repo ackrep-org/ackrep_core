@@ -51,6 +51,7 @@ class DuplicateKeyError(Exception):
 class QueryError(Exception):
     pass
 
+
 def bright(txt):
     return f"{Style.BRIGHT}{txt}{Style.RESET_ALL}"
 
