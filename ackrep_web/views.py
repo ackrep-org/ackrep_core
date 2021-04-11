@@ -235,7 +235,7 @@ class SearchSparqlView(View):
         qsrc = context["query"] = request.GET.get("query", example_query)
 
         try:
-            res = core.run_sparql_query_and_translate_result(qsrc)
+            res = core.AOM.run_sparql_query_and_translate_result(qsrc)
         except Exception as e:
             context["err"] = f"The following error occurred: {str(e)}"
             res = []

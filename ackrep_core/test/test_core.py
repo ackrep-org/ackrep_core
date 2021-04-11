@@ -189,6 +189,25 @@ class TestCases2(DjangoTestCase):
 
         res2 = core.AOM.get_list_of_all_ontology_based_tags()
 
+        qsrc = f"""PREFIX P: <{OM.iri}>
+            SELECT ?entity
+            WHERE {{
+              ?entity P:has_entity_key "J73Y9".
+            }}
+        """
+        res = core.AOM.run_sparql_query_and_translate_result(qsrc)
+        self.assertTrue(isinstance(res[0], core.models.ProblemSpecification))
+
+        qsrc = f"""PREFIX P: <{OM.iri}>
+            SELECT ?entity
+            WHERE {{
+              ?entity P:has_ontology_based_tag P:iTransfer_Function.
+            }}
+        """
+        res = core.AOM.run_sparql_query_and_translate_result(qsrc)
+
+        # IPS(print_tb=-1)
+
 
 def utf8decode(obj):
     if hasattr(obj, "decode"):

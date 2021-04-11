@@ -179,22 +179,28 @@ def clear_db():
     management.call_command("flush", "--no-input")
 
 
+# noinspection PyPep8Naming
 class ACKREP_OntologyManager(object):
     """
     Manages the ontology related tasks in ackrep-core
     """
 
     def __init__(self):
+        # noinspection PyTypeChecker
         self.OM: ypo.OntologyManager = None
         self.ocse_entity_mapping = {}
 
-    def load_ontology(self, startdir, entity_list: List[models.GenericEntity]):
+    def load_ontology(self, startdir, entity_list: List[models.GenericEntity]) -> None:
         """
         load the yml file of the ontology and create instances based on entity_list
         :param startdir:
         :param entity_list:    list of ackrep entities
         :return:
         """
+
+        if isinstance(self.OM, ypo.OntologyManager):
+            # Nothing to do
+            return
 
         path = os.path.join(startdir, "ontology", "ocse-prototype-01.owl.yml")
         self.OM = ypo.OntologyManager(path, world=ypo.owl2.World())
@@ -282,14 +288,20 @@ class ACKREP_OntologyManager(object):
             res2.append(self.wrap_onto_entity(onto_nty))
         return res2
 
-    @staticmethod
-    def wrap_onto_entity(onto_nty):
+    def wrap_onto_entity(self, onto_nty):
         """
 
         :param onto_nty:    class or instance from the ontology
         :return:            template-compatible representation
         """
-        return str(onto_nty)
+
+        if isinstance(onto_nty, self.OM.n.ACKREP_Entity):
+            key = onto_nty.has_entity_key
+            res = get_entity(key)
+        else:
+            res = str(onto_nty)
+
+        return res
 
 
 def load_repo_to_db(startdir, check_consistency=True):
