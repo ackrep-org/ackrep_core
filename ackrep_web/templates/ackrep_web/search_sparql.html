@@ -22,8 +22,17 @@
     {{ query }}
 {% endif %}
 
-{% if search_result %}
-    {% for e in search_result %}
+{% if ackrep_entities %}
+<h3>Result: ACKREP Entities </h3>
+    {% for e in ackrep_entities %}
+        {% include "ackrep_web/widgets/entity.html" with entity=e c=c display="short" only %}
+
+    {% endfor %}
+{% endif %}
+
+{% if onto_entities %}
+<h3>Result: General Entities from the Ontology</h3>
+    {% for e in onto_entities %}
         <pre>{{ e }}</pre>
 
     {% endfor %}

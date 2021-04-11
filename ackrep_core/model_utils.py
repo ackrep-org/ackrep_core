@@ -8,7 +8,7 @@ from ipydex import IPS  # only for debugging
 
 
 # TODO: rename this to get_entity_types
-def get_entities():
+def get_entity_types():
     """
     Return a list of all defined entities
 
@@ -35,7 +35,7 @@ def get_entity_dict_from_db(only_merged=True):
     get all entities which are currently in the database
     :return:
     """
-    entity_type_list = get_entities()
+    entity_type_list = get_entity_types()
 
     entity_dict = {}
 
@@ -56,7 +56,7 @@ def get_entity(key, hint=None):
     assert hint is None, "the path-hint in the caller must be removed now"
 
     results = []
-    for entity_type in all_entities():
+    for entity_type in get_entity_types():
         res = entity_type.objects.filter(key=key)
         results.extend(res)
 
@@ -142,7 +142,9 @@ def all_entities():
     :return:
     """
     if not list_of_all_entities:
-        list_of_all_entities.extend(get_entities())
+        entity_type_list = get_entity_types()
+        for et in entity_type_list:
+            list_of_all_entities.extend(et.objects.all())
     return list_of_all_entities
 
 
@@ -153,6 +155,6 @@ def entity_mapping():
     """
     if not entity_mapping_dict:
         # noinspection PyProtectedMember
-        tmp = dict([(e._type, e) for e in all_entities()])
+        tmp = dict([(e._type, e) for e in get_entity_types()])
         entity_mapping_dict.update(tmp)
     return entity_mapping_dict

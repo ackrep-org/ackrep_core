@@ -91,6 +91,20 @@ class TestCases2(DjangoTestCase):
 
         # TODO test that this url returns a file
 
+    def test_sparql_query(self):
+
+        ##!
+        url = reverse("search-sparql")
+        query = (
+            "query=%23+example+query%3A+select+all+possible+tags%0D%0A%0D%0APREFIX+P%3A+"
+            "<https%3A%2F%2Fackrep.org%2Fdraft%2Focse-prototype01%23>%0D%0A++++++++++++SELECT"
+            "+%3Fentity%0D%0A++++++++++++WHERE+{%0D%0A++++++++++++++%3Fentity+P%3Ahas_ontology_based_tag"
+            "+P%3AiTransfer_Function.%0D%0A++++++++++++}%0D%0A"
+        )
+        response = self.client.get(f"{url}?{query}")
+
+        IPS(print_tb=-1)
+
 
 class TestBugs(DjangoTestCase):
     """

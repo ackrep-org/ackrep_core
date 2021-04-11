@@ -1,5 +1,6 @@
 from colorama import Style, Fore
 from django.utils import timezone
+import yaml
 
 import os
 from ipydex import Container
@@ -67,6 +68,20 @@ def bred(txt):
 def yellow(txt):
     return f"{Fore.YELLOW}{txt}{Style.RESET_ALL}"
 
+
+def smart_parse(obj):
+    """
+    Due to simplified database representation entity.tag_list, sometimes is not a list but a string.
+    In these cases the string must be parsed to a list.
+
+    :param obj:
+    :return:
+    """
+
+    if isinstance(obj, list):
+        return obj
+    else:
+        return yaml.load(obj, Loader=yaml.SafeLoader)
 
 # based on
 # source: https://stackoverflow.com/a/46928226/333403

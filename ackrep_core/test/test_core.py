@@ -22,7 +22,7 @@ For more infos see doc/devdoc/README.md.
 
 
 ackrep_data_test_repo_path = core.data_test_repo_path
-default_repo_head_hash = "7a4a2e8bef30b1751e77ce4d1765363a30822228"  # 2021-04-09 19:02:37
+default_repo_head_hash = "f2a7ca9322334ce65e78daaec11401153048ceb6"  # 2021-04-12 00:45:46
 
 
 class TestCases1(DjangoTestCase):
@@ -72,9 +72,9 @@ class TestCases1(DjangoTestCase):
         all_values = sum(entity_dict.values(), [])
         self.assertEqual(len(all_values), 0)
 
-        # the number of key should be the same as the number of entity types
+        # the number of keys should be the same as the number of entity types
 
-        self.assertEqual(len(entity_dict), len(core.model_utils.get_entities()))
+        self.assertEqual(len(entity_dict), len(core.model_utils.get_entity_types()))
 
         # TODO: load repo and assess the content
         # core.load_repo_to_db(core.data_path)
@@ -160,6 +160,11 @@ class TestCases2(DjangoTestCase):
 
         self.assertEqual(res, [problem_sol1])
 
+    def test_entity_tag_list(self):
+        e = core.model_utils.all_entities()[0]
+        tag_list = core.util.smart_parse(e.tag_list)
+        self.assertTrue(isinstance(tag_list, list))
+
     def test_ontology(self):
 
         # check the ontology manager
@@ -195,8 +200,9 @@ class TestCases2(DjangoTestCase):
               ?entity P:has_entity_key "J73Y9".
             }}
         """
-        res = core.AOM.run_sparql_query_and_translate_result(qsrc)
-        self.assertTrue(isinstance(res[0], core.models.ProblemSpecification))
+        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
+        self.assertEqual(oe, [])
+        self.assertTrue(isinstance(ae[0], core.models.ProblemSpecification))
 
         qsrc = f"""PREFIX P: <{OM.iri}>
             SELECT ?entity
@@ -204,8 +210,18 @@ class TestCases2(DjangoTestCase):
               ?entity P:has_ontology_based_tag P:iTransfer_Function.
             }}
         """
-        res = core.AOM.run_sparql_query_and_translate_result(qsrc)
+        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
+        self.assertTrue(len(ae) > 0)
 
+        qsrc = f"""
+        PREFIX P: <https://ackrep.org/draft/ocse-prototype01#>
+        SELECT ?entity
+        WHERE {{
+          ?entity P:has_entity_key "M4PDA".
+        }}
+        """
+        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
+        self.assertTrue(len(ae) == 1)
         # IPS(print_tb=-1)
 
 

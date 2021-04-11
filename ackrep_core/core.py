@@ -26,7 +26,7 @@ from . import models
 from . import model_utils
 
 # noinspection PyUnresolvedReferences
-from .model_utils import get_entity_dict_from_db, get_entities, resolve_keys, get_entity
+from .model_utils import get_entity_dict_from_db, get_entity_types, resolve_keys, get_entity
 
 # noinspection PyUnresolvedReferences
 from .util import (
@@ -40,6 +40,8 @@ from .util import (
     InconsistentMetaDataError,
     DuplicateKeyError,
 )
+
+from . import util
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
 
@@ -202,6 +204,9 @@ class ACKREP_OntologyManager(object):
             # Nothing to do
             return
 
+        assert len(models.ProblemSpecification.objects.all()) > 0, "no ProblemSpecification found"
+        assert len(entity_list) > 0, "empty entity_list"
+
         path = os.path.join(startdir, "ontology", "ocse-prototype-01.owl.yml")
         self.OM = ypo.OntologyManager(path, world=ypo.owl2.World())
 
@@ -215,20 +220,29 @@ class ACKREP_OntologyManager(object):
                 # instantiation of owlready classes has side effects -> instances are tracked
                 # noinspection PyUnusedLocal
                 instance = cls(has_entity_key=e.key, name=e.name)
-                for tag in e.tag_list:
+
+                tag_list = util.smart_parse(e.tag_list)
+                assert isinstance(tag_list, list), f"unexpexted type of e.tag_list: {type(tag_list)}"
+                for tag in tag_list:
                     if tag.startswith("ocse:"):
                         ocse_concept_name = tag.replace("ocse:", "")
 
-                        # see docstring of create_generic_individuals
-                        generic_individual_name = f"i{ocse_concept_name}"
-                        res = self.OM.onto.search(iri=f"*{generic_individual_name}")
+                        # see yamlpyowl doc (README) wrt proxy_individuals
+                        proxy_individual_name = f"i{ocse_concept_name}"
+                        res = self.OM.onto.search(iri=f"*{proxy_individual_name}")
                         if not len(res) == 1:
                             msg = f"Unknown tag: {tag}. Maybe a spelling error?"
                             raise NameError(msg)
-                        generic_individual = res[0]
-                        instance.has_ontology_based_tag.append(generic_individual)
+                        proxy_individual = res[0]
+                        instance.has_ontology_based_tag.append(proxy_individual)
+                    # IPS(e.key == "M4PDA")
             else:
                 print("unknown entity type:", e)
+
+        if len(self.OM.n.ACKREP_ProblemSolution.instances()) == 0:
+            msg = "Instances of ACKREP_ProblemSolution are missing. This is unexpected."
+            IPS()
+            raise ValueError(msg)
 
         for ocse_entity in self.OM.n.OCSE_Entity.instances():
             self.ocse_entity_mapping[ocse_entity.name] = ocse_entity
@@ -260,7 +274,13 @@ class ACKREP_OntologyManager(object):
         assert len(parent_classes) == 1  # ensure asserted single inheritance (otherwise things get more complicated)
         parent_class = parent_classes[0]
         # this is faster then access via the ontology
-        proxy_individual = self.ocse_entity_mapping.get(f"i{parent_class.name}")
+        proxy_individual_name = f"i{parent_class.name}"
+        proxy_individual = self.ocse_entity_mapping.get(proxy_individual_name)
+
+        if proxy_individual is None:
+            msg = f"could not find {proxy_individual_name} in the ontology"
+            raise NameError(msg)
+
         ackrep_entity.has_ontology_based_tag.append(proxy_individual)
 
         self._recursively_add_tags(ackrep_entity, parent_class)
@@ -276,17 +296,32 @@ class ACKREP_OntologyManager(object):
         res = list(self.OM.make_query(qsrc))
         return res
 
-    def run_sparql_query_and_translate_result(self, qsrc, raw=False):
+    def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> (list, list):
+        """
+
+        :param qsrc:    sparl source of the query
+        :param raw:     flag to return the complete result in onto_entites
+
+        :return:        2-tuple of lists: (ackrep_entities, onto_entites)
+                        (onto_entites contains everything which is not an ACKREP_Entity)
+        """
 
         self.load_ontology(data_path, entity_list=model_utils.all_entities())
 
         assert isinstance(self.OM, ypo.OntologyManager)
         res = list(self.OM.make_query(qsrc))
+        if raw:
+            return [], res
 
-        res2 = []
+        ackrep_entites = []
+        onto_entites = []
         for onto_nty in res:
-            res2.append(self.wrap_onto_entity(onto_nty))
-        return res2
+            ae, oe = self.wrap_onto_entity(onto_nty)
+            if ae is not None:
+                ackrep_entites.append(ae)
+            if oe is not None:
+                onto_entites.append(ae)
+        return ackrep_entites, onto_entites
 
     def wrap_onto_entity(self, onto_nty):
         """
@@ -295,13 +330,14 @@ class ACKREP_OntologyManager(object):
         :return:            template-compatible representation
         """
 
+        ae, oe = None, None
         if isinstance(onto_nty, self.OM.n.ACKREP_Entity):
             key = onto_nty.has_entity_key
-            res = get_entity(key)
+            ae = get_entity(key)
         else:
-            res = str(onto_nty)
+            oe = str(onto_nty)
 
-        return res
+        return ae, oe
 
 
 def load_repo_to_db(startdir, check_consistency=True):
@@ -461,7 +497,7 @@ def get_entities_with_key(key):
     """
     get all entities in the database that have a specific key
     """
-    entity_types = model_utils.get_entities()
+    entity_types = model_utils.get_entity_types()
     entities_with_key = []
 
     for et in entity_types:
