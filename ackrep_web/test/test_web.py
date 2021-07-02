@@ -14,6 +14,8 @@ else:
     splinter_available = True
 
 from ackrep_core import core
+
+# noinspection PyUnresolvedReferences
 from ipydex import IPS
 
 
@@ -93,7 +95,6 @@ class TestCases2(DjangoTestCase):
 
     def test_sparql_query(self):
 
-        ##!
         url = reverse("search-sparql")
         query = (
             "query=%23+example+query%3A+select+all+possible+tags%0D%0A%0D%0APREFIX+P%3A+"
@@ -103,7 +104,8 @@ class TestCases2(DjangoTestCase):
         )
         response = self.client.get(f"{url}?{query}")
 
-        IPS(print_tb=-1)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "utc_template_name=ackrep_web/search_sparql.html")
 
 
 class TestBugs(DjangoTestCase):
