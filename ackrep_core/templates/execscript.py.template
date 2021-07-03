@@ -22,7 +22,11 @@ sys.path.insert(0, r"{{context.problem_spec_path}}")
 # the ProblemSolution Entity
 sys.path.insert(0, r"{{context.solution_path}}")
 
-# IPS() # uncomment for debugging
+# uncomment for debugging
+# from ipydex import IPS, activate_ips_on_exception
+# activate_ips_on_exception()
+
+# IPS()
 
 # these statements assume standard filenames (`problem.py` and `solution.py`)
 
