@@ -313,15 +313,15 @@ class ACKREP_OntologyManager(object):
         if raw:
             return [], res
 
-        ackrep_entites = []
+        ackrep_entities = []
         onto_entites = []
         for onto_nty in res:
             ae, oe = self.wrap_onto_entity(onto_nty)
             if ae is not None:
-                ackrep_entites.append(ae)
+                ackrep_entities.append(ae)
             if oe is not None:
-                onto_entites.append(ae)
-        return ackrep_entites, onto_entites
+                onto_entites.append(oe)
+        return ackrep_entities, onto_entites
 
     def wrap_onto_entity(self, onto_nty):
         """

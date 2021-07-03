@@ -19,19 +19,22 @@
 </form>
 
 {% if query %}
-    {{ query }}
+<code>
+<pre>
+{{ query }}
+</pre>
+</code>
 {% endif %}
 
+<h3>Resulting ACKREP Entities ({{ackrep_entities|length}}) </h3>
 {% if ackrep_entities %}
-<h3>Result: ACKREP Entities </h3>
     {% for e in ackrep_entities %}
         {% include "ackrep_web/widgets/entity.html" with entity=e c=c display="short" only %}
-
     {% endfor %}
 {% endif %}
 
+<h3>Resulting General Entities from the Ontology ({{onto_entities|length}})</h3>
 {% if onto_entities %}
-<h3>Result: General Entities from the Ontology</h3>
     {% for e in onto_entities %}
         <pre>{{ e }}</pre>
 

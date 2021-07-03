@@ -235,13 +235,13 @@ class SearchSparqlView(View):
         qsrc = context["query"] = request.GET.get("query", example_query)
 
         try:
-            ackrep_entities, onto_entites = core.AOM.run_sparql_query_and_translate_result(qsrc)
+            ackrep_entities, onto_entities = core.AOM.run_sparql_query_and_translate_result(qsrc)
         except Exception as e:
             context["err"] = f"The following error occurred: {str(e)}"
-            ackrep_entities, onto_entites = [], []
+            ackrep_entities, onto_entities = [], []
 
         context["ackrep_entities"] = ackrep_entities
-        context["onto_entites"] = onto_entites
+        context["onto_entities"] = onto_entities
         context["c"] = util.Container()  # this could be used for further options
 
         return TemplateResponse(request, "ackrep_web/search_sparql.html", context)
