@@ -86,7 +86,7 @@ def get_metadata_from_file(path, check_sanity=False):
     :return:
     """
     with open(path) as f:
-        data = yaml.load(f, Loader=yaml.FullLoader)
+        data = yaml.load(f, Loader=yaml.SafeLoader)
 
     # TODO: this check is outdated -> temporarily deactivated
     if check_sanity and not set(required_generic_meta_data.keys()).issubset(data.keys()):

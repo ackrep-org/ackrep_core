@@ -63,7 +63,7 @@ def get_entity(key, hint=None):
     if len(results) == 0:
         msg = f"No entity with key '{key}' could be found. Make sure that the database is in sync with repo."
         # TODO: this should be a 404 Error in the future
-        raise ValueError(msg)
+        raise KeyError(msg)
     elif len(results) > 1:
         msg = f"There have been multiple entities with key '{key}'. "
         raise ValueError(msg)

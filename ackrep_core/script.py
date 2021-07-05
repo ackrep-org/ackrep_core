@@ -19,6 +19,9 @@ def main():
     argparser.add_argument(
         "-cs", "--check-solution", metavar="metadatafile", help="check solution (specified by metadata file)"
     )
+    argparser.add_argument(
+        "--check-all-solutions", help="check all solutions (may take some time)", action="store_true"
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -53,6 +56,8 @@ def main():
     elif args.check_solution:
         metadatapath = args.check_solution
         check_solution(metadatapath)
+    elif args.check_all_solutions:
+        check_all_solutions()
 
     elif args.metadata or args.md:
         if args.md:
@@ -96,13 +101,39 @@ def create_new_entity():
     core.convert_dict_to_yaml(field_values, target_path=path)
 
 
-def check_solution(metadatapath):
-    if not metadatapath.endswith("metadata.yml"):
-        metadatapath = os.path.join(metadatapath, "metadata.yml")
-    solution_meta_data = core.get_metadata_from_file(metadatapath)
+def check_all_solutions():
 
-    key = solution_meta_data["key"]
+    returncodes = []
+    for ps in models.ProblemSolution.objects.all():
+        res = check_solution(key=ps.key, exitflag=False)
+        returncodes.append(res.returncode)
+        print("---")
 
+    return sum(returncodes)
+
+
+# def check_solution(metadatapath=None, key=None, exitflag=True):
+def check_solution(arg0: str, exitflag: bool = True):
+    """
+
+    :param arg0:        either an entity key or the path to the respective metadata.yml
+    :param exitflag:    determine whether the program should exit at the end of this function
+
+    :return:            container of subprocess.run (if exitflag == False)
+    """
+
+    try:
+        entity = core.get_entities_with_key(arg0)[0]
+        key = arg0
+    except KeyError:
+        metadatapath = arg0
+        if not metadatapath.endswith("metadata.yml"):
+            metadatapath = os.path.join(metadatapath, "metadata.yml")
+        solution_meta_data = core.get_metadata_from_file(metadatapath)
+        key = solution_meta_data["key"]
+        entity = core.get_entity(key)
+
+    print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
     res = core.check_solution(key=key)
 
     if res.returncode == 0:
@@ -110,7 +141,10 @@ def check_solution(metadatapath):
     else:
         print(bred("Fail."))
 
-    exit(res.returncode)
+    if exitflag:
+        exit(res.returncode)
+    else:
+        return res
 
 
 def dialoge_entity_type():
