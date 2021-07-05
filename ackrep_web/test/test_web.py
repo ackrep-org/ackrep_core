@@ -224,14 +224,14 @@ class TestUI(LiveServerTestCase):
         status_code = self.get_status_code(b)
         self.assertEqual(status_code, 200)
 
-    def test_update_db_button(self):
+    def test_sparql_search_dialog(self):
         b = self.new_browser()
         url1 = self.local_reverse("landing-page")
         b.visit(url1)
         status_code = self.get_status_code(b)
         self.assertEqual(status_code, 200)
 
-        button = b.find_by_id("btn_submit_update_db")
+        button = b.find_by_id("link_search_sparql")
         button.click()
 
         status_code = self.get_status_code(b)
