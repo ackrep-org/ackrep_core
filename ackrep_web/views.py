@@ -222,7 +222,8 @@ class SearchSparqlView(View):
         context = {}
 
         # PREFIX P: <{OM.iri}>
-        example_query = twdd(f"""
+        example_query = twdd(
+            f"""
         # example query: select all possible tags
 
         PREFIX P: <https://ackrep.org/draft/ocse-prototype01#>
@@ -231,7 +232,8 @@ class SearchSparqlView(View):
           ?entity rdf:type ?type.
           ?type rdfs:subClassOf* P:OCSE_Entity.
         }}
-        """)
+        """
+        )
         qsrc = context["query"] = request.GET.get("query", example_query)
 
         try:

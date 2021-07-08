@@ -117,7 +117,7 @@ def resolve_keys(entity):
                 msg = f"There is a problem with the field {field.name} in entity {entity.key}."
                 raise InconsistentMetaDataError(msg)
 
-            refkeylist = yaml.load(refkeylist_str, Loader=yaml.FullLoader)
+            refkeylist = yaml.load(refkeylist_str, Loader=yaml.SafeLoader)
             if refkeylist in (None, [], [""]):
                 refkeylist = []
 

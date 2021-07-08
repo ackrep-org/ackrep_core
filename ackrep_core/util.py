@@ -83,6 +83,7 @@ def smart_parse(obj):
     else:
         return yaml.load(obj, Loader=yaml.SafeLoader)
 
+
 # based on
 # source: https://stackoverflow.com/a/46928226/333403
 # by chidimo
