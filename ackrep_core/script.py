@@ -105,7 +105,7 @@ def check_all_solutions():
 
     returncodes = []
     for ps in models.ProblemSolution.objects.all():
-        res = check_solution(key=ps.key, exitflag=False)
+        res = check_solution(ps.key, exitflag=False)
         returncodes.append(res.returncode)
         print("---")
 
@@ -125,13 +125,15 @@ def check_solution(arg0: str, exitflag: bool = True):
     try:
         entity = core.get_entities_with_key(arg0)[0]
         key = arg0
-    except KeyError:
+    except IndexError:
         metadatapath = arg0
         if not metadatapath.endswith("metadata.yml"):
             metadatapath = os.path.join(metadatapath, "metadata.yml")
         solution_meta_data = core.get_metadata_from_file(metadatapath)
         key = solution_meta_data["key"]
         entity = core.get_entity(key)
+
+    assert isinstance(entity, models.ProblemSolution)
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
     res = core.check_solution(key=key)

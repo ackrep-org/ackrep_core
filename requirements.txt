@@ -12,3 +12,4 @@ yamlpyowl>=0.2.1
 control
 # the following need additional system packages (see dockerfile): gfortran libblas-dev liblapack-dev
 slycot
+casadi
