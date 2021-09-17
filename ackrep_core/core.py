@@ -239,7 +239,7 @@ class ACKREP_OntologyManager(object):
             else:
                 print("unknown entity type:", e)
 
-        if len(self.OM.n.ACKREP_ProblemSolution.instances()) == 0:
+        if len(list(self.OM.n.ACKREP_ProblemSolution.instances())) == 0:
             msg = "Instances of ACKREP_ProblemSolution are missing. This is unexpected."
             IPS()
             raise ValueError(msg)

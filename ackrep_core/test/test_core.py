@@ -170,7 +170,7 @@ class TestCases2(DjangoTestCase):
         # check the ontology manager
         OM = core.AOM.OM
         self.assertFalse(OM is None)
-        self.assertTrue(len(OM.n.ACKREP_ProblemSpecification.instances()) > 0)
+        self.assertTrue(len(list(OM.n.ACKREP_ProblemSpecification.instances())) > 0)
 
         qsrc = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_entity_key "4ZZ9J".}}'
         res = OM.make_query(qsrc)
