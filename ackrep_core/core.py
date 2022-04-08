@@ -461,7 +461,7 @@ def get_solution_data_files(sol_base_path, endswith_str=None, create_media_links
 
 def get_system_model_data_files(system_model_base_path, endswith_str=None, create_media_links=False):
     """
-    walk through <base_path>/_solution_data and return the path of all matching files
+    walk through <base_path> and return the path of all matching files
 
     :param sol_base_path:
     :param endswith_str:
@@ -633,9 +633,10 @@ def check_solution(key):
 
 def check_system_model(key):
     """
-
+    run the script that executes the simulation
+    similar to check_solution
     :param key:                 entity key of the SystemModel
-    :return:
+    :return:    result of evaluation of simulation
     """
 
     system_model_entity = get_entity(key)
@@ -643,7 +644,7 @@ def check_system_model(key):
 
     assert isinstance(system_model_entity, models.SystemModel)
 
-    # get path for solution
+    # get path for system_model
     system_model_file = system_model_entity.system_model_file
 
     if system_model_file != "system_model.py":
@@ -659,32 +660,6 @@ def check_system_model(key):
 
     # noinspection PyUnresolvedReferences
     assert isinstance(system_model_entity.oc, ObjectContainer)
-
-    # assert len(sol_entity.oc.solved_problem_list) >= 1
-
-    # if sol_entity.oc.solved_problem_list == 0:
-    #     msg = f"{sol_entity}: Expected at least one solved problem."
-    #     raise InconsistentMetaDataError(msg)
-
-    # elif sol_entity.oc.solved_problem_list == 1:
-    #     problem_spec = sol_entity.oc.solved_problem_list[0]
-    # else:
-    #     print("Applying a solution to multiple problems is not yet supported. Taking the last one.")
-    #     problem_spec = sol_entity.oc.solved_problem_list[-1]
-
-    # if problem_spec.problem_file != "problem.py":
-    #     msg = "Arbitrary filename will be supported in the future"
-    #     raise NotImplementedError(msg)
-
-    # TODO: handle the filename (see also template)
-    # c.problem_spec_path = os.path.join(root_path, problem_spec.base_path)
-
-    # list of the build_paths
-    # c.method_package_list = []
-    # for mp in sol_entity.oc.method_package_list:
-    #     full_build_path = make_method_build(mp, accept_existing=True)
-    #     assert os.path.isdir(full_build_path)
-    #     c.method_package_list.append(full_build_path)
 
     context = dict(c.item_list())
 
