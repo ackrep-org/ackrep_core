@@ -469,7 +469,7 @@ def get_system_model_data_files(system_model_base_path, endswith_str=None, creat
     :return:
     """
 
-    startdir = os.path.join(root_path, system_model_base_path)
+    startdir = os.path.join(root_path, system_model_base_path, "_system_model_data")
 
     if not os.path.isdir(startdir):
         return []
