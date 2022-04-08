@@ -228,7 +228,6 @@ class SystemModel(GenericEntity):
     system_model_file = models.CharField(max_length=500, null=True, blank=True, default="system_model.py")
     simulation_file = models.CharField(max_length=500, null=True, blank=True, default="simulation.py")
 
-    # TODO: implement and test this
     def related_problems_list(self):
         all_problems = ProblemSpecification.objects.all()
 
@@ -249,7 +248,6 @@ class ProblemSpecification(GenericEntity):
         null=True,
         blank=True,
     )
-    # TODO: implement and test this
     related_system_models_list = EntityKeyListField(
         max_length=500,
         null=True,
