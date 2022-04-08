@@ -220,11 +220,6 @@ class GenericEntity(BaseModel):
 
 class SystemModel(GenericEntity):
     _type = "system_model"
-    # problemclass_list = EntityKeyListField(
-    #     max_length=500,
-    #     null=True,
-    #     blank=True,
-    # )
     estimated_runtime = models.CharField(
         max_length=500,
         null=True,
@@ -234,22 +229,28 @@ class SystemModel(GenericEntity):
     simulation_file = models.CharField(max_length=500, null=True, blank=True, default="simulation.py")
 
     # TODO: implement and test this
-    # def related_problems_list(self):
-    #     all_problems = ProblemSpecification.objects.all()
+    def related_problems_list(self):
+        all_problems = ProblemSpecification.objects.all()
 
-    #     related_problems = []
-    #     for problem in all_problems:
-    #         model_utils.resolve_keys(problem)
-    #         related_problem_keys = [prob.key for prob in problem.oc.related_system_model_list]
-    #         if self.key in related_problem_keys:
-    #             related_problems.append(problem)
+        related_problems = []
+        for problem in all_problems:
+            model_utils.resolve_keys(problem)
+            related_problem_keys = [model.key for model in problem.oc.related_system_models_list]
+            if self.key in related_problem_keys:
+                related_problems.append(problem)
 
-    #     return related_problems
+        return related_problems
 
 
 class ProblemSpecification(GenericEntity):
     _type = "problem_specification"
     problemclass_list = EntityKeyListField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    # TODO: implement and test this
+    related_system_models_list = EntityKeyListField(
         max_length=500,
         null=True,
         blank=True,

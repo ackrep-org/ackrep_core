@@ -60,10 +60,22 @@
         <b>Available solutions:</b>
         {% for e in entity.available_solutions_list %}
             {# TODO: add more information in mouseover #}
-            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a> &nbsp; |  &nbsp;
+            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a> &nbsp; |  &nbsp;
+        {% endfor %}
+        <br>
+        <b>Related System Models:</b>
+        {% for e in entity.oc.related_system_model_list %}
+            {# TODO: add more information in mouseover #}
+            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a> &nbsp; |  &nbsp;
         {% endfor %}
         <br>
     {% elif entity.type == "system_model" %}
+        <b>Related Problems:</b>
+        {% for e in entity.related_problems_list %}
+            {# TODO: add more information in mouseover #}
+            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a> &nbsp; |  &nbsp;
+        {% endfor %}
+        <br>
         {% if c.view_type == "detail" %}
         <!--utc_entity_detial -->
             <br>
