@@ -22,6 +22,9 @@ def main():
     argparser.add_argument(
         "--check-all-solutions", help="check all solutions (may take some time)", action="store_true"
     )
+    argparser.add_argument(
+        "-csm", "--check-system-model", metavar="metadatafile", help="check system_model (specified by metadata file)"
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -58,6 +61,9 @@ def main():
         check_solution(metadatapath)
     elif args.check_all_solutions:
         check_all_solutions()
+    elif args.check_system_model:
+        metadatapath = args.check_system_model
+        check_system_model(metadatapath)
 
     elif args.metadata or args.md:
         if args.md:
@@ -137,6 +143,42 @@ def check_solution(arg0: str, exitflag: bool = True):
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
     res = core.check_solution(key=key)
+
+    if res.returncode == 0:
+        print(bgreen("Success."))
+    else:
+        print(bred("Fail."))
+
+    if exitflag:
+        exit(res.returncode)
+    else:
+        return res
+
+
+def check_system_model(arg0: str, exitflag: bool = True):
+    """
+
+    :param arg0:        either an entity key or the path to the respective metadata.yml
+    :param exitflag:    determine whether the program should exit at the end of this function
+
+    :return:            container of subprocess.run (if exitflag == False)
+    """
+
+    try:
+        entity = core.get_entities_with_key(arg0)[0]
+        key = arg0
+    except IndexError:
+        metadatapath = arg0
+        if not metadatapath.endswith("metadata.yml"):
+            metadatapath = os.path.join(metadatapath, "metadata.yml")
+        system_model_meta_data = core.get_metadata_from_file(metadatapath)
+        key = system_model_meta_data["key"]
+        entity = core.get_entity(key)
+
+    assert isinstance(entity, models.SystemModel)
+    # IPS()
+    print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
+    res = core.check_system_model(key=key)
 
     if res.returncode == 0:
         print(bgreen("Success."))

@@ -631,6 +631,86 @@ def check_solution(key):
     return res
 
 
+def check_system_model(key):
+    """
+
+    :param key:                 entity key of the SystemModel
+    :return:
+    """
+
+    system_model_entity = get_entity(key)
+    resolve_keys(system_model_entity)
+
+    assert isinstance(system_model_entity, models.SystemModel)
+
+    # get path for solution
+    system_model_file = system_model_entity.system_model_file
+
+    if system_model_file != "system_model.py":
+        msg = "Arbitrary filename will be supported in the future"
+        raise NotImplementedError(msg)
+
+    c = Container()  # this will be our easily accessible context dict for the template
+
+    # TODO: handle the filename (see also template)
+    c.system_model_path = os.path.join(root_path, system_model_entity.base_path)
+
+    c.ackrep_core_path = core_pkg_path
+
+    # noinspection PyUnresolvedReferences
+    assert isinstance(system_model_entity.oc, ObjectContainer)
+
+    # assert len(sol_entity.oc.solved_problem_list) >= 1
+
+    # if sol_entity.oc.solved_problem_list == 0:
+    #     msg = f"{sol_entity}: Expected at least one solved problem."
+    #     raise InconsistentMetaDataError(msg)
+
+    # elif sol_entity.oc.solved_problem_list == 1:
+    #     problem_spec = sol_entity.oc.solved_problem_list[0]
+    # else:
+    #     print("Applying a solution to multiple problems is not yet supported. Taking the last one.")
+    #     problem_spec = sol_entity.oc.solved_problem_list[-1]
+
+    # if problem_spec.problem_file != "problem.py":
+    #     msg = "Arbitrary filename will be supported in the future"
+    #     raise NotImplementedError(msg)
+
+    # TODO: handle the filename (see also template)
+    # c.problem_spec_path = os.path.join(root_path, problem_spec.base_path)
+
+    # list of the build_paths
+    # c.method_package_list = []
+    # for mp in sol_entity.oc.method_package_list:
+    #     full_build_path = make_method_build(mp, accept_existing=True)
+    #     assert os.path.isdir(full_build_path)
+    #     c.method_package_list.append(full_build_path)
+
+    context = dict(c.item_list())
+
+    print("  ... Creating exec-script ... ")
+
+    scriptname = "execscript.py"
+
+    assert not system_model_entity.base_path.startswith(os.path.sep)
+
+    # determine whether the entity comes from ackrep_data or ackrep_data_for_unittests ore ackrep_data_import
+    data_repo_path = pathlib.Path(system_model_entity.base_path).parts[0]
+    scriptpath = os.path.join(root_path, data_repo_path, scriptname)
+    render_template("templates/execscript_system_model.py.template", context, target_path=scriptpath)
+
+    print(f"  ... running exec-script {scriptpath} ... ")
+
+    # TODO: plug in containerization here:
+    # Note: this hangs on any interactive element inside the script (such as IPS)
+    res = subprocess.run(["python", scriptpath], capture_output=True)
+    res.exited = res.returncode
+    res.stdout = res.stdout.decode("utf8")
+    res.stderr = res.stderr.decode("utf8")
+
+    return res
+
+
 def clone_external_data_repo(url, mr_key):
     """Clone git repository from url into external_repos/[MERGE_REQUEST_KEY], return path"""
 
