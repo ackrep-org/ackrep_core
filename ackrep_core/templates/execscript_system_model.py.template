@@ -1,0 +1,45 @@
+{# This file is the template for what will become an executed python script.#}
+
+# {{context.warning}}
+
+import sys
+
+# ackrep_core path
+sys.path.insert(0, r"{{context.ackrep_core_path}}")
+
+import ackrep_core
+
+from ipydex import IPS
+
+
+# the SystemModel Entity
+sys.path.insert(0, r"{{context.system_model_path}}")
+
+
+# uncomment for debugging
+# from ipydex import IPS, activate_ips_on_exception, TracerFactory
+# activate_ips_on_exception()
+# activate_trace = TracerFactory()
+# activate_trace()
+
+# IPS()
+
+# these statements assume standard filenames (`system_model.py`, `simulate.py`)
+
+import system_model
+import simulation
+
+# perform the simulation
+simulation_data = simulation.simulate()
+
+# evaluate the simulation (-> ResultContainer)
+rc = simulation.evaluate_simulation(simulation_data)
+
+print(rc.success)
+
+if rc.success:
+    # returncode 0 means: no errors (general convention)
+    exit(0)
+else:
+    # returncode 1 means: wrong result (our convention)
+    exit(1)
