@@ -254,3 +254,45 @@ class NotYetImplementedView(View):
         context = {}
 
         return TemplateResponse(request, "ackrep_web/not_yet_implemented.html", context)
+
+
+class SimulateSystemModelView(View):
+    # noinspection PyMethodMayBeStatic
+    def get(self, request, key):
+
+        try:
+            model_entity = core.get_entity(key)
+        except ValueError as ve:
+            raise Http404(ve)
+
+        # TODO: spawn a new container and shown some status updates while the user is waiting
+
+        core.resolve_keys(model_entity)
+
+        c = core.Container()
+        ts1 = timezone.now()
+        cs_result = core.check_system_model(key)
+        c.diff_time_str = util.smooth_timedelta(ts1)
+
+        c.entity = model_entity
+        c.view_type = "check-system_model"
+        c.view_type_title = "Simulation for:"
+        c.cs_result = cs_result
+
+        c.image_list = core.get_system_model_data_files(model_entity.base_path, endswith_str=".png", create_media_links=True)
+        c.pdf_list = core.get_system_model_data_files(model_entity.base_path, endswith_str=".pdf", create_media_links=True)
+        # IPS()
+        if cs_result.returncode == 0:
+            c.cs_result_css_class = "cs_success"
+            c.cs_verbal_result = "Success"
+            # c.debug = cs_result
+        else:
+            c.cs_result_css_class = "cs_fail"
+            c.cs_verbal_result = "Fail"
+            c.debug = cs_result
+
+        context = {"c": c}
+
+        # create an object container (entity.oc) where for each string-key the real object is available
+
+        return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
