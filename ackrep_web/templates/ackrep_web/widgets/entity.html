@@ -13,52 +13,82 @@
     <b>Created:</b> {{entity.creation_date}}<br>
 
 {#--------------------------------------------------------------------------------------------------------------------#}
-{% if entity.type == "problem_solution"%}
-    <b>Solved Problems:</b>
-    {% for e in entity.oc.solved_problem_list %}
-    {# TODO: add more information in mouseover #}
-    <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a> &nbsp; |  &nbsp;
-    {% endfor %}
-    <br>
-    <b>Used Methods:</b>
-    {% for e in entity.oc.method_package_list %}
-    {# TODO: add more information in mouseover #}
-    <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a>
-    {% endfor %}
+    {% if entity.type == "problem_solution"%}
+        <b>Solved Problems:</b>
+        {% for e in entity.oc.solved_problem_list %}
+            {# TODO: add more information in mouseover #}
+            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a> &nbsp; |  &nbsp;
+        {% endfor %}
+        <br>
+        <b>Used Methods:</b>
+        {% for e in entity.oc.method_package_list %}
+            {# TODO: add more information in mouseover #}
+            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a>
+        {% endfor %}
 
-    {% if c.view_type == "detail" %}
-<!--utc_entity_detial -->
-    <br>
-    <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
-    <br>
-    <a href="{% url 'check-solution' entity.key %}">check this solution</a> (this might take some time)<br>
-    {% elif c.view_type == "check-solution"%}
-<!--utc_check_solution -->
-    <br>
-    <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
-    <b>Result:</b> <span class="cs_result {{c.cs_result_css_class}}">{{c.cs_verbal_result}}</span><br>
-        {% if c.image_list %}
-        <b>Plot:</b><br>
-        <img src="{{c.image_list.0}}"><!--utc_img_url:<{{c.image_list.0}}> --><br>
+        {% if c.view_type == "detail" %}
+    <!--utc_entity_detial -->
+            <br>
+            <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
+            <br>
+            <a href="{% url 'check-solution' entity.key %}">check this solution</a> (this might take some time)<br>
+        {% elif c.view_type == "check-solution"%}
+    <!--utc_check_solution -->
+            <br>
+            <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
+            <b>Result:</b> <span class="cs_result {{c.cs_result_css_class}}">{{c.cs_verbal_result}}</span><br>
+            {% if c.image_list %}
+                <b>Plot:</b><br>
 
-        {% endif %}
-        {% if c.debug %}
-        <b>Debug:</b>
-        <div class="debug_output">
-        {{c.debug}}
-        </div>
-        {% endif %}
-    <b>Output:</b><br>
-    <pre>{{c.cs_result.stdout}}</pre>
-    {% endif %} {#viewtype#}
-{% elif entity.type == "problem_specification" %}
-    <b>Available solutions:</b>
-    {% for e in entity.available_solutions_list %}
-    {# TODO: add more information in mouseover #}
-    <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a> &nbsp; |  &nbsp;
-    {% endfor %}
-    <br>
-{% endif %} {#entity.type#}
+                <!-- <img src="{{c.image_list.0}}">utc_img_url:<{{c.image_list.0}}><br> -->
+
+                {% for image in c.image_list %}
+                <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
+                {% endfor %}
+            {% endif %
+
+            {% if c.debug %}
+                <b>Debug:</b>
+                <div class="debug_output">
+                {{c.debug}}
+                </div>
+            {% endif %}
+            <b>Output:</b><br>
+            <pre>{{c.cs_result.stdout}}</pre>
+        {% endif %} {#viewtype#}
+    {% elif entity.type == "problem_specification" %}
+        <b>Available solutions:</b>
+        {% for e in entity.available_solutions_list %}
+            {# TODO: add more information in mouseover #}
+            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.key}}</a> &nbsp; |  &nbsp;
+        {% endfor %}
+        <br>
+    {% elif entity.type == "system_model" %}
+        {% if c.view_type == "detail" %}
+        <!--utc_entity_detial -->
+            <br>
+            <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
+            <br>
+            <a href="{% url 'check-system_model' entity.key %}">simulate this model</a> (this might take some time)<br>
+        {% elif c.view_type == "check-system_model"%}
+        <!--utc_check_system_model -->
+            {% if c.pdf_list %}  
+                <b>Extensive Material:</b><br>
+                {% for pdf in c.pdf_list %}
+                <!-- <embed src="{{pdf}}", width="700px" height="970px">utc_img_url:<{{pdf}}><br> -->
+                <a href="{{pdf}}">Download pdf</a><br>
+                {% endfor %}
+            {% endif %}
+            {% if c.image_list %}
+                <b>Plot:</b><br>
+                {% for image in c.image_list %}
+                    <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
+                {% endfor %}
+            {% endif %}
+            <b>Output:</b><br>
+            <pre>{{c.cs_result.stdout}}</pre>
+        {% endif %} {#viewtype#}
+    {% endif %} {#entity.type#}
 {#--------------------------------------------------------------------------------------------------------------------#}
 
 
