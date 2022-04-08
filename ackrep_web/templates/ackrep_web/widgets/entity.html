@@ -64,7 +64,7 @@
         {% endfor %}
         <br>
         <b>Related System Models:</b>
-        {% for e in entity.oc.related_system_model_list %}
+        {% for e in entity.oc.related_system_models_list %}
             {# TODO: add more information in mouseover #}
             <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a> &nbsp; |  &nbsp;
         {% endfor %}
