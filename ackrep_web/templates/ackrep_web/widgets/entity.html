@@ -47,7 +47,7 @@
                 {% endfor %}
             {% endif %}
 
-            {% if c.debug %}
+            {% if c.debug %} {# TODO: take value from settings #}
                 <b>Debug:</b>
                 <div class="debug_output">
                 {{c.debug}}

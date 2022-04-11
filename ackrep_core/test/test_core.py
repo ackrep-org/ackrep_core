@@ -129,7 +129,6 @@ class TestCases2(DjangoTestCase):
 
         self.assertEqual(res.returncode, 0)
 
-    @skipUnless(os.environ.get("DJANGO_TESTS_INCLUDE_SLOW") == "True", "skipping slow test. Run with --include-slow")
     def test_check_system_model(self):
 
         # first: run directly
