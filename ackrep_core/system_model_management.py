@@ -5,9 +5,12 @@ Created on Wed Jun  9 13:33:34 2021
 @author: Jonathan Rockstroh
 """
 
+import importlib
 import sympy as sp
 import warnings
 import abc
+import os
+from . import core
 
 
 class GenericModel:
@@ -310,3 +313,55 @@ class GenericModel:
             return
         self.pp_subs_list = list(self.pp_dict.items())
     
+
+### Parameter fetching and tex-ing ###
+
+def update_parameter_tex(key):
+
+    # core.resolve_keys(key)
+    system_model_entity = core.model_utils.get_entity("UXMFA")
+    path = system_model_entity.base_path
+    abs_path = os.path.dirname(os.path.abspath(__file__))
+    mod_name = os.path.join("..", path, "parameters.py")
+    print(mod_name)
+    # a = importlib.util.find_spec(mod_name)
+    # from ipydex import IPS
+    # IPS()
+    importlib.import_module(mod_name, package="ackrep_core")
+    from ...ackrep_data.system_models.lorenz_system import parameters
+
+    # ------ CREATE RAMAINING PART OF THE LATEX TABULAR AND WRITE IT TO FILE
+    # Define "Symbol" column
+    pp_dict_key_list = list(pp_dict.keys())
+    p_symbols = [sp.latex(pp_dict_key_list[i], symbol_names=latex_names) 
+                 for i in range(len(pp_dict))]
+    # set cells in math-mode
+    for i in range(len(p_symbols)):
+        p_symbols[i] = "$" + p_symbols[i] + "$"
+    
+    # Define "Value" column
+    p_values = [sp.latex(p_sf) for p_sf in pp_sf]
+    # set cells in math-mode
+    for i in range(len(p_values)):
+        p_values[i] = "$" + p_values[i] + "$"
+    
+    # Create list, which contains the content of the table body
+    table_body_list = np.array([*start_columns_list, p_symbols, p_values, 
+                                *end_columns_list])
+    # Convert list of column entries to list of row entries
+    table = table_body_list.transpose()
+    
+    # Create string which contains the latex-code of the tabular
+    tex = tab.tabulate(table, tabular_header, tablefmt = 'latex_raw', 
+                       colalign = col_alignment)
+    
+    # Change Directory to the Folder of the Model. 
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    parent2_cwd = os.path.dirname(os.path.dirname(cwd))
+    #TODO: path
+    path_base = os.path.join(parent2_cwd, "01_Models", model_name) 
+    os.chdir(path_base)
+    # Write tabular to Parameter File.
+    file = open("parameters.tex", 'w')
+    file.write(tex)
+    file.close()
