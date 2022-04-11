@@ -3,6 +3,8 @@ import argparse
 
 from ipydex import IPS, activate_ips_on_exception
 
+from ackrep_core import system_model_management
+
 activate_ips_on_exception()
 
 from . import core, models
@@ -25,6 +27,9 @@ def main():
     argparser.add_argument(
         "-csm", "--check-system-model", metavar="metadatafile", help="check system_model (specified by metadata file)"
     )
+    argparser.add_argument(
+        "--update-latex-parameters", metavar="metadatafile", help="update parameters (specified by metadata file)"
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -34,6 +39,7 @@ def main():
     argparser.add_argument("--dd", help="start interactive IPython shell for debugging", action="store_true")
     argparser.add_argument("--md", help="shortcut for `-m metadata.yml`", action="store_true")
     argparser.add_argument("-m", "--metadata", help="process metadata in yaml syntax (.yml file). ")
+    argparser.add_argument("--show-debug", help="set exitflags false in order to see underlying debug outputs", action="store_true")
 
     args = argparser.parse_args()
 
@@ -63,8 +69,11 @@ def main():
         check_all_solutions()
     elif args.check_system_model:
         metadatapath = args.check_system_model
-        check_system_model(metadatapath)
-
+        exitflag = not args.show_debug
+        check_system_model(metadatapath, exitflag=exitflag)
+    elif args.update_latex_parameters:
+        metadatapath = args.update_latex_parameters
+        update_latex_parameters(metadatapath)
     elif args.metadata or args.md:
         if args.md:
             args.metadata = "metadata.yml"
@@ -179,7 +188,6 @@ def check_system_model(arg0: str, exitflag: bool = True):
     # IPS()
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
     res = core.check_system_model(key=key)
-
     if res.returncode == 0:
         print(bgreen("Success."))
     else:
@@ -190,6 +198,38 @@ def check_system_model(arg0: str, exitflag: bool = True):
     else:
         return res
 
+def update_latex_parameters(arg0: str, exitflag: bool = True):
+    """
+
+    :param arg0:        either an entity key or the path to the respective metadata.yml
+    :param exitflag:    determine whether the program should exit at the end of this function
+
+    :return:            container of subprocess.run (if exitflag == False)
+    """
+
+    try:
+        entity = core.get_entities_with_key(arg0)[0]
+        key = arg0
+    except IndexError:
+        metadatapath = arg0
+        if not metadatapath.endswith("metadata.yml"):
+            metadatapath = os.path.join(metadatapath, "metadata.yml")
+        system_model_meta_data = core.get_metadata_from_file(metadatapath)
+        key = system_model_meta_data["key"]
+        entity = core.get_entity(key)
+
+    assert isinstance(entity, models.SystemModel)
+    # IPS()
+    res = system_model_management.update_parameter_tex(key=key)
+    if res.returncode == 0:
+        print(bgreen("Success."))
+    else:
+        print(bred("Fail."))
+
+    if exitflag:
+        exit(res.returncode)
+    else:
+        return res
 
 def dialoge_entity_type():
     entities = models.get_entities()
