@@ -682,7 +682,9 @@ def check_system_model(key):
     res.exited = res.returncode
     res.stdout = res.stdout.decode("utf8")
     res.stderr = res.stderr.decode("utf8")
-
+    if res.returncode != 0:
+        print("Error:", res.stderr)
+    
     return res
 
 
