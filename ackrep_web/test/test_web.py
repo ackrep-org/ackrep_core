@@ -93,6 +93,22 @@ class TestCases2(DjangoTestCase):
 
         # TODO test that this url returns a file
 
+    def test_check_system_model(self):
+        url = reverse("check-system_model", kwargs={"key": "UXMFA"})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, "utc_entity_full")
+        self.assertContains(response, "utc_check_system_model")
+        self.assertContains(response, "utc_img_url")
+
+        regex = re.compile("utc_img_url:<(.*?)>")
+        img_url = regex.findall(response.content.decode("utf8"))
+
+        response = self.client.get(img_url)
+
+        # TODO test that this url returns a file
+
     def test_sparql_query(self):
 
         url = reverse("search-sparql")

@@ -129,6 +129,25 @@ class TestCases2(DjangoTestCase):
 
         self.assertEqual(res.returncode, 0)
 
+    @skipUnless(os.environ.get("DJANGO_TESTS_INCLUDE_SLOW") == "True", "skipping slow test. Run with --include-slow")
+    def test_check_system_model(self):
+
+        # first: run directly
+
+        res = core.check_system_model("UXMFA")
+        self.assertEqual(res.returncode, 0)
+
+        # second: run via commandline
+        os.chdir(ackrep_data_test_repo_path)
+
+        # this assumes the acrep script to be available in $PATH
+        res = subprocess.run(["ackrep", "-csm", "UXMFA"], capture_output=True)
+        res.exited = res.returncode
+        res.stdout = utf8decode(res.stdout)
+        res.stderr = utf8decode(res.stderr)
+
+        self.assertEqual(res.returncode, 0)
+
     def test_check_key(self):
         res = subprocess.run(["ackrep", "--key"], capture_output=True)
         self.assertEqual(res.returncode, 0)
@@ -152,6 +171,24 @@ class TestCases2(DjangoTestCase):
 
         self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
 
+    def test_get_system_model_data_files(self):
+        res = core.check_system_model("UXMFA")
+        self.assertEqual(res.returncode, 0, msg=utf8decode(res.stderr))
+        system_model_entity = core.model_utils.get_entity("UXMFA")
+
+        all_files = core.get_system_model_data_files(system_model_entity.base_path)
+        png_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".png")
+        txt_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".pdf")
+
+        self.assertEqual(len(all_files), 4)
+        self.assertEqual(len(png_files), 1)
+        self.assertEqual(len(txt_files), 1)
+
+        plot_file_path = png_files[0]
+        self.assertTrue(plot_file_path.endswith("plot.png"))
+
+        self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
+
     def test_get_available_solutions(self):
         problem_spec = core.model_utils.get_entity("4ZZ9J")
         problem_sol1 = core.model_utils.get_entity("UKJZI")
@@ -159,6 +196,14 @@ class TestCases2(DjangoTestCase):
         res = problem_spec.available_solutions_list()
 
         self.assertEqual(res, [problem_sol1])
+
+    def test_get_related_problems(self):
+        system_model = core.model_utils.get_entity("UXMFA")
+        problem_spec = core.model_utils.get_entity("S2V8V")
+
+        res = system_model.related_problems_list()
+
+        self.assertEqual(res, [problem_spec])
 
     def test_entity_tag_list(self):
         e = core.model_utils.all_entities()[0]
