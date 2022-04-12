@@ -323,20 +323,18 @@ class GenericModel:
 ### Parameter fetching and tex-ing ###
 
 def update_parameter_tex(key):
-    sys.path.insert(0, root_path)
-    
-    system_model_entity = core.model_utils.get_entity(key)
-    base_path = system_model_entity.base_path
-    mod_path = os.path.join(base_path, "parameters")
-    mod_path = ".".join(mod_path.split("\ "[0]))
+    """search for parameter file of system_model key
+    update tex files and pdf w.r.t. parameters.py
+    delete auxiliary files
+    """
+    parameters = import_parameters(key)
 
-    parameters = importlib.import_module(mod_path)
 
     # ------ CREATE RAMAINING PART OF THE LATEX TABULAR AND WRITE IT TO FILE
     # Define "Symbol" column
-    pp_dict_key_list = list(parameters.pp_dict.keys())
+    pp_dict_key_list = list(parameters.get_default_parameters().keys())
     p_symbols = [sp.latex(pp_dict_key_list[i], symbol_names=parameters.latex_names) 
-                 for i in range(len(parameters.pp_dict))]
+                 for i in range(len(parameters.get_default_parameters()))]
     # set cells in math-mode
     for i in range(len(p_symbols)):
         p_symbols[i] = "$" + p_symbols[i] + "$"
@@ -360,7 +358,7 @@ def update_parameter_tex(key):
     # Change Directory to the Folder of the Model. 
     cwd = os.path.dirname(os.path.abspath(__file__))
     parent2_cwd = os.path.dirname(os.path.dirname(cwd))
-    path_base = os.path.join(root_path, base_path, "_system_model_data") 
+    path_base = os.path.join(root_path, parameters.base_path, "_system_model_data") 
     os.chdir(path_base)
     # Write tabular to Parameter File.
     file = open("parameters.tex", 'w')
@@ -370,9 +368,8 @@ def update_parameter_tex(key):
     # delete aux files created by latex
     # TODO: better solution fpr sleep, right now this is done since aux files take some time to be generated
     import time
-    time.sleep(2)
-    all_files = core.get_system_model_data_files(system_model_entity.base_path)
-    print(all_files)
+    time.sleep(3)
+    all_files = core.get_system_model_data_files(parameters.base_path)
     allowed_list = [".tex", ".png", ".pdf"]
 
     for file in all_files:
@@ -381,13 +378,32 @@ def update_parameter_tex(key):
 
 
 def import_parameters(key):
+    """import parameters.py selected be given key and create related get function for system_model
+
+    Args:
+        key: key of system_model
+
+    Returns:
+        module: parameters
+    """
     sys.path.insert(0, root_path)
     
     system_model_entity = core.model_utils.get_entity(key)
     base_path = system_model_entity.base_path
     mod_path = os.path.join(base_path, "parameters")
-    mod_path = ".".join(mod_path.split("\ "[0]))
+    mod_path = ".".join(mod_path.split(os.path.sep))
 
     parameters = importlib.import_module(mod_path)
+    parameters.base_path = base_path
+
+    pp_nv = list(sp.Matrix(parameters.pp_sf).subs(parameters.pp_subs_list))
+    pp_dict = {parameters.pp_symb[i]:pp_nv[i] for i in range(len(parameters.pp_symb))}
+
+    def get_default_parameters():
+        return pp_dict
+    def get_symbolic_parameters():
+        return parameters.pp_symb
+    parameters.get_default_parameters = get_default_parameters
+    parameters.get_symbolic_parameters = get_symbolic_parameters
 
     return parameters
