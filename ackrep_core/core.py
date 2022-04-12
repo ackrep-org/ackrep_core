@@ -1,6 +1,6 @@
 import secrets
 import yaml
-import os
+import os, sys
 import pathlib
 import time
 import subprocess
@@ -627,6 +627,8 @@ def check_solution(key):
     res.exited = res.returncode
     res.stdout = res.stdout.decode("utf8")
     res.stderr = res.stderr.decode("utf8")
+    if res.returncode != 0:
+        print(res.stderr, file=sys.stderr) # print to stderr
 
     return res
 
@@ -683,7 +685,7 @@ def check_system_model(key):
     res.stdout = res.stdout.decode("utf8")
     res.stderr = res.stderr.decode("utf8")
     if res.returncode != 0:
-        print("Error:", res.stderr)
+        print(res.stderr, file=sys.stderr)
     
     return res
 
