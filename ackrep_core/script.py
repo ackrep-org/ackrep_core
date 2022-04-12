@@ -28,7 +28,7 @@ def main():
         "-csm", "--check-system-model", metavar="metadatafile", help="check system_model (specified by metadata file)"
     )
     argparser.add_argument(
-        "--update-latex-parameters", metavar="metadatafile", help="update parameters (specified by metadata file)"
+        "--update-parameter-tex", metavar="metadatafile", help="update parameters (specified by metadata file)"
     )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
@@ -71,9 +71,9 @@ def main():
         metadatapath = args.check_system_model
         exitflag = not args.show_debug
         check_system_model(metadatapath, exitflag=exitflag)
-    elif args.update_latex_parameters:
-        metadatapath = args.update_latex_parameters
-        update_latex_parameters(metadatapath)
+    elif args.update_parameter_tex:
+        metadatapath = args.update_parameter_tex
+        update_parameter_tex(metadatapath)
     elif args.metadata or args.md:
         if args.md:
             args.metadata = "metadata.yml"
@@ -198,7 +198,7 @@ def check_system_model(arg0: str, exitflag: bool = True):
     else:
         return res
 
-def update_latex_parameters(arg0: str, exitflag: bool = True):
+def update_parameter_tex(arg0: str, exitflag: bool = True):
     """
 
     :param arg0:        either an entity key or the path to the respective metadata.yml
@@ -221,15 +221,7 @@ def update_latex_parameters(arg0: str, exitflag: bool = True):
     assert isinstance(entity, models.SystemModel)
     # IPS()
     res = system_model_management.update_parameter_tex(key=key)
-    if res.returncode == 0:
-        print(bgreen("Success."))
-    else:
-        print(bred("Fail."))
-
-    if exitflag:
-        exit(res.returncode)
-    else:
-        return res
+    
 
 def dialoge_entity_type():
     entities = models.get_entities()
