@@ -28,7 +28,7 @@ def main():
         "-csm", "--check-system-model", metavar="metadatafile", help="check system_model (specified by metadata file)"
     )
     argparser.add_argument(
-        "--update-parameter-tex", metavar="metadatafile", help="update parameters (specified by metadata file)"
+        "--update-parameter-tex", metavar="metadatafile", help="update parameters in tex file (entity is specified by metadata file)"
     )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
