@@ -7,10 +7,16 @@ Created on Wed Jun  9 13:33:34 2021
 
 import importlib
 import sympy as sp
+import numpy as np
+import tabulate as tab
 import warnings
 import abc
+import sys 
 import os
+
 from . import core
+from .util import root_path
+
 
 
 class GenericModel:
@@ -317,51 +323,71 @@ class GenericModel:
 ### Parameter fetching and tex-ing ###
 
 def update_parameter_tex(key):
+    sys.path.insert(0, root_path)
+    
+    system_model_entity = core.model_utils.get_entity(key)
+    base_path = system_model_entity.base_path
+    mod_path = os.path.join(base_path, "parameters")
+    mod_path = ".".join(mod_path.split("\ "[0]))
 
-    # core.resolve_keys(key)
-    system_model_entity = core.model_utils.get_entity("UXMFA")
-    path = system_model_entity.base_path
-    abs_path = os.path.dirname(os.path.abspath(__file__))
-    mod_name = os.path.join("..", path, "parameters.py")
-    print(mod_name)
-    # a = importlib.util.find_spec(mod_name)
-    # from ipydex import IPS
-    # IPS()
-    importlib.import_module(mod_name, package="ackrep_core")
-    from ...ackrep_data.system_models.lorenz_system import parameters
+    parameters = importlib.import_module(mod_path)
 
     # ------ CREATE RAMAINING PART OF THE LATEX TABULAR AND WRITE IT TO FILE
     # Define "Symbol" column
-    pp_dict_key_list = list(pp_dict.keys())
-    p_symbols = [sp.latex(pp_dict_key_list[i], symbol_names=latex_names) 
-                 for i in range(len(pp_dict))]
+    pp_dict_key_list = list(parameters.pp_dict.keys())
+    p_symbols = [sp.latex(pp_dict_key_list[i], symbol_names=parameters.latex_names) 
+                 for i in range(len(parameters.pp_dict))]
     # set cells in math-mode
     for i in range(len(p_symbols)):
         p_symbols[i] = "$" + p_symbols[i] + "$"
     
     # Define "Value" column
-    p_values = [sp.latex(p_sf) for p_sf in pp_sf]
+    p_values = [sp.latex(p_sf) for p_sf in parameters.pp_sf]
     # set cells in math-mode
     for i in range(len(p_values)):
         p_values[i] = "$" + p_values[i] + "$"
     
     # Create list, which contains the content of the table body
-    table_body_list = np.array([*start_columns_list, p_symbols, p_values, 
-                                *end_columns_list])
+    table_body_list = np.array([*parameters.start_columns_list, p_symbols, p_values, 
+                                *parameters.end_columns_list])
     # Convert list of column entries to list of row entries
     table = table_body_list.transpose()
     
     # Create string which contains the latex-code of the tabular
-    tex = tab.tabulate(table, tabular_header, tablefmt = 'latex_raw', 
-                       colalign = col_alignment)
+    tex = tab.tabulate(table, parameters.tabular_header, tablefmt = 'latex_raw', 
+                       colalign = parameters.col_alignment)
     
     # Change Directory to the Folder of the Model. 
     cwd = os.path.dirname(os.path.abspath(__file__))
     parent2_cwd = os.path.dirname(os.path.dirname(cwd))
-    #TODO: path
-    path_base = os.path.join(parent2_cwd, "01_Models", model_name) 
+    path_base = os.path.join(root_path, base_path, "_system_model_data") 
     os.chdir(path_base)
     # Write tabular to Parameter File.
     file = open("parameters.tex", 'w')
     file.write(tex)
     file.close()
+    
+    # delete aux files created by latex
+    # TODO: better solution fpr sleep, right now this is done since aux files take some time to be generated
+    import time
+    time.sleep(2)
+    all_files = core.get_system_model_data_files(system_model_entity.base_path)
+    print(all_files)
+    allowed_list = [".tex", ".png", ".pdf"]
+
+    for file in all_files:
+        if file[-4:] not in allowed_list:
+            os.remove(os.path.split(file)[1])
+
+
+def import_parameters(key):
+    sys.path.insert(0, root_path)
+    
+    system_model_entity = core.model_utils.get_entity(key)
+    base_path = system_model_entity.base_path
+    mod_path = os.path.join(base_path, "parameters")
+    mod_path = ".".join(mod_path.split("\ "[0]))
+
+    parameters = importlib.import_module(mod_path)
+
+    return parameters
