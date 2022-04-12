@@ -5,7 +5,7 @@ from unittest import skipUnless
 from django.test import TestCase as DjangoTestCase
 from git import Repo, InvalidGitRepositoryError
 
-from ackrep_core import core
+from ackrep_core import core, system_model_management
 
 from ipydex import IPS  # only for debugging
 
@@ -23,7 +23,7 @@ For more infos see doc/devdoc/README.md.
 
 ackrep_data_test_repo_path = core.data_test_repo_path
 # default_repo_head_hash = "f2a7ca9322334ce65e78daaec11401153048ceb6"  # 2021-04-12 00:45:46
-default_repo_head_hash = "b0a8b18648b611e7690b9af946fa2f7b82d23133"  # 2022-04-12 11:19:10
+default_repo_head_hash = "5651cd38fdc73c721970f5ad30c5ae11d9740c18"  # 2022-04-12 branch for_unittests
 
 
 class TestCases1(DjangoTestCase):
@@ -123,10 +123,12 @@ class TestCases2(DjangoTestCase):
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = subprocess.run(["ackrep", "-cs", "playground/acrobot_solution/metadata.yml"], capture_output=True)
+        res = subprocess.run(["ackrep", "-cs", "problem_solutions/acrobot_swingup_with_pytrajectory/metadata.yml"], capture_output=True)
         res.exited = res.returncode
         res.stdout = utf8decode(res.stdout)
         res.stderr = utf8decode(res.stderr)
+        if res.returncode != 0:
+            print(res.stderr)
 
         self.assertEqual(res.returncode, 0)
 
@@ -145,6 +147,8 @@ class TestCases2(DjangoTestCase):
         res.exited = res.returncode
         res.stdout = utf8decode(res.stdout)
         res.stderr = utf8decode(res.stderr)
+        if res.returncode != 0:
+            print(res.stderr)
 
         self.assertEqual(res.returncode, 0)
 
@@ -268,6 +272,38 @@ class TestCases2(DjangoTestCase):
         ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
         self.assertTrue(len(ae) == 1)
         # IPS(print_tb=-1)
+
+    def test_update_parameter_tex(self):
+        # call directly
+        system_model_management.update_parameter_tex("UXMFA")
+        # check if latex files are leftover
+        self.test_get_system_model_data_files()
+        # call command line
+        res = subprocess.run(["ackrep", "--update-parameter-tex", "UXMFA"], capture_output=True)
+        res.exited = res.returncode
+        res.stdout = utf8decode(res.stdout)
+        res.stderr = utf8decode(res.stderr)
+        if res.returncode != 0:
+            print(res.stderr)
+
+        self.assertEqual(res.returncode, 0)
+        # check if latex files are leftover
+        self.test_get_system_model_data_files()
+
+    
+    def test_parameters_py(self, key="UXMFA"):
+        parameters = system_model_management.import_parameters(key)
+        self.assertTrue(hasattr(parameters, "model_name"))
+        self.assertTrue(hasattr(parameters, "pp_symb"))
+        self.assertTrue(hasattr(parameters, "pp_sf"))
+        self.assertTrue(hasattr(parameters, "pp_subs_list"))
+        self.assertTrue(hasattr(parameters, "latex_names"))
+        self.assertTrue(hasattr(parameters, "tabular_header"))
+        self.assertTrue(hasattr(parameters, "col_alignment"))
+        self.assertTrue(hasattr(parameters, "col_1"))
+        self.assertTrue(hasattr(parameters, "start_columns_list"))
+        self.assertTrue(hasattr(parameters, "end_columns_list"))
+
 
 
 def utf8decode(obj):
