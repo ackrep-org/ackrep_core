@@ -24,7 +24,7 @@ For more infos see doc/devdoc/README.md.
 
 ackrep_data_test_repo_path = core.data_test_repo_path
 # default_repo_head_hash = "f2a7ca9322334ce65e78daaec11401153048ceb6"  # 2021-04-12 00:45:46
-default_repo_head_hash = "5651cd38fdc73c721970f5ad30c5ae11d9740c18"  # 2022-04-12 branch for_unittests
+default_repo_head_hash = "2c8abb9404af59cbe763073ffc37c60fd18cf5a1"  # 2022-04-13 branch for_unittests
 
 
 class TestCases1(DjangoTestCase):
@@ -133,18 +133,18 @@ class TestCases2(DjangoTestCase):
 
         self.assertEqual(res.returncode, 0)
 
-    def test_check_system_model(self):
+    def test_check_system_model(self, key="UXMFA"):
 
         # first: run directly
 
-        res = core.check_system_model("UXMFA")
+        res = core.check_system_model(key)
         self.assertEqual(res.returncode, 0)
 
         # second: run via commandline
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = subprocess.run(["ackrep", "-csm", "UXMFA"], capture_output=True)
+        res = subprocess.run(["ackrep", "-csm", key], capture_output=True)
         res.exited = res.returncode
         res.stdout = utf8decode(res.stdout)
         res.stderr = utf8decode(res.stderr)
@@ -176,18 +176,20 @@ class TestCases2(DjangoTestCase):
 
         self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
 
-    def test_get_system_model_data_files(self):
-        res = core.check_system_model("UXMFA")
+    def test_get_system_model_data_files(self, key="UXMFA"):
+        res = core.check_system_model(key)
         self.assertEqual(res.returncode, 0, msg=utf8decode(res.stderr))
-        system_model_entity = core.model_utils.get_entity("UXMFA")
+        system_model_entity = core.model_utils.get_entity(key)
 
         all_files = core.get_system_model_data_files(system_model_entity.base_path)
         png_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".png")
         pdf_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".pdf")
+        tex_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".tex")
 
         self.assertEqual(len(all_files), 4)
         self.assertEqual(len(png_files), 1)
         self.assertEqual(len(pdf_files), 1)
+        self.assertEqual(len(tex_files), 2)
 
         plot_file_path = png_files[0]
         self.assertTrue(plot_file_path.endswith("plot.png"))
