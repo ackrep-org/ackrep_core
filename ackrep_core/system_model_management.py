@@ -391,11 +391,15 @@ def import_parameters(key):
     system_model_entity = core.model_utils.get_entity(key)
     base_path = system_model_entity.base_path
     mod_path = os.path.join(base_path, "parameters")
+    if not os.path.isfile(os.path.join(root_path, base_path, "parameters.py")):
+        raise FileNotFoundError(f"Import of parameters.py failed. Path {base_path} does not lead to parameters.py.")
     mod_path = ".".join(mod_path.split(os.path.sep))
 
     parameters = importlib.import_module(mod_path)
     parameters.base_path = base_path
 
+    assert hasattr(parameters, "pp_symb")
+    assert hasattr(parameters, "pp_sf")
     pp_nv = list(sp.Matrix(parameters.pp_sf).subs(parameters.pp_subs_list))
     pp_dict = {parameters.pp_symb[i]:pp_nv[i] for i in range(len(parameters.pp_symb))}
 
