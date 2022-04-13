@@ -182,11 +182,11 @@ class TestCases2(DjangoTestCase):
 
         all_files = core.get_system_model_data_files(system_model_entity.base_path)
         png_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".png")
-        txt_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".pdf")
+        pdf_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".pdf")
 
         self.assertEqual(len(all_files), 4)
         self.assertEqual(len(png_files), 1)
-        self.assertEqual(len(txt_files), 1)
+        self.assertEqual(len(pdf_files), 1)
 
         plot_file_path = png_files[0]
         self.assertTrue(plot_file_path.endswith("plot.png"))
