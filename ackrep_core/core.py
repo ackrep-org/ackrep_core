@@ -496,7 +496,7 @@ def get_system_model_data_files(system_model_base_path, endswith_str=None, creat
             link = rel_path.replace(os.path.sep, "_")
             abs_path_link = os.path.join(settings.MEDIA_ROOT, link)
             if not os.path.exists(abs_path_link):
-                os.symlink(abs_path, abs_path_link, target_is_directory=True)
+                os.symlink(abs_path, abs_path_link)
             result.append(f"{settings.MEDIA_URL}{link}")
 
         return result

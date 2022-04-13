@@ -3,6 +3,7 @@ import subprocess
 
 from unittest import skipUnless
 from django.test import TestCase as DjangoTestCase
+from django.conf import settings
 from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core, system_model_management
@@ -192,6 +193,23 @@ class TestCases2(DjangoTestCase):
         self.assertTrue(plot_file_path.endswith("plot.png"))
 
         self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
+
+    def test_symbolic_link_privileges(self):
+        """this test has to be run as admin"""
+        # check if symbolic links can be created
+        # first: delete existing symbolic links       
+        media_path = settings.MEDIA_ROOT
+        files = os.listdir(media_path)
+        for file in files:
+            os.remove(os.path.join(media_path, file))
+        
+        # second: try creating new symbolic link
+        system_model_entity = core.model_utils.get_entity("UXMFA")
+        try:
+            result = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".png", create_media_links=True)
+        except OSError:
+            result = []
+        self.assertTrue(len(result) > 0, msg="Windows problem: symbolik links cannot be created. Try Running this test with admin privileges! If that dosn't work, see docs.")
 
     def test_get_available_solutions(self):
         problem_spec = core.model_utils.get_entity("4ZZ9J")
