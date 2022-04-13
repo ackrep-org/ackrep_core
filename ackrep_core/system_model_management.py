@@ -13,6 +13,7 @@ import warnings
 import abc
 import sys 
 import os
+import subprocess
 
 from . import core
 from .util import root_path
@@ -376,6 +377,27 @@ def update_parameter_tex(key):
         if file[-4:] not in allowed_list:
             os.remove(os.path.split(file)[1])
 
+def create_pdf(key):
+    """create new documentation.pdf from documentation.tex and parameters.tex"""
+    system_model_entity = core.model_utils.get_entity(key)
+    base_path = system_model_entity.base_path
+    tex_path = os.path.join(root_path, base_path, "_system_model_data")
+    os.chdir(tex_path)
+    # TODO: validate for all OS
+    res = subprocess.run(["pdflatex", "documentation.tex"], capture_output=True)
+    res.exited = res.returncode
+    res.stdout = res.stdout.decode("utf8")
+    res.stderr = res.stderr.decode("utf8")
+    if res.returncode != 0:
+        print(res.stderr, file=sys.stderr)
+    import time
+    time.sleep(3)
+    all_files = core.get_system_model_data_files(base_path)
+    allowed_list = [".tex", ".png", ".pdf"]
+
+    for file in all_files:
+        if file[-4:] not in allowed_list:
+            os.remove(os.path.split(file)[1])
 
 def import_parameters(key):
     """import parameters.py selected be given key and create related get function for system_model

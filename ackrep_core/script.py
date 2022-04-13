@@ -30,6 +30,9 @@ def main():
     argparser.add_argument(
         "--update-parameter-tex", metavar="metadatafile", help="update parameters in tex file (entity is specified by metadata file)"
     )
+    argparser.add_argument(
+        "--create-pdf", metavar="metadatafile", help="create pdf of system model from tex file (entity is specified by metadata file)"
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -74,6 +77,9 @@ def main():
     elif args.update_parameter_tex:
         metadatapath = args.update_parameter_tex
         update_parameter_tex(metadatapath)
+    elif args.create_pdf:
+        metadatapath = args.create_pdf
+        create_pdf(metadatapath)
     elif args.metadata or args.md:
         if args.md:
             args.metadata = "metadata.yml"
@@ -222,6 +228,29 @@ def update_parameter_tex(arg0: str, exitflag: bool = True):
     # IPS()
     res = system_model_management.update_parameter_tex(key=key)
     
+def create_pdf(arg0: str, exitflag: bool = True):
+    """
+
+    :param arg0:        either an entity key or the path to the respective metadata.yml
+    :param exitflag:    determine whether the program should exit at the end of this function
+
+    :return:            container of subprocess.run (if exitflag == False)
+    """
+
+    try:
+        entity = core.get_entities_with_key(arg0)[0]
+        key = arg0
+    except IndexError:
+        metadatapath = arg0
+        if not metadatapath.endswith("metadata.yml"):
+            metadatapath = os.path.join(metadatapath, "metadata.yml")
+        system_model_meta_data = core.get_metadata_from_file(metadatapath)
+        key = system_model_meta_data["key"]
+        entity = core.get_entity(key)
+
+    assert isinstance(entity, models.SystemModel)
+    # IPS()
+    res = system_model_management.create_pdf(key=key)
 
 def dialoge_entity_type():
     entities = models.get_entities()
