@@ -2,6 +2,10 @@
 
 # {{context.warning}}
 
+# prevent debugging scripts from unwanted interference
+import os
+os.environ["NO_IPS_EXCEPTHOOK"] = "True"
+
 import sys
 
 # ackrep_core path
@@ -25,6 +29,7 @@ sys.path.insert(0, r"{{context.solution_path}}")
 # uncomment for debugging
 # from ipydex import IPS, activate_ips_on_exception, TracerFactory
 # activate_ips_on_exception()
+# os.environ.pop("NO_IPS_EXCEPTHOOK", None)
 # activate_trace = TracerFactory()
 # activate_trace()
 
