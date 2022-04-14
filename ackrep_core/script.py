@@ -37,6 +37,9 @@ def main():
         metavar="metadatafile",
         help="create pdf of system model from tex file (entity is specified by metadata file)",
     )
+    argparser.add_argument(
+        "--get-metadata-path-from-key", metavar="key", help="return path to metadata file (relative to repo root) for a given key"
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -80,6 +83,10 @@ def main():
         metadatapath = args.check_system_model
         exitflag = not args.show_debug
         check_system_model(metadatapath, exitflag=exitflag)
+    elif args.get_metadata_path_from_key:
+        key = args.get_metadata_path_from_key
+        exitflag = not args.show_debug
+        get_metadata_from_key(key, exitflag=exitflag)
     elif args.update_parameter_tex:
         metadatapath = args.update_parameter_tex
         update_parameter_tex(metadatapath)
@@ -210,6 +217,25 @@ def check_system_model(arg0: str, exitflag: bool = True):
     else:
         return res
 
+def get_metadata_from_key(arg0: str, exitflag: bool = True):
+    """
+
+    :param arg0:        key
+    :param exitflag:    determine whether the program should exit at the end of this function
+
+    :return:            container of subprocess.run (if exitflag == False)
+    """
+
+
+    entity = core.get_entities_with_key(arg0)[0]
+
+    path = os.path.join(entity.base_path, "metada.yml")
+    print(path)
+
+    if exitflag:
+        exit(0)
+    else:
+        return path
 
 def update_parameter_tex(arg0: str, exitflag: bool = True):
     """
