@@ -1,4 +1,3 @@
-import os
 import argparse
 
 from ipydex import IPS, activate_ips_on_exception
@@ -7,7 +6,8 @@ from ackrep_core import system_model_management
 
 activate_ips_on_exception()
 
-from . import core, models
+from . import core
+from . import models
 from .util import *
 import pprint
 import subprocess
@@ -231,6 +231,7 @@ def get_metadata_from_key(arg0: str, exitflag: bool = True):
 
     path = os.path.join(entity.base_path, "metada.yml")
     print(path)
+    IPS()
 
     if exitflag:
         exit(0)

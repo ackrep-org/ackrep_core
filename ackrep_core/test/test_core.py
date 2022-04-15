@@ -8,6 +8,8 @@ from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core, system_model_management
 
+from ._test_utils import load_repo_to_db_for_tests
+
 from ipydex import IPS  # only for debugging
 
 """
@@ -17,19 +19,37 @@ This module contains the tests of the core module (not ackrep_web)
 one possibility to run these (some of) the tests
 
 python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_core:TestCases1
-
-For more infos see doc/devdoc/README.md.
+python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_core:TestCases2.test_get_metadata_path_from_key
 """
 
 
-ackrep_data_test_repo_path = core.data_test_repo_path
+# inform the core module which path it should consinder as data repo
+data_test_repo_path = core.data_path = os.path.join(core.root_path, "ackrep_data_for_unittests")
+# this must also be set as env var because the tests will call some functions of ackrep
+# via command line
+os.environ["ACKREP_DATA_PATH"] = data_test_repo_path
+
+# due to the command line callings we also need to specify the test-database
+os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core", "db_for_unittests.sqlite3")
+
 # default_repo_head_hash = "f2a7ca9322334ce65e78daaec11401153048ceb6"  # 2021-04-12 00:45:46
 default_repo_head_hash = "c931f25b3eacad8e0ca495de49c3c488135bdb61"  # 2022-04-13 22:15 branch for_unittests
 
 
+
+from django.db import connection
+db_name = connection.settings_dict['NAME']
+
+IPS()
+exit(0)
+
+load_repo_to_db_for_tests(data_test_repo_path, initial=True)
+
+
+
 class TestCases1(DjangoTestCase):
     def setUp(self):
-        core.clear_db()
+        pass
 
     def test_00_unittest_repo(self):
         """
@@ -66,6 +86,7 @@ class TestCases1(DjangoTestCase):
 
         :return:
         """
+        core.clear_db()
 
         entity_dict = core.get_entity_dict_from_db()
         # key: str, value: list
@@ -79,7 +100,7 @@ class TestCases1(DjangoTestCase):
         self.assertEqual(len(entity_dict), len(core.model_utils.get_entity_types()))
 
         # TODO: load repo and assess the content
-        # core.load_repo_to_db(core.data_path)
+        # core.load_repo_to_db(data_test_repo_path)
 
 
 class TestCases2(DjangoTestCase):
@@ -88,7 +109,7 @@ class TestCases2(DjangoTestCase):
     """
 
     def setUp(self):
-        core.load_repo_to_db(core.data_test_repo_path)
+        load_repo_to_db_for_tests(data_test_repo_path)
 
     def test_resolve_keys(self):
         entity = core.model_utils.get_entity("UKJZI")
@@ -158,8 +179,16 @@ class TestCases2(DjangoTestCase):
     def test_check_key(self):
         res = subprocess.run(["ackrep", "--key"], capture_output=True)
         self.assertEqual(res.returncode, 0)
-        self.assertTrue(utf8decode(res.stdout).lower().startswith("random entity-key:"))
 
+        self.assertTrue(strip_decode(res.stdout).lower().startswith("random entity-key:"))
+
+    def test_get_metadata_path_from_key(self):
+        res = subprocess.run(["ackrep", "--get-metadata-path-from-key", "UKJZI"], capture_output=False)
+        self.assertEqual(res.returncode, 0)
+        # self.assertTrue(utf8decode(res.stdout).lower().startswith("random entity-key:"))
+        print(res.stdout)
+        # IPS()
+        
     def test_get_solution_data_files(self):
         res = core.check_solution("UKJZI")
         self.assertEqual(res.returncode, 0, msg=utf8decode(res.stderr))
@@ -390,3 +419,9 @@ def get_data_files_dict(path, endings=[]):
     for ending in endings:
         ending_files_dict[ending] = core.get_data_files(path, ending)
     return ending_files_dict
+def strip_decode(obj):
+
+    # get rid of some (ipython-related boilerplate bytes (ended by \x07))
+    delim = b"\x07"
+    obj = obj.split(delim)[-1]
+    return utf8decode(obj)

@@ -34,7 +34,6 @@ from .util import (
     core_pkg_path,
     root_path,
     data_path,
-    data_test_repo_path,
     ObjectContainer,
     ResultContainer,
     InconsistentMetaDataError,
@@ -179,6 +178,13 @@ def clear_db():
 
     print("Clearing DB...")
     management.call_command("flush", "--no-input")
+    
+    from django.db import connection
+    db_name = connection.settings_dict['NAME']
+    # Or alternatively
+    # db_name2 = connection.get_connection_params()['db']
+    IPS()
+
 
 
 # noinspection PyPep8Naming

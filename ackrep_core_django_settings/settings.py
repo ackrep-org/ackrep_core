@@ -79,10 +79,42 @@ TEMPLATES = [
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
+# allow for separate databases, e.g. to handle unittests that make cli calls to `ackrep`
+
+if not (database_path := os.environ.get("ACKREP_DATABASE_PATH")):
+    # use default db name
+    database_path = os.path.join(BASE_DIR, "db.sqlite3")
+
+    test_db_settings = {
+        "TEST": {
+            "ENGINE": "django.db.backends.sqlite3",
+
+            # TODO: ensure that this is consistent with test_core.py
+            "NAME": os.path.join(BASE_DIR, "db_for_unittests.sqlite3"),
+        }
+    }
+else: 
+    # use the provided path also as path for the test db
+
+    test_db_settings = {
+        "TEST": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": database_path,
+        }
+
+    }
+
+
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+        "NAME": database_path,
+
+        # 'TEST': {
+        #     'NAME': os.path.join(BASE_DIR, 'db_test.sqlite3')
+        # }
+            
     }
 }
 

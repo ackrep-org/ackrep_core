@@ -4,6 +4,16 @@
 
 As the software is still an early prototype and defining the concrete feature set is subject to ongoing research, only a fraction of the functionality is already covered by tests. However this fraction will increase in the future. The unittest depend on data which is maintained outside of this repo: It is assumed that there is a copy of the `acrep_data` repository named `acrep_data_for_unittests` next to it (see [directory layout](https://github.com/cknoll/ackrep_deployment#directory-layout)) and that its HEAD points to a defined commit (see `ackrep_core.core.test.test_core.default_repo_head_hash`).
 
+Before the tests can be run the test database has to be set up (tested with bash on Linux):
+
+```
+cd $ACKREP_CORE_DIR
+export ACKREP_DATABASE_PATH=db_for_unittests.sqlite3
+rm -f db_for_unittests.sqlite3
+python manage.py migrate --run-syncdb
+unset ACKREP_DATABASE_PATH
+```
+
 
 There are several options to run the tests. The following is recommended (`--rednose` is optional):
 
