@@ -10,6 +10,7 @@ from ipydex import Container
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
 # path of this package (i.e. the directory ackrep_core)
+# (this is where manage.py is located)
 core_pkg_path = os.path.dirname(mod_path)
 
 # root_path: path of the general project root

@@ -1,4 +1,8 @@
 import argparse
+import subprocess
+import pprint
+import questionary
+from django.core import management
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -9,10 +13,6 @@ activate_ips_on_exception()
 from . import core
 from . import models
 from .util import *
-import pprint
-import subprocess
-
-import questionary
 
 
 def main():
@@ -42,6 +42,12 @@ def main():
     )
     argparser.add_argument(
         "--get-metadata-rel-path-from-key", metavar="key", help="return path to metadata file (relative to repo root) for a given key"
+    )
+    argparser.add_argument(
+        "--bootstrap-db", help="delete database and recreate it (without data)", action="store_true"
+    )
+    argparser.add_argument(
+        "--bootstrap-test-db", help="delete database for unittests and recreate it (without data)", action="store_true"
     )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
@@ -113,6 +119,10 @@ def main():
     elif args.key:
         print("Random entity-key: ", core.gen_random_entity_key())
         return
+    elif args.bootstrap_db:
+        bootstrap_db(db="main")
+    elif args.bootstrap_test_db:
+        bootstrap_db(db="test")
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -360,3 +370,44 @@ def dialoge_field_values(entity_class):
         res_dict[f.name] = qres
 
     return res_dict
+
+
+def bootstrap_db(db: str) -> None:
+    """
+    This function basically executes
+      `rm -f db.sqlite3; python manage.py migrate --run-syncdb`
+    for either the main or the test database.
+
+    :param db:      'main' or 'test'
+    """
+    
+    valid_values = ("main", "test")
+    assert db in valid_values
+
+    old_workdir = os.getcwd()
+    os.chdir(core.core_pkg_path)
+
+    if db == "main":
+        fname = "db.sqlite3"
+    else:
+        fname = "db_for_unittest.sqlite3"
+
+    env_db_path = os.environ.get("ACKREP_DATABASE_PATH")
+    db_path = os.path.abspath(fname)
+
+    if env_db_path is not None and env_db_path != db_path:
+        msg = (
+            "Inconsistent values for bootstrapping database: "
+            f"internal db_path: {db_path}, env var ACKREP_DATABASE_PATH: {env_db_path}"
+        )
+        raise ValueError(msg)
+
+    try:
+        os.unlink(fname)
+    except FileNotFoundError:
+        pass
+
+    management.call_command("migrate", "--run-syncdb")
+
+    # return to old working dir
+    os.chdir(old_workdir)

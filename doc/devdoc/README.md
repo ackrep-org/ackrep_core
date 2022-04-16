@@ -8,6 +8,10 @@ Before the tests can be run for the first time the test database has to be set u
 (tested with bash on Linux):
 
 ```
+# Option 1: 
+ackrep --bootstrap-test-db
+
+# Option 2 (deprecated leagacy approach):
 cd $ACKREP_CORE_DIR
 export ACKREP_DATABASE_PATH=db_for_unittests.sqlite3
 rm -f db_for_unittests.sqlite3
