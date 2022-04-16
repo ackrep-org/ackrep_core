@@ -44,6 +44,7 @@ def load_repo_to_db_for_tsts(repo_path:str) -> None:
     elif db_regeneration_mode == "2" and not test_metadata.db_initialized:
             # only run if db has not yet been regenerated
             core.load_repo_to_db(repo_path)
+            test_metadata.db_initialized = True
 
     else:
         # do nothing
