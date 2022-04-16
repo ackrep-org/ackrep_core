@@ -2,7 +2,7 @@ import os, sys
 import subprocess
 
 from unittest import skipUnless
-from django.test import TestCase as DjangoTestCase
+from django.test import TestCase as DjangoTestCase, SimpleTestCase
 from django.conf import settings
 from git import Repo, InvalidGitRepositoryError
 
@@ -32,22 +32,21 @@ os.environ["ACKREP_DATA_PATH"] = data_test_repo_path
 # due to the command line callings we also need to specify the test-database
 os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core", "db_for_unittests.sqlite3")
 
+# prevent cli commands to get stuck in unexpected IPython shell on error
+# (comment out for debugging)
+os.environ["NO_IPS_EXCEPTHOOK"] = "True"
+
 # default_repo_head_hash = "f2a7ca9322334ce65e78daaec11401153048ceb6"  # 2021-04-12 00:45:46
 default_repo_head_hash = "c931f25b3eacad8e0ca495de49c3c488135bdb61"  # 2022-04-13 22:15 branch for_unittests
 
 
+class TestCases1(SimpleTestCase):
+    """
+    We use `SimpleTestCase` [1] as base class to allow for persistent changes in the database.
+    This is the simples way to test the db related behavior of cli commands.
 
-from django.db import connection
-db_name = connection.settings_dict['NAME']
-
-IPS()
-exit(0)
-
-load_repo_to_db_for_tests(data_test_repo_path, initial=True)
-
-
-
-class TestCases1(DjangoTestCase):
+    [1] https://docs.djangoproject.com/en/4.0/topics/testing/tools/#django.test.SimpleTestCase.databases
+    """
     def setUp(self):
         pass
 
@@ -103,10 +102,16 @@ class TestCases1(DjangoTestCase):
         # core.load_repo_to_db(data_test_repo_path)
 
 
-class TestCases2(DjangoTestCase):
+class TestCases2(SimpleTestCase):
     """
-    These tests expect the database to be loaded
+    These tests expect the database to be loaded.
+
+    We use `SimpleTestCase` [1] as base class to allow for persistent changes in the database.
+    This is the simples way to test the db related behavior of cli commands.
+
+    [1] https://docs.djangoproject.com/en/4.0/topics/testing/tools/#django.test.SimpleTestCase.databases
     """
+    databases = '__all__'
 
     def setUp(self):
         load_repo_to_db_for_tests(data_test_repo_path)

@@ -111,9 +111,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": database_path,
 
-        # 'TEST': {
-        #     'NAME': os.path.join(BASE_DIR, 'db_test.sqlite3')
-        # }
+        **test_db_settings
             
     }
 }

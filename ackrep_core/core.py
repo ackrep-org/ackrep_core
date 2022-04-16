@@ -14,6 +14,7 @@ from git import Repo
 # noinspection PyUnresolvedReferences
 from django.conf import settings
 from django.core import management
+from django.db import connection as django_db_connection
 
 from yamlpyowl import core as ypo
 
@@ -71,6 +72,9 @@ required_generic_meta_data = {
     "external_references": None,
     "notes": None,
 }
+
+
+db_name = django_db_connection.settings_dict['NAME']
 
 
 def gen_random_entity_key():
@@ -178,13 +182,6 @@ def clear_db():
 
     print("Clearing DB...")
     management.call_command("flush", "--no-input")
-    
-    from django.db import connection
-    db_name = connection.settings_dict['NAME']
-    # Or alternatively
-    # db_name2 = connection.get_connection_params()['db']
-    IPS()
-
 
 
 # noinspection PyPep8Naming
@@ -504,7 +501,7 @@ def make_method_build(method_package, accept_existing=True):
 
 
 # TODO: merge with `get_entity_dict_from_db`
-def get_entities_with_key(key):
+def get_entities_with_key(key, raise_error_on_empty=False):
     """
     get all entities in the database that have a specific key
     """
@@ -513,6 +510,16 @@ def get_entities_with_key(key):
 
     for et in entity_types:
         entities_with_key += list(et.objects.filter(key=key))
+
+    if raise_error_on_empty and not entities_with_key:
+        n = len(model_utils.all_entities())
+
+        msg = (
+            f"No entity with key {key} could be found among the {n} entities in database. "
+            f"Make sure the database was correctly initialized.\n`dbname`='{db_name}'\n\n"
+            "If this occurs in a unit test, see devdocs for details."
+        )
+        raise KeyError(msg)
 
     return entities_with_key
 

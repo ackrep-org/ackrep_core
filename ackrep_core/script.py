@@ -226,12 +226,10 @@ def get_metadata_from_key(arg0: str, exitflag: bool = True):
     :return:            container of subprocess.run (if exitflag == False)
     """
 
-
-    entity = core.get_entities_with_key(arg0)[0]
+    entity = core.get_entities_with_key(arg0, raise_error_on_empty=True)[0]    
 
     path = os.path.join(entity.base_path, "metada.yml")
     print(path)
-    IPS()
 
     if exitflag:
         exit(0)
