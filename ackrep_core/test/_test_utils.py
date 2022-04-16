@@ -1,11 +1,13 @@
 import os
+from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core
 
 # globally accessible variable to save whether the database has yet been initialized
 test_metadata = core.Container(db_initialized=False)
 
-def load_repo_to_db_for_tests(repo_path:str) -> None:
+# this function must not have "test" inside its name for not beeing interpreted as test case
+def load_repo_to_db_for_tsts(repo_path:str) -> None:
     """
     Call core.load_repo_to_db(...) depending on some environment variable.
 
@@ -46,3 +48,12 @@ def load_repo_to_db_for_tests(repo_path:str) -> None:
     else:
         # do nothing
         pass
+
+def reset_repo(repo_path):
+    """
+    Some tests change the state of the working directory of the test repository.
+    This function resets it to the last commit.
+    """
+
+    repo = Repo(repo_path)
+    repo.head.reset(index=True, working_tree=True)

@@ -10,7 +10,7 @@ from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core, system_model_management
 
-from ._test_utils import load_repo_to_db_for_tests
+from ._test_utils import load_repo_to_db_for_tsts, reset_repo
 
 from ipydex import IPS  # only for debugging
 
@@ -26,10 +26,10 @@ python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_core:Te
 
 
 # inform the core module which path it should consinder as data repo
-data_test_repo_path = core.data_path = os.path.join(core.root_path, "ackrep_data_for_unittests")
+ackrep_data_test_repo_path = core.data_path = os.path.join(core.root_path, "ackrep_data_for_unittests")
 # this must also be set as env var because the tests will call some functions of ackrep
 # via command line
-os.environ["ACKREP_DATA_PATH"] = data_test_repo_path
+os.environ["ACKREP_DATA_PATH"] = ackrep_data_test_repo_path
 
 # due to the command line callings we also need to specify the test-database
 os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core", "db_for_unittests.sqlite3")
@@ -38,16 +38,13 @@ os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core",
 # (comment out for debugging)
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
-# default_repo_head_hash = "f2a7ca9322334ce65e78daaec11401153048ceb6"  # 2021-04-12 00:45:46
-default_repo_head_hash = "c931f25b3eacad8e0ca495de49c3c488135bdb61"  # 2022-04-13 22:15 branch for_unittests
+# use `git log -1` to display the full hash
+default_repo_head_hash = "c931f25b3eacad8e0ca495de49c3c488135bdb61"  # 2022-04-16 branch for_unittests
 
 
 class TestCases1(SimpleTestCase):
     """
-    We use `SimpleTestCase` [1] as base class to allow for persistent changes in the database.
-    This is the simples way to test the db related behavior of cli commands.
-
-    [1] https://docs.djangoproject.com/en/4.0/topics/testing/tools/#django.test.SimpleTestCase.databases
+    These test cases do not access the database at all
     """
     def setUp(self):
         pass
@@ -82,27 +79,6 @@ class TestCases1(SimpleTestCase):
 
         self.assertEqual(repo_head_hash, default_repo_head_hash, msg=msg)
 
-    def test_import_repo(self):
-        """
-
-        :return:
-        """
-        core.clear_db()
-
-        entity_dict = core.get_entity_dict_from_db()
-        # key: str, value: list
-
-        # the lists should be each of length 0
-        all_values = sum(entity_dict.values(), [])
-        self.assertEqual(len(all_values), 0)
-
-        # the number of keys should be the same as the number of entity types
-
-        self.assertEqual(len(entity_dict), len(core.model_utils.get_entity_types()))
-
-        # TODO: load repo and assess the content
-        # core.load_repo_to_db(data_test_repo_path)
-
 
 class TestCases2(SimpleTestCase):
     """
@@ -116,7 +92,14 @@ class TestCases2(SimpleTestCase):
     databases = '__all__'
 
     def setUp(self):
-        load_repo_to_db_for_tests(data_test_repo_path)
+        load_repo_to_db_for_tsts(ackrep_data_test_repo_path)
+
+    def tearDown(self):
+        # optionally check if repo is clean
+        pass
+        repo = Repo(ackrep_data_test_repo_path)
+        assert not repo.is_dirty()
+
 
     def test_resolve_keys(self):
         entity = core.model_utils.get_entity("UKJZI")
@@ -183,6 +166,10 @@ class TestCases2(SimpleTestCase):
 
         self.assertEqual(res.returncode, 0)
 
+        # ensure repo is clean again
+        # TODO: remove this if png is removed from repo
+        reset_repo(ackrep_data_test_repo_path)
+
     def test_check_key(self):
         res = subprocess.run(["ackrep", "--key"], capture_output=True)
         self.assertEqual(res.returncode, 0)
@@ -230,6 +217,10 @@ class TestCases2(SimpleTestCase):
 
     def test_create_media_links(self):
         # first: delete existing links
+        # ensure repo is clean again
+        # TODO: remove this if png is removed from repo
+        reset_repo(ackrep_data_test_repo_path)
+        
         media_path = settings.MEDIA_ROOT
         files = os.listdir(media_path)
         for file in files:
@@ -264,6 +255,91 @@ class TestCases2(SimpleTestCase):
         e = core.model_utils.all_entities()[0]
         tag_list = core.util.smart_parse(e.tag_list)
         self.assertTrue(isinstance(tag_list, list))
+
+    def test_update_parameter_tex(self):
+        # call directly
+        system_model_management.update_parameter_tex("UXMFA")
+        # check if latex files are leftover
+        self.test_get_system_model_data_files()
+        # call command line
+        res = subprocess.run(["ackrep", "--update-parameter-tex", "UXMFA"], capture_output=True)
+        res.exited = res.returncode
+        res.stdout = utf8decode(res.stdout)
+        res.stderr = utf8decode(res.stderr)
+        if res.returncode != 0:
+            print(res.stderr)
+
+        self.assertEqual(res.returncode, 0)
+        # check if latex files are leftover
+        self.test_get_system_model_data_files()
+
+        # ensure repo is clean again
+        # TODO: remove this if png is removed from repo
+        reset_repo(ackrep_data_test_repo_path)
+
+    def test_create_pdf(self):
+        # first check if pdflatex is installed and included in path
+        if platform.system() == "Windows":
+            # TODO JF: Check if `shell=True` is really necessary on Windows
+            # on Linux it provokes undesired behavior
+            res = subprocess.run(["pdflatex", "--help"], shell=True, capture_output=True)
+        else:
+            res = subprocess.run(["pdflatex", "--help"], shell=False, capture_output=True)
+        
+        res.exited = res.returncode
+        res.stdout = utf8decode(res.stdout)
+        res.stderr = utf8decode(res.stderr)
+        if res.returncode != 0:
+            print(res.stderr)
+
+        self.assertEqual(res.returncode, 0, msg="pdflatex not found! Check installation and its existence in PATH!")
+
+        # call directly 
+        system_model_management.create_pdf("UXMFA")
+        # TODO JF: decide how to proceed with these comments:
+        # check if latex files are leftover
+        # self.test_get_system_model_data_files()
+        
+        # # call command line
+        # res = subprocess.run(["ackrep", "--create-pdf", "UXMFA"], capture_output=True)
+        # res.exited = res.returncode
+        # res.stdout = utf8decode(res.stdout)
+        # res.stderr = utf8decode(res.stderr)
+        # if res.returncode != 0:
+        #     print(res.stderr)
+
+        # self.assertEqual(res.returncode, 0)
+        # # check if latex files are leftover
+        # self.test_get_system_model_data_files()
+
+        # leave the repo in a clean state
+        reset_repo(ackrep_data_test_repo_path)
+
+    
+    def test_parameters_py(self, key="UXMFA"):
+        parameters = system_model_management.import_parameters(key)
+        self.assertTrue(hasattr(parameters, "model_name"))
+        self.assertTrue(hasattr(parameters, "pp_symb"))
+        self.assertTrue(hasattr(parameters, "pp_sf"))
+        self.assertTrue(hasattr(parameters, "pp_subs_list"))
+        self.assertTrue(hasattr(parameters, "latex_names"))
+        self.assertTrue(hasattr(parameters, "tabular_header"))
+        self.assertTrue(hasattr(parameters, "col_alignment"))
+        self.assertTrue(hasattr(parameters, "col_1"))
+        self.assertTrue(hasattr(parameters, "start_columns_list"))
+        self.assertTrue(hasattr(parameters, "end_columns_list"))
+
+
+class TestCases3(DjangoTestCase):
+    """
+    These tests expect the database to be regenerated every time.
+    
+    Database changes should not be persistent outside this each case.
+    -> Use DjangoTestCase as base class which ensures this behavior ("Transactions")
+    """
+    
+    def setUp(self):
+        core.load_repo_to_db(ackrep_data_test_repo_path)
 
     def test_ontology(self):
 
@@ -405,6 +481,24 @@ class TestCases2(SimpleTestCase):
         delattr(parameters, "pp_symb")
         res = system_model_management.check_system_parameters(parameters)
         self.assertEqual(res, 2)
+    def test_import_repo(self):
+
+        # ensure database is empty
+        core.clear_db()
+
+        entity_dict = core.get_entity_dict_from_db()
+        # key: str, value: list
+
+        # the lists should be each of length 0
+        all_values = sum(entity_dict.values(), [])
+        self.assertEqual(len(all_values), 0)
+
+        # the number of keys should be the same as the number of entity types
+
+        self.assertEqual(len(entity_dict), len(core.model_utils.get_entity_types()))
+
+        # TODO: load repo and assess the content
+        # core.load_repo_to_db(ackrep_data_test_repo_path)
 
 
 def utf8decode(obj):
