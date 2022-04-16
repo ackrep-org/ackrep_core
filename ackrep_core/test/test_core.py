@@ -1,4 +1,6 @@
-import os, sys
+import os
+import sys
+import platform
 import subprocess
 
 from unittest import skipUnless
@@ -340,7 +342,12 @@ class TestCases2(SimpleTestCase):
 
     def test_create_pdf(self):
         # first check if pdflatex is installed and included in path
-        res = subprocess.run(["pdflatex", "--help"], shell=True, capture_output=True)
+        if platform.system() == "Windows":
+            # TODO: Check if `shell=True` is really necessary on Windows
+            # on Linux it provokes undesired behavior
+            res = subprocess.run(["pdflatex", "--help"], shell=True, capture_output=True)
+        else:
+            res = subprocess.run(["pdflatex", "--help"], shell=False, capture_output=True)
         res.exited = res.returncode
         res.stdout = utf8decode(res.stdout)
         res.stderr = utf8decode(res.stderr)
