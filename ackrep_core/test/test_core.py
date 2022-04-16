@@ -279,11 +279,29 @@ class TestCases3(SimpleTestCase):
         self.assertTrue(strip_decode(res.stdout).lower().startswith("random entity-key:"))
 
     def test_get_metadata_path_from_key(self):
-        res = subprocess.run(["ackrep", "--get-metadata-path-from-key", "UKJZI"], capture_output=False)
+
+        key = "UKJZI"
+        # first: relative path
+        res = subprocess.run(["ackrep", "--get-metadata-rel-path-from-key", key], capture_output=True)
         self.assertEqual(res.returncode, 0)
-        # self.assertTrue(utf8decode(res.stdout).lower().startswith("random entity-key:"))
-        print(res.stdout)
-        # IPS()
+        
+        relpath = strip_decode(res.stdout).strip()
+        expected_relpath = os.path.join(
+            "ackrep_data_for_unittests",
+            "problem_solutions",
+            "double_integrator_transition_with_pytrajectory",
+            "metada.yml"
+            )
+        self.assertEqual(relpath, expected_relpath)
+
+        # second: absolute path
+        res = subprocess.run(["ackrep", "--get-metadata-abs-path-from-key", key], capture_output=True)
+        self.assertEqual(res.returncode, 0)
+        
+        abspath = strip_decode(res.stdout).strip()
+    
+        self.assertIn(relpath, abspath)
+        self.assertTrue(len(abspath) > len(relpath))
         
     def test_get_solution_data_files(self):
         res = core.check_solution("UKJZI")
@@ -627,7 +645,7 @@ def get_data_files_dict(path, endings=[]):
     for ending in endings:
         ending_files_dict[ending] = core.get_data_files(path, ending)
     return ending_files_dict
-def strip_decode(obj):
+def strip_decode(obj) -> str:
 
     # get rid of some (ipython-related boilerplate bytes (ended by \x07))
     delim = b"\x07"

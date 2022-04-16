@@ -38,7 +38,10 @@ def main():
         help="create pdf of system model from tex file (entity is specified by metadata file)",
     )
     argparser.add_argument(
-        "--get-metadata-path-from-key", metavar="key", help="return path to metadata file (relative to repo root) for a given key"
+        "--get-metadata-abs-path-from-key", metavar="key", help="return absolute path to metadata file for a given key"
+    )
+    argparser.add_argument(
+        "--get-metadata-rel-path-from-key", metavar="key", help="return path to metadata file (relative to repo root) for a given key"
     )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
@@ -83,10 +86,14 @@ def main():
         metadatapath = args.check_system_model
         exitflag = not args.show_debug
         check_system_model(metadatapath, exitflag=exitflag)
-    elif args.get_metadata_path_from_key:
-        key = args.get_metadata_path_from_key
+    elif args.get_metadata_abs_path_from_key:
+        key = args.get_metadata_abs_path_from_key
         exitflag = not args.show_debug
-        get_metadata_from_key(key, exitflag=exitflag)
+        get_metadata_path_from_key(key, absflag=True, exitflag=exitflag)
+    elif args.get_metadata_rel_path_from_key:
+        key = args.get_metadata_rel_path_from_key
+        exitflag = not args.show_debug
+        get_metadata_path_from_key(key, absflag=False, exitflag=exitflag)
     elif args.update_parameter_tex:
         metadatapath = args.update_parameter_tex
         update_parameter_tex(metadatapath)
@@ -217,10 +224,12 @@ def check_system_model(arg0: str, exitflag: bool = True):
     else:
         return res
 
-def get_metadata_from_key(arg0: str, exitflag: bool = True):
+def get_metadata_path_from_key(arg0: str, absflag: bool = True, exitflag: bool = True):
     """
 
     :param arg0:        key
+    :param absflag:     flag to determine if absolute (True) or relative path (False)
+                        should be returned
     :param exitflag:    determine whether the program should exit at the end of this function
 
     :return:            container of subprocess.run (if exitflag == False)
@@ -229,6 +238,8 @@ def get_metadata_from_key(arg0: str, exitflag: bool = True):
     entity = core.get_entities_with_key(arg0, raise_error_on_empty=True)[0]    
 
     path = os.path.join(entity.base_path, "metada.yml")
+    if absflag:
+        path = os.path.join(core.root_path, path)
     print(path)
 
     if exitflag:
