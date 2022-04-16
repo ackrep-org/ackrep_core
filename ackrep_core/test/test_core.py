@@ -15,13 +15,19 @@ from ._test_utils import load_repo_to_db_for_tsts, reset_repo
 from ipydex import IPS  # only for debugging
 
 """
-This module contains the tests of the core module (not ackrep_web)
+This module contains the tests of the core module (not ackrep_web).
+
+The order of classes in the file reflects the execution order, see also
+<https://docs.djangoproject.com/en/4.0/topics/testing/overview/#order-of-tests>.
 
 
-one possibility to run these (some of) the tests
+Possibilities to run (some of) the tests:
 
-python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_core:TestCases1
-python3 manage.py test --nocapture --rednose --ips ackrep_core.test.test_core:TestCases2.test_get_metadata_path_from_key
+`python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core`
+`python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases1`
+`python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases3.test_get_metadata_path_from_key`
+
+See also devdocs for tipps on speeding tests.
 """
 
 
@@ -42,9 +48,15 @@ os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 default_repo_head_hash = "c931f25b3eacad8e0ca495de49c3c488135bdb61"  # 2022-04-16 branch for_unittests
 
 
-class TestCases1(SimpleTestCase):
+class TestCases1(DjangoTestCase):
     """
-    These test cases do not access the database at all
+    The tests in this class should be run first.
+
+    These test cases do not access the database at all, so they should use SimpleTestCase
+    as base class. However, due to [1] instance of DjangoTestCase (i.e. django.test.TestCase)
+    are run first. 
+
+    [1] https://docs.djangoproject.com/en/4.0/topics/testing/overview/#order-of-tests
     """
     def setUp(self):
         pass
@@ -80,7 +92,97 @@ class TestCases1(SimpleTestCase):
         self.assertEqual(repo_head_hash, default_repo_head_hash, msg=msg)
 
 
-class TestCases2(SimpleTestCase):
+class TestCases2(DjangoTestCase):
+    """
+    These tests expect the database to be regenerated every time.
+    
+    Database changes should not be persistent outside this each case.
+    -> Use DjangoTestCase as base class which ensures this behavior ("Transactions")
+    """
+    
+    def setUp(self):
+        core.load_repo_to_db(ackrep_data_test_repo_path)
+
+    def test_ontology(self):
+
+        # check the ontology manager
+        OM = core.AOM.OM
+        self.assertFalse(OM is None)
+        self.assertTrue(len(list(OM.n.ACKREP_ProblemSpecification.instances())) > 0)
+
+        qsrc = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_entity_key "4ZZ9J".}}'
+        res = OM.make_query(qsrc)
+        self.assertEqual(len(res), 1)
+        ps_double_integrator_transition = res.pop()
+
+        qsrc = f"PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_ontology_based_tag P:iLinear_State_Space_System.}}"
+        res = OM.make_query(qsrc)
+        self.assertTrue(ps_double_integrator_transition in res)
+
+        # get list of all possible tags (instances of OCSE_Entity and its subclasses)
+        qsrc = f"""PREFIX P: <{OM.iri}>
+            SELECT ?entity
+            WHERE {{
+              ?entity rdf:type ?type.
+              ?type rdfs:subClassOf* P:OCSE_Entity.
+            }}
+        """
+        res = OM.make_query(qsrc)
+        self.assertTrue(len(res) > 40)
+
+        res2 = core.AOM.get_list_of_all_ontology_based_tags()
+
+        qsrc = f"""PREFIX P: <{OM.iri}>
+            SELECT ?entity
+            WHERE {{
+              ?entity P:has_entity_key "J73Y9".
+            }}
+        """
+        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
+        self.assertEqual(oe, [])
+        self.assertTrue(isinstance(ae[0], core.models.ProblemSpecification))
+
+        qsrc = f"""PREFIX P: <{OM.iri}>
+            SELECT ?entity
+            WHERE {{
+              ?entity P:has_ontology_based_tag P:iTransfer_Function.
+            }}
+        """
+        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
+        self.assertTrue(len(ae) > 0)
+
+        qsrc = f"""
+        PREFIX P: <https://ackrep.org/draft/ocse-prototype01#>
+        SELECT ?entity
+        WHERE {{
+          ?entity P:has_entity_key "M4PDA".
+        }}
+        """
+        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
+        self.assertTrue(len(ae) == 1)
+        # IPS(print_tb=-1)
+
+    def test_import_repo(self):
+
+        # ensure database is empty
+        core.clear_db()
+
+        entity_dict = core.get_entity_dict_from_db()
+        # key: str, value: list
+
+        # the lists should be each of length 0
+        all_values = sum(entity_dict.values(), [])
+        self.assertEqual(len(all_values), 0)
+
+        # the number of keys should be the same as the number of entity types
+
+        self.assertEqual(len(entity_dict), len(core.model_utils.get_entity_types()))
+
+        # TODO: load repo and assess the content
+        # core.load_repo_to_db(ackrep_data_test_repo_path)
+
+
+class TestCases3(SimpleTestCase):
     """
     These tests expect the database to be loaded.
 
