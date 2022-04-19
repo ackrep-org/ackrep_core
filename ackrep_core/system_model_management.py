@@ -377,27 +377,52 @@ def update_parameter_tex(key):
         if file[-4:] not in allowed_list:
             os.remove(os.path.split(file)[1])
 
-def create_pdf(key):
-    """create new documentation.pdf from documentation.tex and parameters.tex"""
+def create_pdf(key, output_path=None):
+    """create new documentation.pdf from documentation.tex and parameters.tex, specified by key.
+    If outputpath is set, pdf is created at given path.
+    Auxiliary Files are deleted.
+    """
     system_model_entity = core.model_utils.get_entity(key)
     base_path = system_model_entity.base_path
     tex_path = os.path.join(root_path, base_path, "_system_model_data")
     os.chdir(tex_path)
-    # TODO: validate for all OS
+    if output_path is None:
     res = subprocess.run(["pdflatex", "documentation.tex"], capture_output=True)
+    else:
+        test_dir = os.path.join(tex_path, output_path)
+        if not os.path.isdir(test_dir):
+            os.mkdir(test_dir)
+        res = subprocess.run(["pdflatex", "-output-directory", output_path, "documentation.tex"], capture_output=True)
     res.exited = res.returncode
     res.stdout = res.stdout.decode("utf8")
     res.stderr = res.stderr.decode("utf8")
     if res.returncode != 0:
         print(res.stderr, file=sys.stderr)
-    import time
-    time.sleep(3)
-    all_files = core.get_system_model_data_files(base_path)
-    allowed_list = [".tex", ".png", ".pdf"]
 
-    for file in all_files:
-        if file[-4:] not in allowed_list:
+    # clean up auxiliary files
+    import time
+    time.sleep(5)
+
+    delete_list = ["gz", "aux", "fdb_latexmk", "fls", "log"]
+
+    # no specified output directory
+    if output_path is None:
+        file_path = tex_path
+    # absolute output directory
+    elif os.path.isabs(output_path):
+        file_path = output_path
+    # relative output directory
+    else:
+        file_path = os.path.join(tex_path, output_path)
+
+    os.chdir(file_path)
+    files = os.listdir()
+    for file in files:
+        if file.split(".")[-1] in delete_list:
             os.remove(os.path.split(file)[1])
+
+    return res
+
 
 def import_parameters(key):
     """import parameters.py selected be given key and create related get function for system_model

@@ -312,25 +312,44 @@ class TestCases2(DjangoTestCase):
         res.stderr = utf8decode(res.stderr)
         if res.returncode != 0:
             print(res.stderr)
-
         self.assertEqual(res.returncode, 0, msg="pdflatex not found! Check installation and its existence in PATH!")
 
-        # call directly 
-        system_model_management.create_pdf("UXMFA")
-        # check if latex files are leftover
-        # self.test_get_system_model_data_files()
-        
-        # # call command line
-        # res = subprocess.run(["ackrep", "--create-pdf", "UXMFA"], capture_output=True)
-        # res.exited = res.returncode
-        # res.stdout = utf8decode(res.stdout)
-        # res.stderr = utf8decode(res.stderr)
-        # if res.returncode != 0:
-        #     print(res.stderr)
+        system_model_entity = core.model_utils.get_entity("UXMFA")
 
-        # self.assertEqual(res.returncode, 0)
-        # # check if latex files are leftover
-        # self.test_get_system_model_data_files()
+        ## call directly
+        res = system_model_management.create_pdf("UXMFA")
+        res.exited = res.returncode
+        res.stdout = utf8decode(res.stdout)
+        res.stderr = utf8decode(res.stderr)
+        if res.returncode != 0:
+            print(res.stderr)
+        self.assertEqual(res.returncode, 0)
+
+        # check leftover files
+        files_dict = get_data_files_dict(system_model_entity.base_path, endings=[".pdf", ".png", ".tex"])
+        self.assertEqual(len(files_dict["all"]), 4)
+        self.assertEqual(len(files_dict[".png"]), 1)
+        self.assertEqual(len(files_dict[".pdf"]), 1)
+        self.assertEqual(len(files_dict[".tex"]), 2)
+
+        ## call command line
+        os.chdir(ackrep_data_test_repo_path)
+        res = subprocess.run(["ackrep", "--create-pdf", "UXMFA"], capture_output=True)
+        res.exited = res.returncode
+        res.stdout = utf8decode(res.stdout)
+        res.stderr = utf8decode(res.stderr)
+        if res.returncode != 0:
+            print(res.stderr)
+        self.assertEqual(res.returncode, 0)
+
+        # # check leftover files
+        files_dict = get_data_files_dict(system_model_entity.base_path, endings=[".pdf", ".png", ".tex"])
+        self.assertEqual(len(files_dict["all"]), 4)
+        self.assertEqual(len(files_dict[".png"]), 1)
+        self.assertEqual(len(files_dict[".pdf"]), 1)
+        self.assertEqual(len(files_dict[".tex"]), 2)
+
+        # reset unittest_repo
 
     
     def test_parameters_py(self, key="UXMFA"):

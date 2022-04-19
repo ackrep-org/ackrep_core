@@ -251,6 +251,16 @@ def create_pdf(arg0: str, exitflag: bool = True):
     assert isinstance(entity, models.SystemModel)
     # IPS()
     res = system_model_management.create_pdf(key=key)
+    if res.returncode == 0:
+        print(bgreen("Success."))
+    else:
+        print(bred("Fail."))
+
+    if exitflag:
+        exit(res.returncode)
+    else:
+        return res
+
 
 def dialoge_entity_type():
     entities = models.get_entities()
