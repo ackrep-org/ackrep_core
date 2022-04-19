@@ -124,7 +124,9 @@ class TestCases2(DjangoTestCase):
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = subprocess.run(["ackrep", "-cs", "problem_solutions/acrobot_swingup_with_pytrajectory/metadata.yml"], capture_output=True)
+        res = subprocess.run(
+            ["ackrep", "-cs", "problem_solutions/acrobot_swingup_with_pytrajectory/metadata.yml"], capture_output=True
+        )
         res.exited = res.returncode
         res.stdout = utf8decode(res.stdout)
         res.stderr = utf8decode(res.stderr)
@@ -203,9 +205,7 @@ class TestCases2(DjangoTestCase):
             result = core.get_data_files(system_model_entity.base_path, endswith_str=".png", create_media_links=True)
         except OSError:
             result = []
-        self.assertTrue(
-            len(result) > 0
-        )
+        self.assertTrue(len(result) > 0)
 
     def test_get_available_solutions(self):
         problem_spec = core.model_utils.get_entity("4ZZ9J")
@@ -303,7 +303,6 @@ class TestCases2(DjangoTestCase):
 
         self.assertEqual(res.returncode, 0)
 
-
     def test_create_pdf(self):
         # first check if pdflatex is installed and included in path
         res = subprocess.run(["pdflatex", "--help"], shell=True, capture_output=True)
@@ -350,7 +349,6 @@ class TestCases2(DjangoTestCase):
         self.assertEqual(len(files_dict[".tex"]), 2)
 
         # reset unittest_repo
-
 
     def test_parameter_import(self, key="UXMFA"):
         # test with correct data

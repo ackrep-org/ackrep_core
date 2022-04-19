@@ -28,10 +28,14 @@ def main():
         "-csm", "--check-system-model", metavar="metadatafile", help="check system_model (specified by metadata file)"
     )
     argparser.add_argument(
-        "--update-parameter-tex", metavar="metadatafile", help="update parameters in tex file (entity is specified by metadata file)"
+        "--update-parameter-tex",
+        metavar="metadatafile",
+        help="update parameters in tex file (entity is specified by metadata file)",
     )
     argparser.add_argument(
-        "--create-pdf", metavar="metadatafile", help="create pdf of system model from tex file (entity is specified by metadata file)"
+        "--create-pdf",
+        metavar="metadatafile",
+        help="create pdf of system model from tex file (entity is specified by metadata file)",
     )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
@@ -42,7 +46,9 @@ def main():
     argparser.add_argument("--dd", help="start interactive IPython shell for debugging", action="store_true")
     argparser.add_argument("--md", help="shortcut for `-m metadata.yml`", action="store_true")
     argparser.add_argument("-m", "--metadata", help="process metadata in yaml syntax (.yml file). ")
-    argparser.add_argument("--show-debug", help="set exitflags false in order to see underlying debug outputs", action="store_true")
+    argparser.add_argument(
+        "--show-debug", help="set exitflags false in order to see underlying debug outputs", action="store_true"
+    )
 
     args = argparser.parse_args()
 
@@ -204,6 +210,7 @@ def check_system_model(arg0: str, exitflag: bool = True):
     else:
         return res
 
+
 def update_parameter_tex(arg0: str, exitflag: bool = True):
     """
 
@@ -227,7 +234,8 @@ def update_parameter_tex(arg0: str, exitflag: bool = True):
     assert isinstance(entity, models.SystemModel)
     # IPS()
     res = system_model_management.update_parameter_tex(key=key)
-    
+
+
 def create_pdf(arg0: str, exitflag: bool = True):
     """
 
