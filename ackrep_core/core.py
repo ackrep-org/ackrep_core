@@ -414,17 +414,22 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
     return entity_list
 
 
-def get_solution_data_files(sol_base_path, endswith_str=None, create_media_links=False):
+def get_data_files(base_path, endswith_str=None, create_media_links=False):
     """
-    walk through <base_path>/_solution_data and return the path of all matching files
+    walk through <base_path>/_solution_data or <base_path>/_system_model_data depending on the base_path
+    and return the path of all matching files
 
-    :param sol_base_path:
+    :param base_path: entity.base_path
     :param endswith_str:
     :param create_media_links:  if True, create symlinks in `settings.MEDIA_ROOT` to these files
     :return:
     """
-
-    startdir = os.path.join(root_path, sol_base_path, "_solution_data")
+    if "system_models" in base_path:
+        startdir = os.path.join(root_path, base_path, "_system_model_data")
+    elif "problem_solutions" in base_path:
+        startdir = os.path.join(root_path, base_path, "_solution_data")
+    else:
+        raise FileNotFoundError("invalid path!")
 
     if not os.path.isdir(startdir):
         return []
@@ -439,69 +444,24 @@ def get_solution_data_files(sol_base_path, endswith_str=None, create_media_links
         def matchfunc(fn):
             return fn.endswith(endswith_str)
 
-    abs_solution_files = list(get_files_by_pattern(startdir, matchfunc))
+    abs_files = list(get_files_by_pattern(startdir, matchfunc))
 
     # convert absolute paths into relative paths (w.r.t. `root_path`)
 
-    solution_files = [f.replace(f"{root_path}{os.path.sep}", "") for f in abs_solution_files]
+    files = [f.replace(f"{root_path}{os.path.sep}", "") for f in abs_files]
 
     if create_media_links:
         result = []
-        for abs_path, rel_path in zip(abs_solution_files, solution_files):
+        for abs_path, rel_path in zip(abs_files, files):
             link = rel_path.replace(os.path.sep, "_")
             abs_path_link = os.path.join(settings.MEDIA_ROOT, link)
             if not os.path.exists(abs_path_link):
-                os.symlink(abs_path, abs_path_link)
+                os.link(abs_path, abs_path_link)
             result.append(f"{settings.MEDIA_URL}{link}")
 
         return result
     else:
-        return solution_files
-
-
-def get_system_model_data_files(system_model_base_path, endswith_str=None, create_media_links=False):
-    """
-    walk through <base_path> and return the path of all matching files
-
-    :param sol_base_path:
-    :param endswith_str:
-    :param create_media_links:  if True, create symlinks in `settings.MEDIA_ROOT` to these files
-    :return:
-    """
-
-    startdir = os.path.join(root_path, system_model_base_path, "_system_model_data")
-
-    if not os.path.isdir(startdir):
-        return []
-
-    if endswith_str is None:
-        # noinspection PyUnusedLocal
-        def matchfunc(fn):
-            return True
-
-    else:
-
-        def matchfunc(fn):
-            return fn.endswith(endswith_str)
-
-    abs_system_model_files = list(get_files_by_pattern(startdir, matchfunc))
-
-    # convert absolute paths into relative paths (w.r.t. `root_path`)
-
-    system_model_files = [f.replace(f"{root_path}{os.path.sep}", "") for f in abs_system_model_files]
-
-    if create_media_links:
-        result = []
-        for abs_path, rel_path in zip(abs_system_model_files, system_model_files):
-            link = rel_path.replace(os.path.sep, "_")
-            abs_path_link = os.path.join(settings.MEDIA_ROOT, link)
-            if not os.path.exists(abs_path_link):
-                os.symlink(abs_path, abs_path_link)
-            result.append(f"{settings.MEDIA_URL}{link}")
-
-        return result
-    else:
-        return system_model_files
+        return files
 
 
 def make_method_build(method_package, accept_existing=True):

@@ -143,7 +143,7 @@ class CheckSolutionView(View):
         c.view_type_title = "Check Solution for:"
         c.cs_result = cs_result
 
-        c.image_list = core.get_solution_data_files(sol_entity.base_path, endswith_str=".png", create_media_links=True)
+        c.image_list = core.get_data_files(sol_entity.base_path, endswith_str=".png", create_media_links=True)
 
         if cs_result.returncode == 0:
             c.cs_result_css_class = "cs_success"
@@ -279,9 +279,9 @@ class SimulateSystemModelView(View):
         c.view_type_title = "Simulation for:"
         c.cs_result = cs_result
 
-        c.image_list = core.get_system_model_data_files(model_entity.base_path, endswith_str=".png", create_media_links=True)
-        c.pdf_list = core.get_system_model_data_files(model_entity.base_path, endswith_str=".pdf", create_media_links=True)
-        # IPS()
+        c.image_list = core.get_data_files(model_entity.base_path, endswith_str=".png", create_media_links=True)
+        c.pdf_list = core.get_data_files(model_entity.base_path, endswith_str=".pdf", create_media_links=True)
+
         if cs_result.returncode == 0:
             c.cs_result_css_class = "cs_success"
             c.cs_verbal_result = "Success"

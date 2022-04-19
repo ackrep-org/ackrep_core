@@ -133,18 +133,18 @@ class TestCases2(DjangoTestCase):
 
         self.assertEqual(res.returncode, 0)
 
-    def test_check_system_model(self, key="UXMFA"):
+    def test_check_system_model(self):
 
         # first: run directly
 
-        res = core.check_system_model(key)
+        res = core.check_system_model("UXMFA")
         self.assertEqual(res.returncode, 0)
 
         # second: run via commandline
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = subprocess.run(["ackrep", "-csm", key], capture_output=True)
+        res = subprocess.run(["ackrep", "-csm", "UXMFA"], capture_output=True)
         res.exited = res.returncode
         res.stdout = utf8decode(res.stdout)
         res.stderr = utf8decode(res.stderr)
@@ -163,15 +163,12 @@ class TestCases2(DjangoTestCase):
         self.assertEqual(res.returncode, 0, msg=utf8decode(res.stderr))
         sol_entity = core.model_utils.get_entity("UKJZI")
 
-        all_files = core.get_solution_data_files(sol_entity.base_path)
-        png_files = core.get_solution_data_files(sol_entity.base_path, endswith_str=".png")
-        txt_files = core.get_solution_data_files(sol_entity.base_path, endswith_str=".txt")
+        files_dict = get_data_files_dict(sol_entity.base_path, endings=[".png"])
 
-        self.assertEqual(len(all_files), 1)
-        self.assertEqual(len(png_files), 1)
-        self.assertEqual(len(txt_files), 0)
+        self.assertEqual(len(files_dict["all"]), 1)
+        self.assertEqual(len(files_dict[".png"]), 1)
 
-        plot_file_path = png_files[0]
+        plot_file_path = files_dict[".png"][0]
         self.assertTrue(plot_file_path.endswith("plot.png"))
 
         self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
@@ -181,37 +178,34 @@ class TestCases2(DjangoTestCase):
         self.assertEqual(res.returncode, 0, msg=utf8decode(res.stderr))
         system_model_entity = core.model_utils.get_entity(key)
 
-        all_files = core.get_system_model_data_files(system_model_entity.base_path)
-        png_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".png")
-        pdf_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".pdf")
-        tex_files = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".tex")
+        files_dict = get_data_files_dict(system_model_entity.base_path, endings=[".png", ".pdf", ".tex"])
 
-        self.assertEqual(len(all_files), 4)
-        self.assertEqual(len(png_files), 1)
-        self.assertEqual(len(pdf_files), 1)
-        self.assertEqual(len(tex_files), 2)
+        self.assertEqual(len(files_dict["all"]), 4)
+        self.assertEqual(len(files_dict[".png"]), 1)
+        self.assertEqual(len(files_dict[".pdf"]), 1)
+        self.assertEqual(len(files_dict[".tex"]), 2)
 
-        plot_file_path = png_files[0]
+        plot_file_path = files_dict[".png"][0]
         self.assertTrue(plot_file_path.endswith("plot.png"))
 
         self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
 
-    def test_symbolic_link_privileges(self):
-        """this test has to be run as admin"""
-        # check if symbolic links can be created
-        # first: delete existing symbolic links       
+    def test_create_media_links(self):
+        # first: delete existing links
         media_path = settings.MEDIA_ROOT
         files = os.listdir(media_path)
         for file in files:
             os.remove(os.path.join(media_path, file))
-        
-        # second: try creating new symbolic link
+
+        # second: try creating new link
         system_model_entity = core.model_utils.get_entity("UXMFA")
         try:
-            result = core.get_system_model_data_files(system_model_entity.base_path, endswith_str=".png", create_media_links=True)
+            result = core.get_data_files(system_model_entity.base_path, endswith_str=".png", create_media_links=True)
         except OSError:
             result = []
-        self.assertTrue(len(result) > 0, msg="Windows problem: symbolik links cannot be created. Try Running this test with admin privileges! If that dosn't work, see docs.")
+        self.assertTrue(
+            len(result) > 0
+        )
 
     def test_get_available_solutions(self):
         problem_spec = core.model_utils.get_entity("4ZZ9J")
@@ -359,3 +353,22 @@ def utf8decode(obj):
         return obj.decode("utf8")
     else:
         return obj
+
+
+def get_data_files_dict(path, endings=[]):
+    """fetch all data filed from given path and put them in dict with the following keys:
+    - "all"
+    - entries of endings
+
+    Args:
+        path: entity.base_path
+        endings : array of ending strings, e.g. [".png", ".pdf"]
+
+    Returns:
+        dict: dictionary of files
+    """
+    ending_files_dict = dict()
+    ending_files_dict["all"] = core.get_data_files(path)
+    for ending in endings:
+        ending_files_dict[ending] = core.get_data_files(path, ending)
+    return ending_files_dict
