@@ -24,7 +24,7 @@ For more infos see doc/devdoc/README.md.
 
 ackrep_data_test_repo_path = core.data_test_repo_path
 # default_repo_head_hash = "f2a7ca9322334ce65e78daaec11401153048ceb6"  # 2021-04-12 00:45:46
-default_repo_head_hash = "2c8abb9404af59cbe763073ffc37c60fd18cf5a1"  # 2022-04-13 branch for_unittests
+default_repo_head_hash = "c931f25b3eacad8e0ca495de49c3c488135bdb61"  # 2022-04-13 22:15 branch for_unittests
 
 
 class TestCases1(DjangoTestCase):
