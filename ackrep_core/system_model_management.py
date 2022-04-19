@@ -365,17 +365,9 @@ def update_parameter_tex(key):
     file = open("parameters.tex", 'w')
     file.write(tex)
     file.close()
-    
-    # delete aux files created by latex
-    # TODO: better solution fpr sleep, right now this is done since aux files take some time to be generated
-    import time
-    time.sleep(3)
-    all_files = core.get_system_model_data_files(parameters.base_path)
-    allowed_list = [".tex", ".png", ".pdf"]
 
-    for file in all_files:
-        if file[-4:] not in allowed_list:
-            os.remove(os.path.split(file)[1])
+    return 0
+
 
 def create_pdf(key, output_path=None):
     """create new documentation.pdf from documentation.tex and parameters.tex, specified by key.
@@ -387,7 +379,7 @@ def create_pdf(key, output_path=None):
     tex_path = os.path.join(root_path, base_path, "_system_model_data")
     os.chdir(tex_path)
     if output_path is None:
-    res = subprocess.run(["pdflatex", "documentation.tex"], capture_output=True)
+        res = subprocess.run(["pdflatex", "documentation.tex"], capture_output=True)
     else:
         test_dir = os.path.join(tex_path, output_path)
         if not os.path.isdir(test_dir):
@@ -433,8 +425,9 @@ def import_parameters(key):
     Returns:
         module: parameters
     """
+    # TODO: root_path is incorrect when running unittests
     sys.path.insert(0, root_path)
-    
+
     system_model_entity = core.model_utils.get_entity(key)
     base_path = system_model_entity.base_path
     mod_path = os.path.join(base_path, "parameters")
@@ -445,10 +438,11 @@ def import_parameters(key):
     parameters = importlib.import_module(mod_path)
     parameters.base_path = base_path
 
-    assert hasattr(parameters, "pp_symb")
-    assert hasattr(parameters, "pp_sf")
+    parameters.parameter_check = check_system_parameters(parameters)
+    assert parameters.parameter_check == 0
+
     pp_nv = list(sp.Matrix(parameters.pp_sf).subs(parameters.pp_subs_list))
-    pp_dict = {parameters.pp_symb[i]:pp_nv[i] for i in range(len(parameters.pp_symb))}
+    pp_dict = {parameters.pp_symb[i]: pp_nv[i] for i in range(len(parameters.pp_symb))}
 
     def get_default_parameters():
         return pp_dict
@@ -458,3 +452,33 @@ def import_parameters(key):
     parameters.get_symbolic_parameters = get_symbolic_parameters
 
     return parameters
+
+
+def check_system_parameters(parameters):
+    """check if parameter module has correct attributes
+    # TODO: check if attributes are of correct type etc. (pydantic)
+    Args:
+        parameters (module):
+    """
+    if not hasattr(parameters, "model_name"):
+        return 1
+    if not hasattr(parameters, "pp_symb"):
+        return 2
+    if not hasattr(parameters, "pp_sf"):
+        return 3
+    if not hasattr(parameters, "pp_subs_list"):
+        return 4
+    if not hasattr(parameters, "latex_names"):
+        return 5
+    if not hasattr(parameters, "tabular_header"):
+        return 6
+    if not hasattr(parameters, "col_alignment"):
+        return 7
+    if not hasattr(parameters, "col_1"):
+        return 8
+    if not hasattr(parameters, "start_columns_list"):
+        return 9
+    if not hasattr(parameters, "end_columns_list"):
+        return 10
+
+    return 0

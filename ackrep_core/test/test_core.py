@@ -289,10 +289,11 @@ class TestCases2(DjangoTestCase):
 
     def test_update_parameter_tex(self):
         # call directly
-        system_model_management.update_parameter_tex("UXMFA")
-        # check if latex files are leftover
-        self.test_get_system_model_data_files()
+        res = system_model_management.update_parameter_tex("UXMFA")
+        self.assertEqual(res, 0)
+
         # call command line
+        os.chdir(ackrep_data_test_repo_path)
         res = subprocess.run(["ackrep", "--update-parameter-tex", "UXMFA"], capture_output=True)
         res.exited = res.returncode
         res.stdout = utf8decode(res.stdout)
@@ -301,8 +302,7 @@ class TestCases2(DjangoTestCase):
             print(res.stderr)
 
         self.assertEqual(res.returncode, 0)
-        # check if latex files are leftover
-        self.test_get_system_model_data_files()
+
 
     def test_create_pdf(self):
         # first check if pdflatex is installed and included in path
@@ -351,20 +351,20 @@ class TestCases2(DjangoTestCase):
 
         # reset unittest_repo
 
-    
-    def test_parameters_py(self, key="UXMFA"):
-        parameters = system_model_management.import_parameters(key)
-        self.assertTrue(hasattr(parameters, "model_name"))
-        self.assertTrue(hasattr(parameters, "pp_symb"))
-        self.assertTrue(hasattr(parameters, "pp_sf"))
-        self.assertTrue(hasattr(parameters, "pp_subs_list"))
-        self.assertTrue(hasattr(parameters, "latex_names"))
-        self.assertTrue(hasattr(parameters, "tabular_header"))
-        self.assertTrue(hasattr(parameters, "col_alignment"))
-        self.assertTrue(hasattr(parameters, "col_1"))
-        self.assertTrue(hasattr(parameters, "start_columns_list"))
-        self.assertTrue(hasattr(parameters, "end_columns_list"))
 
+    def test_parameter_import(self, key="UXMFA"):
+        # test with correct data
+        parameters = system_model_management.import_parameters(key)
+        self.assertEqual(parameters.parameter_check, 0)
+
+        # test with incorrect data
+        delattr(parameters, "pp_sf")
+        res = system_model_management.check_system_parameters(parameters)
+        self.assertEqual(res, 3)
+
+        delattr(parameters, "pp_symb")
+        res = system_model_management.check_system_parameters(parameters)
+        self.assertEqual(res, 2)
 
 
 def utf8decode(obj):
