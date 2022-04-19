@@ -376,81 +376,8 @@ class TestCases3(SimpleTestCase):
         tag_list = core.util.smart_parse(e.tag_list)
         self.assertTrue(isinstance(tag_list, list))
 
-    def test_update_parameter_tex(self):
-        # call directly
-        system_model_management.update_parameter_tex("UXMFA")
-        # check if latex files are leftover
-        self.test_get_system_model_data_files()
-        # call command line
-        res = subprocess.run(["ackrep", "--update-parameter-tex", "UXMFA"], capture_output=True)
-        res.exited = res.returncode
-        res.stdout = utf8decode(res.stdout)
-        res.stderr = utf8decode(res.stderr)
-        if res.returncode != 0:
-            print(res.stderr)
 
-        self.assertEqual(res.returncode, 0)
-        # check if latex files are leftover
-        self.test_get_system_model_data_files()
-
-        # ensure repo is clean again
-        # TODO: remove this if png is removed from repo
-        reset_repo(ackrep_data_test_repo_path)
-
-    def test_create_pdf(self):
-        # first check if pdflatex is installed and included in path
-        if platform.system() == "Windows":
-            # TODO JF: Check if `shell=True` is really necessary on Windows
-            # on Linux it provokes undesired behavior
-            res = subprocess.run(["pdflatex", "--help"], shell=True, capture_output=True)
-        else:
-            res = subprocess.run(["pdflatex", "--help"], shell=False, capture_output=True)
-        
-        res.exited = res.returncode
-        res.stdout = utf8decode(res.stdout)
-        res.stderr = utf8decode(res.stderr)
-        if res.returncode != 0:
-            print(res.stderr)
-
-        self.assertEqual(res.returncode, 0, msg="pdflatex not found! Check installation and its existence in PATH!")
-
-        # call directly 
-        system_model_management.create_pdf("UXMFA")
-        # TODO JF: decide how to proceed with these comments:
-        # check if latex files are leftover
-        # self.test_get_system_model_data_files()
-        
-        # # call command line
-        # res = subprocess.run(["ackrep", "--create-pdf", "UXMFA"], capture_output=True)
-        # res.exited = res.returncode
-        # res.stdout = utf8decode(res.stdout)
-        # res.stderr = utf8decode(res.stderr)
-        # if res.returncode != 0:
-        #     print(res.stderr)
-
-        # self.assertEqual(res.returncode, 0)
-        # # check if latex files are leftover
-        # self.test_get_system_model_data_files()
-
-        # leave the repo in a clean state
-        reset_repo(ackrep_data_test_repo_path)
-
-    
-    def test_parameters_py(self, key="UXMFA"):
-        parameters = system_model_management.import_parameters(key)
-        self.assertTrue(hasattr(parameters, "model_name"))
-        self.assertTrue(hasattr(parameters, "pp_symb"))
-        self.assertTrue(hasattr(parameters, "pp_sf"))
-        self.assertTrue(hasattr(parameters, "pp_subs_list"))
-        self.assertTrue(hasattr(parameters, "latex_names"))
-        self.assertTrue(hasattr(parameters, "tabular_header"))
-        self.assertTrue(hasattr(parameters, "col_alignment"))
-        self.assertTrue(hasattr(parameters, "col_1"))
-        self.assertTrue(hasattr(parameters, "start_columns_list"))
-        self.assertTrue(hasattr(parameters, "end_columns_list"))
-
-
-class TestCases3(DjangoTestCase):
+class TestCases4(DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.
     
@@ -460,65 +387,6 @@ class TestCases3(DjangoTestCase):
     
     def setUp(self):
         core.load_repo_to_db(ackrep_data_test_repo_path)
-
-    def test_ontology(self):
-
-        # check the ontology manager
-        OM = core.AOM.OM
-        self.assertFalse(OM is None)
-        self.assertTrue(len(list(OM.n.ACKREP_ProblemSpecification.instances())) > 0)
-
-        qsrc = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_entity_key "4ZZ9J".}}'
-        res = OM.make_query(qsrc)
-        self.assertEqual(len(res), 1)
-        ps_double_integrator_transition = res.pop()
-
-        qsrc = f"PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_ontology_based_tag P:iLinear_State_Space_System.}}"
-        res = OM.make_query(qsrc)
-        self.assertTrue(ps_double_integrator_transition in res)
-
-        # get list of all possible tags (instances of OCSE_Entity and its subclasses)
-        qsrc = f"""PREFIX P: <{OM.iri}>
-            SELECT ?entity
-            WHERE {{
-              ?entity rdf:type ?type.
-              ?type rdfs:subClassOf* P:OCSE_Entity.
-            }}
-        """
-        res = OM.make_query(qsrc)
-        self.assertTrue(len(res) > 40)
-
-        res2 = core.AOM.get_list_of_all_ontology_based_tags()
-
-        qsrc = f"""PREFIX P: <{OM.iri}>
-            SELECT ?entity
-            WHERE {{
-              ?entity P:has_entity_key "J73Y9".
-            }}
-        """
-        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
-        self.assertEqual(oe, [])
-        self.assertTrue(isinstance(ae[0], core.models.ProblemSpecification))
-
-        qsrc = f"""PREFIX P: <{OM.iri}>
-            SELECT ?entity
-            WHERE {{
-              ?entity P:has_ontology_based_tag P:iTransfer_Function.
-            }}
-        """
-        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
-        self.assertTrue(len(ae) > 0)
-
-        qsrc = f"""
-        PREFIX P: <https://ackrep.org/draft/ocse-prototype01#>
-        SELECT ?entity
-        WHERE {{
-          ?entity P:has_entity_key "M4PDA".
-        }}
-        """
-        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
-        self.assertTrue(len(ae) == 1)
-        # IPS(print_tb=-1)
 
     def test_update_parameter_tex(self):
         # call directly
@@ -538,12 +406,8 @@ class TestCases3(DjangoTestCase):
 
     def test_create_pdf(self):
         # first check if pdflatex is installed and included in path
-        if platform.system() == "Windows":
-            # TODO: Check if `shell=True` is really necessary on Windows
-            # on Linux it provokes undesired behavior
-            res = subprocess.run(["pdflatex", "--help"], shell=True, capture_output=True)
-        else:
-            res = subprocess.run(["pdflatex", "--help"], shell=False, capture_output=True)
+        # TODO: if there is a problem with this, `shell=True` might solve it on Windows
+        res = subprocess.run(["pdflatex", "--help"], capture_output=True)
         res.exited = res.returncode
         res.stdout = utf8decode(res.stdout)
         res.stderr = utf8decode(res.stderr)
@@ -570,7 +434,6 @@ class TestCases3(DjangoTestCase):
         self.assertEqual(len(files_dict[".tex"]), 2)
 
         ## call command line
-        os.chdir(ackrep_data_test_repo_path)
         res = subprocess.run(["ackrep", "--create-pdf", "UXMFA"], capture_output=True)
         res.exited = res.returncode
         res.stdout = utf8decode(res.stdout)
@@ -587,6 +450,7 @@ class TestCases3(DjangoTestCase):
         self.assertEqual(len(files_dict[".tex"]), 2)
 
         # reset unittest_repo
+        reset_repo(ackrep_data_test_repo_path)
 
     def test_parameter_import(self, key="UXMFA"):
         # test with correct data
@@ -601,24 +465,6 @@ class TestCases3(DjangoTestCase):
         delattr(parameters, "pp_symb")
         res = system_model_management.check_system_parameters(parameters)
         self.assertEqual(res, 2)
-    def test_import_repo(self):
-
-        # ensure database is empty
-        core.clear_db()
-
-        entity_dict = core.get_entity_dict_from_db()
-        # key: str, value: list
-
-        # the lists should be each of length 0
-        all_values = sum(entity_dict.values(), [])
-        self.assertEqual(len(all_values), 0)
-
-        # the number of keys should be the same as the number of entity types
-
-        self.assertEqual(len(entity_dict), len(core.model_utils.get_entity_types()))
-
-        # TODO: load repo and assess the content
-        # core.load_repo_to_db(ackrep_data_test_repo_path)
 
 
 def utf8decode(obj):
@@ -645,6 +491,8 @@ def get_data_files_dict(path, endings=[]):
     for ending in endings:
         ending_files_dict[ending] = core.get_data_files(path, ending)
     return ending_files_dict
+
+
 def strip_decode(obj) -> str:
 
     # get rid of some (ipython-related boilerplate bytes (ended by \x07))
