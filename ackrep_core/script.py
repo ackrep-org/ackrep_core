@@ -247,7 +247,7 @@ def get_metadata_path_from_key(arg0: str, absflag: bool = True, exitflag: bool =
 
     entity = core.get_entities_with_key(arg0, raise_error_on_empty=True)[0]    
 
-    path = os.path.join(entity.base_path, "metada.yml")
+    path = os.path.join(entity.base_path, "metadata.yml")
     if absflag:
         path = os.path.join(core.root_path, path)
     print(path)
