@@ -197,7 +197,8 @@ class TestCases2(DjangoTestCase):
         media_path = settings.MEDIA_ROOT
         files = os.listdir(media_path)
         for file in files:
-            os.remove(os.path.join(media_path, file))
+            if file != "empty":
+                os.remove(os.path.join(media_path, file))
 
         # second: try creating new link
         system_model_entity = core.model_utils.get_entity("UXMFA")
