@@ -7,7 +7,7 @@ from ackrep_core import core
 test_metadata = core.Container(db_initialized=False)
 
 # this function must not have "test" inside its name for not beeing interpreted as test case
-def load_repo_to_db_for_tsts(repo_path:str) -> None:
+def load_repo_to_db_for_tests(repo_path:str) -> None:
     """
     Call core.load_repo_to_db(...) depending on some environment variable.
 

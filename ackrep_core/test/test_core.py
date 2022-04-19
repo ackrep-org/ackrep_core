@@ -10,7 +10,7 @@ from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core, system_model_management
 
-from ._test_utils import load_repo_to_db_for_tsts, reset_repo
+from ._test_utils import load_repo_to_db_for_tests, reset_repo
 
 from ipydex import IPS  # only for debugging
 
@@ -194,7 +194,7 @@ class TestCases3(SimpleTestCase):
     databases = '__all__'
 
     def setUp(self):
-        load_repo_to_db_for_tsts(ackrep_data_test_repo_path)
+        load_repo_to_db_for_tests(ackrep_data_test_repo_path)
 
     def tearDown(self):
         # optionally check if repo is clean
