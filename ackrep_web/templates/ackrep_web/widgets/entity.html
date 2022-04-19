@@ -55,6 +55,11 @@
             {% endif %}
             <b>Output:</b><br>
             <pre>{{c.cs_result.stdout}}</pre>
+            {% if c.cs_results.stderr %}
+            <!--utc_error_message -->
+            <b>Error Message:</b><br>
+            <pre>{{c.cs_result.stderr}}</pre>
+            {% endif %}
         {% endif %} {#viewtype#}
     {% elif entity.type == "problem_specification" %}
         <b>Available solutions:</b>
