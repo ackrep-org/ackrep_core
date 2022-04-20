@@ -2,7 +2,7 @@ ipydex
 pyyaml
 colorama
 questionary
-django
+django<4.0
 django-bleach
 django-nose
 jinja2
@@ -13,3 +13,6 @@ control
 # the following need additional system packages (see dockerfile): gfortran libblas-dev liblapack-dev
 slycot
 casadi
+symbtools
+pytrajectory
+tabulate
