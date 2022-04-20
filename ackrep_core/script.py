@@ -391,7 +391,7 @@ def bootstrap_db(db: str) -> None:
     if db == "main":
         fname = "db.sqlite3"
     else:
-        fname = "db_for_unittest.sqlite3"
+        fname = "db_for_unittests.sqlite3"
 
     env_db_path = os.environ.get("ACKREP_DATABASE_PATH")
     db_path = os.path.abspath(fname)
