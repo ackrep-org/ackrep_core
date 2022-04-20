@@ -1,4 +1,5 @@
 import os
+import subprocess
 from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core
@@ -58,3 +59,41 @@ def reset_repo(repo_path):
 
     repo = Repo(repo_path)
     repo.head.reset(index=True, working_tree=True)
+
+
+def utf8decode(obj):
+    if hasattr(obj, "decode"):
+        return obj.decode("utf8")
+    else:
+        return obj
+
+
+def strip_decode(obj) -> str:
+
+    # get rid of some (ipython-related boilerplate bytes (ended by \x07))
+    delim = b"\x07"
+    obj = obj.split(delim)[-1]
+    return utf8decode(obj)
+
+
+def run_command(arglist, capture_output=True, **kwargs):
+    """
+    Unified handling of calling commands.
+    Automatically prints an error message if necessary.
+    """
+    res = subprocess.run(arglist, capture_output=capture_output, **kwargs)
+    res.exited = res.returncode
+    res.stdout = strip_decode(res.stdout)
+    res.stderr = strip_decode(res.stderr)
+    if res.returncode != 0:
+        msg = f"""
+        The command `{' '.join(arglist)}` exited with returncode {res.returncode}.
+
+        stdout: {res.stdout}
+
+        stderr: {res.stderr}
+        """
+        print(res.stderr)
+
+    return res
+

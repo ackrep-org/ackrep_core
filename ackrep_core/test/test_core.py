@@ -10,7 +10,7 @@ from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core, system_model_management
 
-from ._test_utils import load_repo_to_db_for_tests, reset_repo
+from ._test_utils import load_repo_to_db_for_tests, reset_repo, run_command, utf8decode, strip_decode
 
 from ipydex import IPS  # only for debugging
 
@@ -91,6 +91,18 @@ class TestCases1(DjangoTestCase):
 
         self.assertEqual(repo_head_hash, default_repo_head_hash, msg=msg)
 
+    def test_logging(self):
+        res = run_command(["ackrep", "--test-logging", "--log=10"])
+        lines = res.stdout.strip().split("\n")
+        self.assertEqual(len(lines), 5)
+        self.assertIn("critical", lines[0])
+        self.assertIn("debug", lines[-1])
+
+        res = run_command(["ackrep", "--test-logging", "--log=30"])
+        lines = res.stdout.strip().split("\n")
+        self.assertEqual(len(lines), 3)
+        self.assertIn("critical", lines[0])
+        self.assertIn("warning", lines[-1])
 
 class TestCases2(DjangoTestCase):
     """
@@ -467,13 +479,6 @@ class TestCases4(DjangoTestCase):
         self.assertEqual(res, 2)
 
 
-def utf8decode(obj):
-    if hasattr(obj, "decode"):
-        return obj.decode("utf8")
-    else:
-        return obj
-
-
 def get_data_files_dict(path, endings=[]):
     """fetch all data filed from given path and put them in dict with the following keys:
     - "all"
@@ -493,9 +498,3 @@ def get_data_files_dict(path, endings=[]):
     return ending_files_dict
 
 
-def strip_decode(obj) -> str:
-
-    # get rid of some (ipython-related boilerplate bytes (ended by \x07))
-    delim = b"\x07"
-    obj = obj.split(delim)[-1]
-    return utf8decode(obj)

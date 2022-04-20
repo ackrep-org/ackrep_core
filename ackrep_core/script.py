@@ -63,7 +63,19 @@ def main():
         "--show-debug", help="set exitflags false in order to see underlying debug outputs", action="store_true"
     )
 
+    argparser.add_argument(
+        "--log", metavar="loglevel", help="specify log level: DEBUG (10), INFO, WARNING, ERROR, CRITICAL (50)",
+        type=int
+    )
+
+    argparser.add_argument(
+        "--test-logging", help="print out some dummy messages for each logging category", action="store_true"
+    )
+
     args = argparser.parse_args()
+
+    if  args.log:
+        core.logger.setLevel(int(args.log))
 
     if args.new:
         create_new_entity()
@@ -124,6 +136,8 @@ def main():
         bootstrap_db(db="main")
     elif args.bootstrap_test_db:
         bootstrap_db(db="test")
+    elif args.test_logging:
+        core.send_log_messages()
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()

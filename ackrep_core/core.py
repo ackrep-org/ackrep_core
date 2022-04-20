@@ -5,6 +5,7 @@ import pathlib
 import time
 import subprocess
 import shutil
+import logging
 from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
@@ -42,6 +43,19 @@ from .util import (
 )
 
 from . import util
+
+# initialize logging with default loglevel (might be overwritten by command line option)
+# see https://docs.python.org/3/howto/logging-cookbook.html
+defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.WARNING)
+logger = logging.getLogger("ackrep_logger")
+FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
+DATEFORMAT= "%H:%M:%S"
+formatter = logging.Formatter(fmt=FORMAT, datefmt=DATEFORMAT)
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(defaul_loglevel)
+
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
 
@@ -746,6 +760,16 @@ def get_merge_request_dict():
     }
 
     return mr_dict
+
+def send_log_messages()->None:
+    """
+    Create a log message of every category. Main purpose: to be used in unit tests.
+    """
+    logger.critical("critical")
+    logger.error("error")
+    logger.warn("warning")
+    logger.info("info")
+    logger.debug("debug")
 
 
 AOM = ACKREP_OntologyManager()
