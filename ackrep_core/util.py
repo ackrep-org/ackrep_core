@@ -15,13 +15,11 @@ core_pkg_path = os.path.dirname(mod_path)
 
 # root_path: path of the general project root
 # (expected to contain ackrep_data, ackrep_core, ackrep_deployment, ...)
-root_path = os.environ.get("ACKREP_ROOT_PATH")
-if not (root_path):
+if not (root_path := os.environ.get("ACKREP_ROOT_PATH")):
     root_path = os.path.abspath(os.path.join(mod_path, "..", ".."))
 
 # this env-variable will be set e.g. by unit tests to make cli invocations from tests work
-data_path = os.environ.get("ACKREP_DATA_PATH")
-if not (data_path):
+if not (data_path := os.environ.get("ACKREP_DATA_PATH")):
 # paths for (ackrep_data and its test-related clone)
     data_path = os.path.join(root_path, "ackrep_data")
 

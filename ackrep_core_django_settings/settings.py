@@ -80,8 +80,7 @@ TEMPLATES = [
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
 # allow for separate databases, e.g. to handle unittests that make cli calls to `ackrep`
-database_path = os.environ.get("ACKREP_DATABASE_PATH")
-if not (database_path):
+if not (database_path := os.environ.get("ACKREP_DATABASE_PATH")):
     # use default db name
     database_path = os.path.join(BASE_DIR, "db.sqlite3")
 
