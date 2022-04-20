@@ -3,6 +3,7 @@ import subprocess
 import pprint
 import questionary
 from django.core import management
+from django.conf import settings
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -406,7 +407,8 @@ def bootstrap_db(db: str) -> None:
         os.unlink(fname)
     except FileNotFoundError:
         pass
-
+    
+    settings.DATABASES["default"]["NAME"] = db_path
     management.call_command("migrate", "--run-syncdb")
 
     # return to old working dir
