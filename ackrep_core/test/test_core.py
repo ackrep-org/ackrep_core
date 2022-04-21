@@ -93,15 +93,16 @@ class TestCases1(DjangoTestCase):
 
     def test_logging(self):
         res = run_command(["ackrep", "--test-logging", "--log=10"])
-        relevant_output = res.stdout.strip().split("- - - demo log messages - - -\n")[-1]
-        lines = relevant_output.split("\n")
+        nl = os.linesep
+        relevant_output = res.stdout.strip().split(f"- - - demo log messages - - -{nl}")[-1]
+        lines = relevant_output.split(nl)
         self.assertEqual(len(lines), 5)
         self.assertIn("critical", lines[0])
         self.assertIn("debug", lines[-1])
 
         res = run_command(["ackrep", "--test-logging", "--log=30"])
-        relevant_output = res.stdout.strip().split("- - - demo log messages - - -\n")[-1]
-        lines = relevant_output.split("\n")
+        relevant_output = res.stdout.strip().split(f"- - - demo log messages - - -{nl}")[-1]
+        lines = relevant_output.split(nl)
         self.assertEqual(len(lines), 3)
         self.assertIn("critical", lines[0])
         self.assertIn("warning", lines[-1])
@@ -399,7 +400,7 @@ class TestCases3(SimpleTestCase):
         key = "UXMFA"
         res = run_command(["ackrep", "--show-entity-info", key])
         self.assertEqual(res.returncode, 0)
-        lines = res.stdout.strip().split("\n")
+        lines = res.stdout.strip().split(os.linesep)
         self.assertGreaterEqual(len(lines), 4)
 
     def test_update_parameter_tex(self):
@@ -417,6 +418,9 @@ class TestCases3(SimpleTestCase):
             print(res.stderr)
 
         self.assertEqual(res.returncode, 0)
+
+        # reset unittest_repo (for this test seems only necessary on Windows)
+        reset_repo(ackrep_data_test_repo_path)
 
     def test_create_pdf(self):
         # first check if pdflatex is installed and included in path
