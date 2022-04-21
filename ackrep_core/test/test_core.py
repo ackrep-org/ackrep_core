@@ -419,6 +419,9 @@ class TestCases3(SimpleTestCase):
 
         self.assertEqual(res.returncode, 0)
 
+        # reset unittest_repo (for this test seems only necessary on Windows)
+        reset_repo(ackrep_data_test_repo_path)
+
     def test_create_pdf(self):
         # first check if pdflatex is installed and included in path
         # TODO: if there is a problem with this, `shell=True` might solve it on Windows
