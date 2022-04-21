@@ -689,13 +689,10 @@ def check_system_model(key):
 
     # TODO: plug in containerization here:
     # Note: this hangs on any interactive element inside the script (such as IPS)
-    res = subprocess.run(["python", scriptpath], capture_output=True)
+    res = subprocess.run(["python", scriptpath], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     res.exited = res.returncode
-    res.stdout = res.stdout.decode("utf8")
-    res.stderr = res.stderr.decode("utf8")
     if res.returncode != 0:
-        print(res.stderr, file=sys.stderr)
-
+        print(res.stdout, file=sys.stderr)
     return res
 
 

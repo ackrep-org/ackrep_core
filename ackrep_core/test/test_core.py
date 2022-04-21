@@ -268,19 +268,18 @@ class TestCases3(SimpleTestCase):
         # first: run directly
 
         res = core.check_system_model("UXMFA")
+        if res.returncode != 0:
+            print(res.stdout)
         self.assertEqual(res.returncode, 0)
 
         # second: run via commandline
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = subprocess.run(["ackrep", "-csm", "UXMFA"], capture_output=True)
+        res = subprocess.run(["ackrep", "-csm", "UXMFA"], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         res.exited = res.returncode
-        res.stdout = utf8decode(res.stdout)
-        res.stderr = utf8decode(res.stderr)
         if res.returncode != 0:
-            print(res.stderr)
-
+            print(res.stdout)
         self.assertEqual(res.returncode, 0)
 
         # ensure repo is clean again
