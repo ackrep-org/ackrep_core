@@ -194,7 +194,7 @@ def get_files_by_pattern(directory, match_func):
 
 def clear_db():
 
-    print("Clearing DB...")
+    logger.info("Clearing DB...")
     management.call_command("flush", "--no-input")
 
 
@@ -254,7 +254,7 @@ class ACKREP_OntologyManager(object):
                         instance.has_ontology_based_tag.append(proxy_individual)
                     # IPS(e.key == "M4PDA")
             else:
-                print("unknown entity type:", e)
+                logger.warning(f"unknown entity type: {e}")
 
         if len(list(self.OM.n.ACKREP_ProblemSolution.instances())) == 0:
             msg = "Instances of ACKREP_ProblemSolution are missing. This is unexpected."
@@ -358,7 +358,7 @@ class ACKREP_OntologyManager(object):
 
 
 def load_repo_to_db(startdir, check_consistency=True):
-    print("Completely rebuilding DB from file system")
+    logger.info("Completely rebuilding DB from file system")
 
     clear_db()
 
@@ -366,7 +366,7 @@ def load_repo_to_db(startdir, check_consistency=True):
 
     if check_consistency:
         # TODO: this should be disabled during unittest to save time
-        print("Create internal links between entities (only for consistency checking) ...")
+        logger.debug("Create internal links between entities (only for consistency checking) ...")
         entity_dict = model_utils.get_entity_dict_from_db()
 
         for etype, elist in entity_dict.items():
@@ -393,12 +393,12 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
         status `open` in the database. Also set merge_request to supplied key on new
         entities.
     """
-    print("Searching '%s' and subdirectories for 'metadata.yml'..." % (os.path.abspath(startdir)))
+    logger.debug("Searching '%s' and subdirectories for 'metadata.yml'..." % (os.path.abspath(startdir)))
     meta_data_files = list(get_files_by_pattern(startdir, lambda fn: fn == "metadata.yml"))
     entity_list = []
-    print("Found %d entity metadata files" % (len(meta_data_files)))
+    logger.debug("Found %d entity metadata files" % (len(meta_data_files)))
 
-    print("Creating DB objects...")
+    logger.info("Creating DB objects...")
     for md_path in meta_data_files:
 
         md = get_metadata_from_file(md_path)
@@ -411,7 +411,7 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
         # example: C:\dev\ackrep\ackrep_data\problem_solutions\solution1 --> ackrep_data\problem_solutions\solution1
         base_path_rel = os.path.relpath(base_path_abs, root_path)
         e.base_path = base_path_rel
-        print(e.key, e.base_path)
+        logger.debug(e.key, e.base_path)
 
         duplicates = get_entities_with_key(e.key)
         if (
@@ -427,7 +427,7 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
             e.save()
             entity_list.append(e)
 
-    print("Added %d new entities to DB" % (len(entity_list)))
+    logger.info("Added %d new entities to DB" % (len(entity_list)))
     return entity_list
 
 
@@ -576,7 +576,7 @@ def check_solution(key):
     elif sol_entity.oc.solved_problem_list == 1:
         problem_spec = sol_entity.oc.solved_problem_list[0]
     else:
-        print("Applying a solution to multiple problems is not yet supported. Taking the last one.")
+        logger.warning("Applying a solution to multiple problems is not yet supported. Taking the last one.")
         problem_spec = sol_entity.oc.solved_problem_list[-1]
 
     if problem_spec.problem_file != "problem.py":
@@ -595,7 +595,7 @@ def check_solution(key):
 
     context = dict(c.item_list())
 
-    print("  ... Creating exec-script ... ")
+    logger.info("  ... Creating exec-script ... ")
 
     scriptname = "execscript.py"
 
@@ -606,7 +606,7 @@ def check_solution(key):
     scriptpath = os.path.join(root_path, data_repo_path, scriptname)
     render_template("templates/execscript.py.template", context, target_path=scriptpath)
 
-    print(f"  ... running exec-script {scriptpath} ... ")
+    logger.info(f"  ... running exec-script {scriptpath} ... ")
 
     # TODO: plug in containerization here:
     # Note: this hangs on any interactive element inside the script (such as IPS)
@@ -652,7 +652,7 @@ def check_system_model(key):
 
     context = dict(c.item_list())
 
-    print("  ... Creating exec-script ... ")
+    logger.info("  ... Creating exec-script ... ")
 
     scriptname = "execscript.py"
 
@@ -663,7 +663,7 @@ def check_system_model(key):
     scriptpath = os.path.join(root_path, data_repo_path, scriptname)
     render_template("templates/execscript_system_model.py.template", context, target_path=scriptpath)
 
-    print(f"  ... running exec-script {scriptpath} ... ")
+    logger.info(f"  ... running exec-script {scriptpath} ... ")
 
     # TODO: plug in containerization here:
     # Note: this hangs on any interactive element inside the script (such as IPS)
