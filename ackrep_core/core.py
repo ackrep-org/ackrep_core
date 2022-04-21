@@ -771,5 +771,23 @@ def send_log_messages()->None:
     logger.info("info")
     logger.debug("debug")
 
+def print_entity_info(key:str)-> None:
+    """
+    Print a report on an entity to stdout.
+
+    :param key:    key of the respective entity
+    """
+    entity, = get_entities_with_key(key, raise_error_on_empty=True)
+
+    # this uses print and not logging because the user expects this output independently
+    # from loglevel
+    print("Entity Info",)
+    row_template = "  {:<20}: {}"
+    print(row_template.format("name", entity.name))
+    print(row_template.format("key", entity.key))
+    print(row_template.format("short description", entity.short_description))
+    print(row_template.format("base path", entity.base_path))
+    print()
+
 
 AOM = ACKREP_OntologyManager()

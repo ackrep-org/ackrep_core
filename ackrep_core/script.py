@@ -64,6 +64,10 @@ def main():
     )
 
     argparser.add_argument(
+        "--show-entity-info", metavar="key", help="print out some info about the entity"
+    )
+
+    argparser.add_argument(
         "--log", metavar="loglevel", help="specify log level: DEBUG (10), INFO, WARNING, ERROR, CRITICAL (50)",
         type=int
     )
@@ -136,6 +140,9 @@ def main():
         bootstrap_db(db="main")
     elif args.bootstrap_test_db:
         bootstrap_db(db="test")
+    elif args.show_entity_info:
+        key = args.show_entity_info
+        core.print_entity_info(key)
     elif args.test_logging:
         core.send_log_messages()
     else:

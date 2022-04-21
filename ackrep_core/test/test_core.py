@@ -387,14 +387,24 @@ class TestCases3(SimpleTestCase):
         e = core.model_utils.all_entities()[0]
         tag_list = core.util.smart_parse(e.tag_list)
         self.assertTrue(isinstance(tag_list, list))
-
+    
+    def test_print_entity_info(self):
+        # Note: this test case does not work as a method of a `DjangoTestCase` subclass but only
+        # in a `SimpleTestCase` subclass.
+        key = "UXMFA"
+        res = run_command(["ackrep", "--show-entity-info", key])
+        self.assertEqual(res.returncode, 0)
+        lines = res.stdout.strip().split("\n")
+        self.assertGreaterEqual(len(lines), 4)
 
 class TestCases4(DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.
     
-    Database changes should not be persistent outside this each case.
-    -> Use DjangoTestCase as base class which ensures this behavior ("Transactions")
+    Database changes of **these tests** should **not** be persistent outside each case, e.g. from cli.
+    -> DjangoTestCase ist used as base class which ensures this behavior ("Transactions" [1]).
+
+    [1] https://docs.djangoproject.com/en/4.0/topics/testing/tools/#testcase
     """
     
     def setUp(self):
