@@ -10,7 +10,7 @@ from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core, system_model_management
 
-from ._test_utils import load_repo_to_db_for_tests, reset_repo, run_command, utf8decode, strip_decode
+from ._test_utils import load_repo_to_db_for_ut, reset_repo, run_command, utf8decode, strip_decode
 
 from ipydex import IPS  # only for debugging
 
@@ -208,7 +208,7 @@ class TestCases3(SimpleTestCase):
     databases = '__all__'
 
     def setUp(self):
-        load_repo_to_db_for_tests(ackrep_data_test_repo_path)
+        load_repo_to_db_for_ut(ackrep_data_test_repo_path)
 
     def tearDown(self):
         # optionally check if repo is clean
@@ -304,7 +304,7 @@ class TestCases3(SimpleTestCase):
             "ackrep_data_for_unittests",
             "problem_solutions",
             "double_integrator_transition_with_pytrajectory",
-            "metada.yml"
+            "metadata.yml"
             )
         self.assertEqual(relpath, expected_relpath)
 
@@ -348,6 +348,9 @@ class TestCases3(SimpleTestCase):
         self.assertTrue(plot_file_path.endswith("plot.png"))
 
         self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
+
+        # reset unittest_repo
+        reset_repo(ackrep_data_test_repo_path)
 
     def test_create_media_links(self):
         # first: delete existing links
@@ -398,19 +401,6 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(res.returncode, 0)
         lines = res.stdout.strip().split("\n")
         self.assertGreaterEqual(len(lines), 4)
-
-class TestCases4(DjangoTestCase):
-    """
-    These tests expect the database to be regenerated every time.
-    
-    Database changes of **these tests** should **not** be persistent outside each case, e.g. from cli.
-    -> DjangoTestCase ist used as base class which ensures this behavior ("Transactions" [1]).
-
-    [1] https://docs.djangoproject.com/en/4.0/topics/testing/tools/#testcase
-    """
-    
-    def setUp(self):
-        core.load_repo_to_db(ackrep_data_test_repo_path)
 
     def test_update_parameter_tex(self):
         # call directly
@@ -476,6 +466,20 @@ class TestCases4(DjangoTestCase):
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)
 
+
+class TestCases4(DjangoTestCase):
+    """
+    These tests expect the database to be regenerated every time.
+    
+    Database changes of **these tests** should **not** be persistent outside each case, e.g. from cli.
+    -> DjangoTestCase ist used as base class which ensures this behavior ("Transactions" [1]).
+
+    [1] https://docs.djangoproject.com/en/4.0/topics/testing/tools/#testcase
+    """
+    
+    def setUp(self):
+        core.load_repo_to_db(ackrep_data_test_repo_path)
+
     def test_parameter_import(self, key="UXMFA"):
         # test with correct data
         parameters = system_model_management.import_parameters(key)
@@ -508,5 +512,3 @@ def get_data_files_dict(path, endings=[]):
     for ending in endings:
         ending_files_dict[ending] = core.get_data_files(path, ending)
     return ending_files_dict
-
-

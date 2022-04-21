@@ -8,7 +8,7 @@ from ackrep_core import core
 test_metadata = core.Container(db_initialized=False)
 
 # this function must not have "test" inside its name for not beeing interpreted as test case
-def load_repo_to_db_for_tests(repo_path:str) -> None:
+def load_repo_to_db_for_ut(repo_path:str = None) -> None:
     """
     Call core.load_repo_to_db(...) depending on some environment variable.
 
@@ -27,6 +27,8 @@ def load_repo_to_db_for_tests(repo_path:str) -> None:
     usage example.: `export ACKREP_TEST_DB_REGENERATION_MODE=3`
     python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases2.test_get_metadata_path_from_key
     """
+
+    assert repo_path is not None
 
     db_regeneration_mode = os.environ.get("ACKREP_TEST_DB_REGENERATION_MODE", "1")
 

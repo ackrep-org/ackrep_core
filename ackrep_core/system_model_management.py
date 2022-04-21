@@ -424,7 +424,10 @@ def import_parameters(key):
         raise FileNotFoundError(f"Import of parameters.py failed. Path {base_path} does not lead to parameters.py.")
     mod_path = ".".join(mod_path.split(os.path.sep))
 
+    core.logger.debug(f"loading parameters for key {key} from {mod_path}")
+
     parameters = importlib.import_module(mod_path)
+    importlib.reload(parameters)  # reload module to ensure most recent version
     parameters.base_path = base_path
 
     parameters.parameter_check = check_system_parameters(parameters)
