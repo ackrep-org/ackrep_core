@@ -15,7 +15,7 @@ from git import Repo
 # noinspection PyUnresolvedReferences
 from django.conf import settings
 from django.core import management
-from django.db import connection as django_db_connection
+from django.db import connection as django_db_connection, connections as django_db_connections
 
 from yamlpyowl import core as ypo
 
@@ -89,6 +89,28 @@ required_generic_meta_data = {
 
 
 db_name = django_db_connection.settings_dict['NAME']
+
+
+def send_debug_report(send=None):
+    """
+    Send debug information such as relevant environmental variables to designated output (logger or stdout).
+
+    :param send:    Function to be used for sending the message. Default: logger.debug. Alternatively: print.
+    """
+
+    if send is None:
+        send = logger.debug
+
+    row_template = "  {:<30}: {}"
+
+    send("** ENVIRONMENT VARS: **")
+    for k, v in os.environ.items():
+        if k.startswith("ACKREP_"):
+            send(row_template.format(k, v))
+    
+    send("** DB CONNECTION:  **")
+    send(django_db_connections["default"].get_connection_params())
+    send("\n")
 
 
 def gen_random_entity_key():

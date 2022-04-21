@@ -78,12 +78,19 @@ def main():
 
     args = argparser.parse_args()
 
+    # non-exclusive options
     if  args.log:
         core.logger.setLevel(int(args.log))
 
+    if os.environ.get("ACKREP_PRINT_DEBUG_REPORT"):
+        core.send_debug_report(print)
+    else:
+        # default: use logger.debug
+        core.send_debug_report(core.logger.debug)
+
+    # exclusive options
     if args.new:
         create_new_entity()
-
     elif args.dd:
         IPS()
     elif args.load_repo_to_db:
