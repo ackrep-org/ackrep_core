@@ -787,6 +787,8 @@ def send_log_messages()->None:
     """
     Create a log message of every category. Main purpose: to be used in unit tests.
     """
+    # this serves as a delimiter to distinguish these messages from others
+    logger.critical("- - - demo log messages - - -")
     logger.critical("critical")
     logger.error("error")
     logger.warn("warning")

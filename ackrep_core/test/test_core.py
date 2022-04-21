@@ -93,13 +93,15 @@ class TestCases1(DjangoTestCase):
 
     def test_logging(self):
         res = run_command(["ackrep", "--test-logging", "--log=10"])
-        lines = res.stdout.strip().split("\n")
+        relevant_output = res.stdout.strip().split("- - - demo log messages - - -\n")[-1]
+        lines = relevant_output.split("\n")
         self.assertEqual(len(lines), 5)
         self.assertIn("critical", lines[0])
         self.assertIn("debug", lines[-1])
 
         res = run_command(["ackrep", "--test-logging", "--log=30"])
-        lines = res.stdout.strip().split("\n")
+        relevant_output = res.stdout.strip().split("- - - demo log messages - - -\n")[-1]
+        lines = relevant_output.split("\n")
         self.assertEqual(len(lines), 3)
         self.assertIn("critical", lines[0])
         self.assertIn("warning", lines[-1])
