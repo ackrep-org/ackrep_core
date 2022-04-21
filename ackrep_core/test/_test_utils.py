@@ -93,7 +93,7 @@ def run_command(arglist, capture_output=True, **kwargs):
 
         stderr: {res.stderr}
         """
-        print(res.stderr)
+        print(msg)
 
     return res
 
