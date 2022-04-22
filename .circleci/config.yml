@@ -12,6 +12,9 @@ jobs: # A basic unit of work in a run
       - restore_cache:
       # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
           key: deps1--{{ checksum "requirements.txt" }}
+      - restore_cache:
+      # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+          key: data1
       - run:
           name: Install Dependancies
           command: | 
@@ -22,17 +25,9 @@ jobs: # A basic unit of work in a run
       - run:
           name: Load Test Data
           command: | 
-            echo "0"
-            ls
             cd ../
-            echo "1"
-            ls
             git clone https://github.com/ackrep-org/ackrep_data.git
-            echo "2"
-            ls
             mv ackrep_data ackrep_data_for_unittests
-            echo "3"
-            ls
             cd ackrep_data_for_unittests
             git checkout for_unittests
       - run:
@@ -50,6 +45,10 @@ jobs: # A basic unit of work in a run
           key: deps1--{{ checksum "requirements.txt" }}
           paths:
             - "venv"
+      - save_cache: 
+          key: data1
+          paths:
+            - "../ackrep_data_for_unittests"
   # test:
   #   working_directory: ~/ackrep_core
   #   docker: # run the steps with Docker
