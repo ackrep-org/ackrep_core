@@ -23,7 +23,8 @@ jobs: # A basic unit of work in a run
           name: Load Test Data
           command: | 
             git clone https://github.com/ackrep-org/ackrep_data.git
-            ren ackrep_data ackrep_data_for_unittests
+            ls
+            mv ackrep_data ackrep_data_for_unittests
             ls
             dir
             cd ackrep_data_for_unittests
