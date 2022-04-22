@@ -22,11 +22,17 @@ jobs: # A basic unit of work in a run
       - run:
           name: Load Test Data
           command: | 
+            echo "0"
+            ls
+            cd ../
+            echo "1"
+            ls
             git clone https://github.com/ackrep-org/ackrep_data.git
+            echo "2"
             ls
             mv ackrep_data ackrep_data_for_unittests
+            echo "3"
             ls
-            dir
             cd ackrep_data_for_unittests
             git checkout for_unittests
       - run:
