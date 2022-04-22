@@ -19,6 +19,10 @@ jobs: # A basic unit of work in a run
             . venv/bin/activate
             pip install -r requirements.txt
             pip install -e .
+      - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
+          key: deps1--{{ checksum "requirements.txt" }}
+          paths:
+            - "venv"
       - run:
           name: Load Test Data
           command: | 
@@ -43,10 +47,6 @@ jobs: # A basic unit of work in a run
       #     root: ackrep_core
       #     paths:
       #       - "venv"     
-      - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
-          key: deps1--{{ checksum "requirements.txt" }}
-          paths:
-            - "venv"
   # test:
   #   working_directory: ~/ackrep_core
   #   docker: # run the steps with Docker
