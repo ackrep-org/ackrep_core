@@ -267,7 +267,7 @@ class TestCases3(SimpleTestCase):
 
         # first: run directly
 
-        res = core.check_system_model("UXMFA")
+        res = core.check_system_model("UXMF")
         if res.returncode != 0:
             print(res.stdout)
         self.assertEqual(res.returncode, 0)
@@ -422,6 +422,8 @@ class TestCases3(SimpleTestCase):
         reset_repo(ackrep_data_test_repo_path)
 
     def test_create_pdf(self):
+        if os.environ["SKIP_TEST_CREATE_PDF"]:
+            return
         # first check if pdflatex is installed and included in path
         # TODO: if there is a problem with this, `shell=True` might solve it on Windows
         res = subprocess.run(["pdflatex", "--help"], capture_output=True)
