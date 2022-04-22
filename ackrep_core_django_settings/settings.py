@@ -164,7 +164,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # path where db-backups are dumped to
 BACKUP_PATH = os.path.join(BASE_DIR, "db_backups")
 
-TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
+TEST_RUNNER = 'xmlrunner.extra.djangotestrunner.XMLTestRunner' # TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
+TEST_OUTPUT_VERBOSE = 2
 TEST_OUTPUT_DIR = 'test-results'
 
 
