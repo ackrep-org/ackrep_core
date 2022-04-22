@@ -11,7 +11,7 @@ jobs: # A basic unit of work in a run
       - checkout # check out source code to working directory
       - restore_cache:
       # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
-          key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          key: deps1--{{ checksum "requirements.txt" }}
       - run:
           name: Install Dependancies
           command: | 
@@ -33,7 +33,9 @@ jobs: # A basic unit of work in a run
       - run:
           name: Test Core
           command: | 
-            cd ../ackrep_core
+            ls
+            cd ../
+            ls
             python manage.py makemigrations
             ackrep --bootstrap-test-db
             python manage.py test --keepdb ackrep_core.test.test_core
@@ -42,7 +44,7 @@ jobs: # A basic unit of work in a run
       #     paths:
       #       - "venv"     
       - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
-          key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          key: deps1--{{ checksum "requirements.txt" }}
           paths:
             - "venv"
   # test:
