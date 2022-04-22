@@ -8,8 +8,10 @@ django-nose
 jinja2
 gitpython
 yamlpyowl>=0.2.1
+symbtools
+pytrajectory
 # the following should be migrated to the environment specification:
 control
 # the following need additional system packages (see dockerfile): gfortran libblas-dev liblapack-dev
-slycot
+# slycot
 casadi

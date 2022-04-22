@@ -16,7 +16,6 @@ jobs: # A basic unit of work in a run
           command: | 
             python -m venv venv
             . venv/bin/activate
-            conda install -c conda-forge slycot
             pip install -r requirements.txt
             pip install -e .
       - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
@@ -30,9 +29,8 @@ jobs: # A basic unit of work in a run
     steps:
       - run:
           command: | # . venv/bin/activate
-            pip install pipenv
-            pipenv install
-            pipenv run python manage.py test
+            . venv/bin/activate
+            python manage.py test
       - store_test_results: # Upload test results for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
           path: test-results
       - store_artifacts: # Upload test summary for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
@@ -42,7 +40,7 @@ workflows:
   version: 2 
   build_and_test:
     jobs:
-      # - setup
-      - test
-          # requires:
-          #   - setup
+      - setup
+      - test:
+          requires:
+            - setup
