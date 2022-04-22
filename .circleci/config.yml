@@ -12,9 +12,6 @@ jobs: # A basic unit of work in a run
       - restore_cache:
       # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
           key: deps1--{{ checksum "requirements.txt" }}
-      - restore_cache:
-      # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
-          key: data1
       - run:
           name: Install Dependancies
           command: | 
@@ -37,6 +34,11 @@ jobs: # A basic unit of work in a run
             python manage.py makemigrations
             ackrep --bootstrap-test-db
             python manage.py test --keepdb ackrep_core.test.test_core
+      - store_test_results: # Upload test results for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
+          path: test-results
+      - store_artifacts: # Upload test summary for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
+          path: test-artifacts
+          destination: tr1
       # - persist_to_workspace:
       #     root: ackrep_core
       #     paths:
@@ -45,10 +47,6 @@ jobs: # A basic unit of work in a run
           key: deps1--{{ checksum "requirements.txt" }}
           paths:
             - "venv"
-      - save_cache: 
-          key: data1
-          paths:
-            - "../ackrep_data_for_unittests"
   # test:
   #   working_directory: ~/ackrep_core
   #   docker: # run the steps with Docker
