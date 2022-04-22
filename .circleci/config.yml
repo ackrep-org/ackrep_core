@@ -20,6 +20,10 @@ jobs: # A basic unit of work in a run
             . venv/bin/activate
             pip install -r requirements.txt
             pip install -e .
+      - persist_to_workspace:
+          root: ackrep_core 
+          paths: 
+            - venv
       - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
           key: deps1--{{ checksum "requirements.txt" }}
           paths:
@@ -34,6 +38,7 @@ jobs: # A basic unit of work in a run
           name: Load Test Data
           command: | 
             cd ../
+            ls
             git clone https://github.com/ackrep-org/ackrep_data.git
             mv ackrep_data ackrep_data_for_unittests
             cd ackrep_data_for_unittests
@@ -48,6 +53,8 @@ jobs: # A basic unit of work in a run
           NO_IPS_EXCEPTHOOK: True
           SKIP_TEST_CREATE_PDF: True
     steps:
+      - attach_workspace:
+          at: ackrep_core
       - run:
           name: Test Core
           command: | 
