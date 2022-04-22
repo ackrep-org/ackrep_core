@@ -27,6 +27,8 @@ jobs: # A basic unit of work in a run
     docker: # run the steps with Docker
       - image: cimg/python:3.8
     steps:
+      - paths: 
+        - "venv"
       - run:
           command: | # . venv/bin/activate
             . venv/bin/activate
