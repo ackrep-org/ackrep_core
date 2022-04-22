@@ -54,7 +54,7 @@ jobs: # A basic unit of work in a run
           SKIP_TEST_CREATE_PDF: True
     steps:
       - attach_workspace:
-          at: ackrep_core
+          at: ~/ackrep_core
       - run:
           name: Test Core
           command: | 
