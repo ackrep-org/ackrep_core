@@ -1,7 +1,7 @@
 jobs: # A basic unit of work in a run
   setup: 
     # directory where steps are run
-    working_directory: ~/root
+    working_directory: ~/ackrep_core
     docker: # run the steps with Docker
       # CircleCI Python images available at: https://hub.docker.com/r/circleci/python/
       - image: cimg/python:3.8
@@ -38,6 +38,7 @@ jobs: # A basic unit of work in a run
       - run:
           name: Test Core
           command: | 
+            . venv/bin/activate
             python manage.py makemigrations
             ackrep --bootstrap-test-db
             python manage.py test --keepdb ackrep_core.test.test_core
