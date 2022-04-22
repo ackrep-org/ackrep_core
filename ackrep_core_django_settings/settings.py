@@ -165,6 +165,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 BACKUP_PATH = os.path.join(BASE_DIR, "db_backups")
 
 TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
+TEST_OUTPUT_DIR = 'test-results'
 
 
 # The following mechanism allows to incorporate custom settings (which are maintained
