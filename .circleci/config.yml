@@ -17,15 +17,18 @@ jobs: # A basic unit of work in a run
           command: | 
             python -m venv venv
             . venv/bin/activate
-            cd ackrep_core
             ls
             pip install -r requirements.txt
             pip install -e .
       - run:
           name: Load Test Data
           command: | 
+            ls
+            cd ../
+            ls
             git clone https://github.com/ackrep-org/ackrep_data.git
-            cd ../ackrep_data
+            cd ackrep_data
+            ls
             git checkout for_unittests
       - run:
           name: Test Core
