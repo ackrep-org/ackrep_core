@@ -51,6 +51,7 @@ jobs: # A basic unit of work in a run
       - run:
           name: Test Core
           command: | 
+            ls
             . venv/bin/activate
             python manage.py makemigrations
             ackrep --bootstrap-test-db
