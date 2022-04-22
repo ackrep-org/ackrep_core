@@ -267,7 +267,7 @@ class TestCases3(SimpleTestCase):
 
         # first: run directly
 
-        res = core.check_system_model("UXMF")
+        res = core.check_system_model("UXMFA")
         if res.returncode != 0:
             print(res.stdout)
         self.assertEqual(res.returncode, 0)
