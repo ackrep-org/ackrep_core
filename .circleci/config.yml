@@ -18,7 +18,7 @@ jobs: # A basic unit of work in a run
             . venv/bin/activate
             pip install -r requirements.txt
             pip install -e .
-            python manage.py test
+            python manage.py test --keepdb ackrep_core.test.test_core
       - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
           paths:
