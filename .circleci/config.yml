@@ -1,4 +1,3 @@
-version: 2 
 jobs: # A basic unit of work in a run
   setup: 
     # directory where steps are run
@@ -38,6 +37,7 @@ jobs: # A basic unit of work in a run
           path: test-results
           destination: tr1
 workflows:
+  version: 2 
   build_and_test:
     jobs:
       - setup
