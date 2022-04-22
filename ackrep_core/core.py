@@ -692,8 +692,10 @@ def check_system_model(key):
     res = subprocess.run(["python", scriptpath], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     res.exited = res.returncode
     if res.returncode != 0:
-        print(res.stdout, file=sys.stderr)
+        logger.error(f"Error in execscript: {scriptpath}")
+        logger.error(res.stdout)
     return res
+
 
 
 def clone_external_data_repo(url, mr_key):
