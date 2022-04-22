@@ -1,0 +1,44 @@
+version: 2 
+jobs: # A basic unit of work in a run
+  setup: 
+    # directory where steps are run
+    working_directory: ~/ackrep_core
+    docker: # run the steps with Docker
+      # CircleCI Python images available at: https://hub.docker.com/r/circleci/python/
+      - image: cimg/python:3.8
+        environment: # environment variables for primary container
+          NO_IPS_EXCEPTHOOK: True
+    steps: # steps that comprise the `build` job
+      - checkout # check out source code to working directory
+      - restore_cache:
+      # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+          key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
+      - run:
+          command: | # conda install -c conda-forge slycot
+            python -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+            pip install -e .
+      - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
+          key: deps1-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+          paths:
+            - "venv"
+  test:
+    working_directory: ~/ackrep_core
+    docker: # run the steps with Docker
+      - image: cimg/python:3.8
+    steps:
+      - run:
+          command: |
+            . venv/bin/activate
+            python manage.py test
+      - store_test_results: # Upload test results for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
+          path: test-results
+      - store_artifacts: # Upload test summary for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
+          path: test-results
+          destination: tr1
+workflows:
+  build_and_test:
+    jobs:
+      - setup
+      - test
