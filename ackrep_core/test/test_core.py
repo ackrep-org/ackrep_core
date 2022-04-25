@@ -466,8 +466,8 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-csm", "UXMFA"], supress_output=True)
-        self.assertNotEqual(res.returncode, 0)
+        res = run_command(["ackrep", "-csm", "UXMFA"], suppress_output=True)
+        self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
         self.assertIn("SyntaxError: invalid syntax (parameters.py, line", res.stdout)
@@ -493,8 +493,8 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-cs", "UKJZI"], supress_output=True)
-        self.assertNotEqual(res.returncode, 0)
+        res = run_command(["ackrep", "-cs", "UKJZI"], suppress_output=True)
+        self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
 
