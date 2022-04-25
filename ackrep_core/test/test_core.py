@@ -474,6 +474,59 @@ class TestCases3(SimpleTestCase):
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)
 
+    def test_error_messages(self):
+        ## test error message of check_system_model and execscript
+        # create syntax error in file
+        parameter_path = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
+        os.chdir(parameter_path)
+        file = open("parameters.py", "rt+")
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if "=" in line:
+                lines[i] = line.replace("=", "=_")
+                break
+
+        file.seek(0)
+        file.writelines(lines)
+        file.close()
+
+        # test for retcode != 0
+        res = run_command(["ackrep", "-csm", "UXMFA", "--log 50"])
+        self.assertNotEqual(res.returncode, 0)
+
+        # check error message for existance (and readability?)
+        self.assertIn(res.stdout, "SyntaxError: invalid syntax (parameters.py, line")
+
+        # reset unittest_repo
+        reset_repo(ackrep_data_test_repo_path)
+
+        ## test error message of check_solution and execscript
+        # create syntax error in file
+        parameter_path = os.path.join(
+            ackrep_data_test_repo_path, "problem_specifications", "double_integrator_transition"
+        )
+        os.chdir(parameter_path)
+        file = open("problem.py", "rt+")
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if "=" in line:
+                lines[i] = line.replace("=", "=_")
+                break
+
+        file.seek(0)
+        file.writelines(lines)
+        file.close()
+
+        # test for retcode != 0
+        res = run_command(["ackrep", "-cs", "UKJZI", "--log 50"])
+        self.assertNotEqual(res.returncode, 0)
+
+        # check error message for existance (and readability?)
+        self.assertIn(res.stdout, "SyntaxError: invalid syntax (problem.py, line")
+
+        # reset unittest_repo
+        reset_repo(ackrep_data_test_repo_path)
+
 
 class TestCases4(DjangoTestCase):
     """
