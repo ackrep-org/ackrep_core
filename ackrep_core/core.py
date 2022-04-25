@@ -49,7 +49,7 @@ from . import util
 defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.WARNING)
 logger = logging.getLogger("ackrep_logger")
 FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
-DATEFORMAT= "%H:%M:%S"
+DATEFORMAT = "%H:%M:%S"
 formatter = logging.Formatter(fmt=FORMAT, datefmt=DATEFORMAT)
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(formatter)
@@ -88,7 +88,7 @@ required_generic_meta_data = {
 }
 
 
-db_name = django_db_connection.settings_dict['NAME']
+db_name = django_db_connection.settings_dict["NAME"]
 
 
 def send_debug_report(send=None):
@@ -107,7 +107,7 @@ def send_debug_report(send=None):
     for k, v in os.environ.items():
         if k.startswith("ACKREP_"):
             send(row_template.format(k, v))
-    
+
     send("** DB CONNECTION:  **")
     send(django_db_connections["default"].get_connection_params())
     send("\n")
@@ -697,7 +697,6 @@ def check_system_model(key):
     return res
 
 
-
 def clone_external_data_repo(url, mr_key):
     """Clone git repository from url into external_repos/[MERGE_REQUEST_KEY], return path"""
 
@@ -782,7 +781,8 @@ def get_merge_request_dict():
 
     return mr_dict
 
-def send_log_messages()->None:
+
+def send_log_messages() -> None:
     """
     Create a log message of every category. Main purpose: to be used in unit tests.
     """
@@ -794,13 +794,14 @@ def send_log_messages()->None:
     logger.info("info")
     logger.debug("debug")
 
-def print_entity_info(key:str)-> None:
+
+def print_entity_info(key: str) -> None:
     """
     Print a report on an entity to stdout.
 
     :param key:    key of the respective entity
     """
-    entity, = get_entities_with_key(key, raise_error_on_empty=True)
+    (entity,) = get_entities_with_key(key, raise_error_on_empty=True)
 
     # this uses print and not logging because the user expects this output independently
     # from loglevel

@@ -42,11 +42,11 @@ def main():
         "--get-metadata-abs-path-from-key", metavar="key", help="return absolute path to metadata file for a given key"
     )
     argparser.add_argument(
-        "--get-metadata-rel-path-from-key", metavar="key", help="return path to metadata file (relative to repo root) for a given key"
+        "--get-metadata-rel-path-from-key",
+        metavar="key",
+        help="return path to metadata file (relative to repo root) for a given key",
     )
-    argparser.add_argument(
-        "--bootstrap-db", help="delete database and recreate it (without data)", action="store_true"
-    )
+    argparser.add_argument("--bootstrap-db", help="delete database and recreate it (without data)", action="store_true")
     argparser.add_argument(
         "--bootstrap-test-db", help="delete database for unittests and recreate it (without data)", action="store_true"
     )
@@ -63,13 +63,10 @@ def main():
         "--show-debug", help="set exitflags false in order to see underlying debug outputs", action="store_true"
     )
 
-    argparser.add_argument(
-        "--show-entity-info", metavar="key", help="print out some info about the entity"
-    )
+    argparser.add_argument("--show-entity-info", metavar="key", help="print out some info about the entity")
 
     argparser.add_argument(
-        "--log", metavar="loglevel", help="specify log level: DEBUG (10), INFO, WARNING, ERROR, CRITICAL (50)",
-        type=int
+        "--log", metavar="loglevel", help="specify log level: DEBUG (10), INFO, WARNING, ERROR, CRITICAL (50)", type=int
     )
 
     argparser.add_argument(
@@ -79,7 +76,7 @@ def main():
     args = argparser.parse_args()
 
     # non-exclusive options
-    if  args.log:
+    if args.log:
         core.logger.setLevel(int(args.log))
 
     if os.environ.get("ACKREP_PRINT_DEBUG_REPORT"):
@@ -263,6 +260,7 @@ def check_system_model(arg0: str, exitflag: bool = True):
     else:
         return res
 
+
 def get_metadata_path_from_key(arg0: str, absflag: bool = True, exitflag: bool = True):
     """
 
@@ -274,7 +272,7 @@ def get_metadata_path_from_key(arg0: str, absflag: bool = True, exitflag: bool =
     :return:            container of subprocess.run (if exitflag == False)
     """
 
-    entity = core.get_entities_with_key(arg0, raise_error_on_empty=True)[0]    
+    entity = core.get_entities_with_key(arg0, raise_error_on_empty=True)[0]
 
     path = os.path.join(entity.base_path, "metadata.yml")
     if absflag:
@@ -285,6 +283,7 @@ def get_metadata_path_from_key(arg0: str, absflag: bool = True, exitflag: bool =
         exit(0)
     else:
         return path
+
 
 def update_parameter_tex(arg0: str, exitflag: bool = True):
     """
@@ -409,7 +408,7 @@ def bootstrap_db(db: str) -> None:
 
     :param db:      'main' or 'test'
     """
-    
+
     valid_values = ("main", "test")
     assert db in valid_values
 
@@ -435,7 +434,7 @@ def bootstrap_db(db: str) -> None:
         os.unlink(fname)
     except FileNotFoundError:
         pass
-    
+
     settings.DATABASES["default"]["NAME"] = db_path
     management.call_command("migrate", "--run-syncdb")
 

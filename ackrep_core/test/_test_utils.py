@@ -8,7 +8,7 @@ from ackrep_core import core
 test_metadata = core.Container(db_initialized=False)
 
 # this function must not have "test" inside its name for not beeing interpreted as test case
-def load_repo_to_db_for_ut(repo_path:str = None) -> None:
+def load_repo_to_db_for_ut(repo_path: str = None) -> None:
     """
     Call core.load_repo_to_db(...) depending on some environment variable.
 
@@ -32,7 +32,6 @@ def load_repo_to_db_for_ut(repo_path:str = None) -> None:
 
     db_regeneration_mode = os.environ.get("ACKREP_TEST_DB_REGENERATION_MODE", "1")
 
-
     valid_values = ("1", "2", "3")
     if db_regeneration_mode not in valid_values:
         raise ValueError(
@@ -41,17 +40,18 @@ def load_repo_to_db_for_ut(repo_path:str = None) -> None:
         )
 
     if db_regeneration_mode == "1":
-            # called by setUp-methods
-            core.load_repo_to_db(repo_path)
+        # called by setUp-methods
+        core.load_repo_to_db(repo_path)
 
     elif db_regeneration_mode == "2" and not test_metadata.db_initialized:
-            # only run if db has not yet been regenerated
-            core.load_repo_to_db(repo_path)
-            test_metadata.db_initialized = True
+        # only run if db has not yet been regenerated
+        core.load_repo_to_db(repo_path)
+        test_metadata.db_initialized = True
 
     else:
         # do nothing
         pass
+
 
 def reset_repo(repo_path):
     """
@@ -98,4 +98,3 @@ def run_command(arglist, capture_output=True, **kwargs):
         print(msg)
 
     return res
-

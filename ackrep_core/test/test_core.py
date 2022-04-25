@@ -58,6 +58,7 @@ class TestCases1(DjangoTestCase):
 
     [1] https://docs.djangoproject.com/en/4.0/topics/testing/overview/#order-of-tests
     """
+
     def setUp(self):
         pass
 
@@ -107,6 +108,7 @@ class TestCases1(DjangoTestCase):
         self.assertIn("critical", lines[0])
         self.assertIn("warning", lines[-1])
 
+
 class TestCases2(DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.
@@ -114,7 +116,7 @@ class TestCases2(DjangoTestCase):
     Database changes should not be persistent outside this each case.
     -> Use DjangoTestCase as base class which ensures this behavior ("Transactions")
     """
-    
+
     def setUp(self):
         core.load_repo_to_db(ackrep_data_test_repo_path)
 
@@ -206,7 +208,8 @@ class TestCases3(SimpleTestCase):
 
     [1] https://docs.djangoproject.com/en/4.0/topics/testing/tools/#django.test.SimpleTestCase.databases
     """
-    databases = '__all__'
+
+    databases = "__all__"
 
     def setUp(self):
         load_repo_to_db_for_ut(ackrep_data_test_repo_path)
@@ -216,7 +219,6 @@ class TestCases3(SimpleTestCase):
         pass
         repo = Repo(ackrep_data_test_repo_path)
         assert not repo.is_dirty()
-
 
     def test_resolve_keys(self):
         entity = core.model_utils.get_entity("UKJZI")
@@ -298,25 +300,25 @@ class TestCases3(SimpleTestCase):
         # first: relative path
         res = subprocess.run(["ackrep", "--get-metadata-rel-path-from-key", key], capture_output=True)
         self.assertEqual(res.returncode, 0)
-        
+
         relpath = strip_decode(res.stdout).strip()
         expected_relpath = os.path.join(
             "ackrep_data_for_unittests",
             "problem_solutions",
             "double_integrator_transition_with_pytrajectory",
-            "metadata.yml"
-            )
+            "metadata.yml",
+        )
         self.assertEqual(relpath, expected_relpath)
 
         # second: absolute path
         res = subprocess.run(["ackrep", "--get-metadata-abs-path-from-key", key], capture_output=True)
         self.assertEqual(res.returncode, 0)
-        
+
         abspath = strip_decode(res.stdout).strip()
-    
+
         self.assertIn(relpath, abspath)
         self.assertTrue(len(abspath) > len(relpath))
-        
+
     def test_get_solution_data_files(self):
         res = core.check_solution("UKJZI")
         self.assertEqual(res.returncode, 0, msg=utf8decode(res.stderr))
@@ -357,7 +359,7 @@ class TestCases3(SimpleTestCase):
         # ensure repo is clean again
         # TODO: remove this if png is removed from repo
         reset_repo(ackrep_data_test_repo_path)
-        
+
         media_path = settings.MEDIA_ROOT
         files = os.listdir(media_path)
         for file in files:
@@ -392,7 +394,7 @@ class TestCases3(SimpleTestCase):
         e = core.model_utils.all_entities()[0]
         tag_list = core.util.smart_parse(e.tag_list)
         self.assertTrue(isinstance(tag_list, list))
-    
+
     def test_print_entity_info(self):
         # Note: this test case does not work as a method of a `DjangoTestCase` subclass but only
         # in a `SimpleTestCase` subclass.
@@ -424,7 +426,7 @@ class TestCases3(SimpleTestCase):
     @skipIf(os.environ.get("SKIP_TEST_CREATE_PDF") == "True", "skipping test on CI due to lack of pdflatex")
     def test_create_pdf(self):
         # TODO: test this somehow with CI
-        
+
         # first check if pdflatex is installed and included in path
         # TODO: if there is a problem with this, `shell=True` might solve it on Windows
         res = subprocess.run(["pdflatex", "--help"], capture_output=True)
@@ -482,7 +484,7 @@ class TestCases4(DjangoTestCase):
 
     [1] https://docs.djangoproject.com/en/4.0/topics/testing/tools/#testcase
     """
-    
+
     def setUp(self):
         core.load_repo_to_db(ackrep_data_test_repo_path)
 

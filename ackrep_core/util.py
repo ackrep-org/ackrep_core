@@ -22,7 +22,7 @@ if not (root_path):
 # this env-variable will be set e.g. by unit tests to make cli invocations from tests work
 data_path = os.environ.get("ACKREP_DATA_PATH")
 if not (data_path):
-# paths for (ackrep_data and its test-related clone)
+    # paths for (ackrep_data and its test-related clone)
     data_path = os.path.join(root_path, "ackrep_data")
 
 
