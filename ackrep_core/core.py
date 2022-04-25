@@ -566,28 +566,7 @@ def check_solution(key):
     :param key:                 entity key of the ProblemSolution
     :return:
     """
-
-    sol_entity = get_entity(key)
-    resolve_keys(sol_entity)
-
-    assert isinstance(sol_entity, models.ProblemSolution)
-
-    # get path for solution
-    solution_file = sol_entity.solution_file
-
-    if solution_file != "solution.py":
-        msg = "Arbitrary filename will be supported in the future"
-        raise NotImplementedError(msg)
-
-    c = Container()  # this will be our easily accessible context dict for the template
-
-    # TODO: handle the filename (see also template)
-    c.solution_path = os.path.join(root_path, sol_entity.base_path)
-
-    c.ackrep_core_path = core_pkg_path
-
-    # noinspection PyUnresolvedReferences
-    assert isinstance(sol_entity.oc, ObjectContainer)
+    sol_entity, c = _create_entity(key, "solution")
 
     assert len(sol_entity.oc.solved_problem_list) >= 1
 
@@ -595,7 +574,7 @@ def check_solution(key):
         msg = f"{sol_entity}: Expected at least one solved problem."
         raise InconsistentMetaDataError(msg)
 
-    elif sol_entity.oc.solved_problem_list == 1:
+    elif len(sol_entity.oc.solved_problem_list) == 1:
         problem_spec = sol_entity.oc.solved_problem_list[0]
     else:
         logger.warning("Applying a solution to multiple problems is not yet supported. Taking the last one.")
@@ -615,29 +594,7 @@ def check_solution(key):
         assert os.path.isdir(full_build_path)
         c.method_package_list.append(full_build_path)
 
-    context = dict(c.item_list())
-
-    logger.info("  ... Creating exec-script ... ")
-
-    scriptname = "execscript.py"
-
-    assert not sol_entity.base_path.startswith(os.path.sep)
-
-    # determine whether the entity comes from ackrep_data or ackrep_data_for_unittests ore ackrep_data_import
-    data_repo_path = pathlib.Path(sol_entity.base_path).parts[0]
-    scriptpath = os.path.join(root_path, data_repo_path, scriptname)
-    render_template("templates/execscript.py.template", context, target_path=scriptpath)
-
-    logger.info(f"  ... running exec-script {scriptpath} ... ")
-
-    # TODO: plug in containerization here:
-    # Note: this hangs on any interactive element inside the script (such as IPS)
-    res = subprocess.run(["python", scriptpath], capture_output=True)
-    res.exited = res.returncode
-    res.stdout = res.stdout.decode("utf8")
-    res.stderr = res.stderr.decode("utf8")
-    if res.returncode != 0:
-        print(res.stderr, file=sys.stderr)  # print to stderr
+    res = _run_execscript_from_template(sol_entity, c, "solution")
 
     return res
 
@@ -649,28 +606,52 @@ def check_system_model(key):
     :param key:                 entity key of the SystemModel
     :return:    result of evaluation of simulation
     """
+    system_model_entity, c = _create_entity(key, "system_model")
 
-    system_model_entity = get_entity(key)
-    resolve_keys(system_model_entity)
+    res = _run_execscript_from_template(system_model_entity, c, "system_model")
 
-    assert isinstance(system_model_entity, models.SystemModel)
+    return res
 
-    # get path for system_model
-    system_model_file = system_model_entity.system_model_file
 
-    if system_model_file != "system_model.py":
-        msg = "Arbitrary filename will be supported in the future"
-        raise NotImplementedError(msg)
+def _create_entity(key, type):
+    """create entity for check solution and check system model"""
+    assert type in ("solution", "system_model")
+
+    entity = get_entity(key)
+    resolve_keys(entity)
+
+    # test entity type and get path to relevant file
+    if type == "solution":
+        assert isinstance(entity, models.ProblemSolution)
+        python_file = entity.solution_file
+        if python_file != "solution.py":
+            msg = "Arbitrary filename will be supported in the future"
+            raise NotImplementedError(msg)
+
+    else:
+        assert isinstance(entity, models.SystemModel)
+        python_file = entity.system_model_file
+        if python_file != "system_model.py":
+            msg = "Arbitrary filename will be supported in the future"
+            raise NotImplementedError(msg)
 
     c = Container()  # this will be our easily accessible context dict for the template
 
-    # TODO: handle the filename (see also template)
-    c.system_model_path = os.path.join(root_path, system_model_entity.base_path)
+    if type == "solution":
+        c.solution_path = os.path.join(root_path, entity.base_path)
+    else:
+        c.system_model_path = os.path.join(root_path, entity.base_path)
 
     c.ackrep_core_path = core_pkg_path
 
     # noinspection PyUnresolvedReferences
-    assert isinstance(system_model_entity.oc, ObjectContainer)
+    assert isinstance(entity.oc, ObjectContainer)
+
+    return entity, c
+
+
+def _run_execscript_from_template(entity, c, type):
+    assert type in ("solution", "system_model")
 
     context = dict(c.item_list())
 
@@ -678,12 +659,15 @@ def check_system_model(key):
 
     scriptname = "execscript.py"
 
-    assert not system_model_entity.base_path.startswith(os.path.sep)
+    assert not entity.base_path.startswith(os.path.sep)
 
     # determine whether the entity comes from ackrep_data or ackrep_data_for_unittests ore ackrep_data_import
-    data_repo_path = pathlib.Path(system_model_entity.base_path).parts[0]
+    data_repo_path = pathlib.Path(entity.base_path).parts[0]
     scriptpath = os.path.join(root_path, data_repo_path, scriptname)
-    render_template("templates/execscript_system_model.py.template", context, target_path=scriptpath)
+    if type == "solution":
+        render_template("templates/execscript.py.template", context, target_path=scriptpath)
+    else:
+        render_template("templates/execscript_system_model.py.template", context, target_path=scriptpath)
 
     logger.info(f"  ... running exec-script {scriptpath} ... ")
 
@@ -694,6 +678,7 @@ def check_system_model(key):
     if res.returncode != 0:
         logger.error(f"Error in execscript: {scriptpath}")
         logger.error(res.stdout)
+
     return res
 
 
