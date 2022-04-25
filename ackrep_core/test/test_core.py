@@ -3,7 +3,7 @@ import sys
 import platform
 import subprocess
 
-from unittest import skipUnless
+from unittest import skipIf, skipUnless
 from django.test import TestCase as DjangoTestCase, SimpleTestCase
 from django.conf import settings
 from git import Repo, InvalidGitRepositoryError
@@ -421,9 +421,10 @@ class TestCases3(SimpleTestCase):
         # reset unittest_repo (for this test seems only necessary on Windows)
         reset_repo(ackrep_data_test_repo_path)
 
+    @skipIf(os.environ.get("SKIP_TEST_CREATE_PDF") == "True", "skipping test on CI due to lack of pdflatex")
     def test_create_pdf(self):
-        if os.environ["SKIP_TEST_CREATE_PDF"]:
-            return
+        # TODO: test this somehow with CI
+        
         # first check if pdflatex is installed and included in path
         # TODO: if there is a problem with this, `shell=True` might solve it on Windows
         res = subprocess.run(["pdflatex", "--help"], capture_output=True)
