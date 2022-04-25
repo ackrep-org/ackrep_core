@@ -254,14 +254,7 @@ class TestCases3(SimpleTestCase):
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = subprocess.run(
-            ["ackrep", "-cs", "problem_solutions/acrobot_swingup_with_pytrajectory/metadata.yml"], capture_output=True
-        )
-        res.exited = res.returncode
-        res.stdout = utf8decode(res.stdout)
-        res.stderr = utf8decode(res.stderr)
-        if res.returncode != 0:
-            print(res.stderr)
+        res = run_command(["ackrep", "-cs", "problem_solutions/acrobot_swingup_with_pytrajectory/metadata.yml"])
 
         self.assertEqual(res.returncode, 0)
 
@@ -278,10 +271,7 @@ class TestCases3(SimpleTestCase):
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = subprocess.run(["ackrep", "-csm", "UXMFA"], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        res.exited = res.returncode
-        if res.returncode != 0:
-            print(res.stdout)
+        res = run_command(["ackrep", "-csm", "UXMFA"])
         self.assertEqual(res.returncode, 0)
 
         # ensure repo is clean again
@@ -289,19 +279,19 @@ class TestCases3(SimpleTestCase):
         reset_repo(ackrep_data_test_repo_path)
 
     def test_check_key(self):
-        res = subprocess.run(["ackrep", "--key"], capture_output=True)
+        res = run_command(["ackrep", "--key"])
         self.assertEqual(res.returncode, 0)
 
-        self.assertTrue(strip_decode(res.stdout).lower().startswith("random entity-key:"))
+        self.assertTrue(res.stdout.lower().startswith("random entity-key:"))
 
     def test_get_metadata_path_from_key(self):
 
         key = "UKJZI"
         # first: relative path
-        res = subprocess.run(["ackrep", "--get-metadata-rel-path-from-key", key], capture_output=True)
+        res = run_command(["ackrep", "--get-metadata-rel-path-from-key", key])
         self.assertEqual(res.returncode, 0)
 
-        relpath = strip_decode(res.stdout).strip()
+        relpath = res.stdout.strip()
         expected_relpath = os.path.join(
             "ackrep_data_for_unittests",
             "problem_solutions",
@@ -311,10 +301,10 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(relpath, expected_relpath)
 
         # second: absolute path
-        res = subprocess.run(["ackrep", "--get-metadata-abs-path-from-key", key], capture_output=True)
+        res = run_command(["ackrep", "--get-metadata-abs-path-from-key", key])
         self.assertEqual(res.returncode, 0)
 
-        abspath = strip_decode(res.stdout).strip()
+        abspath = res.stdout.strip()
 
         self.assertIn(relpath, abspath)
         self.assertTrue(len(abspath) > len(relpath))
@@ -411,12 +401,7 @@ class TestCases3(SimpleTestCase):
 
         # call command line
         os.chdir(ackrep_data_test_repo_path)
-        res = subprocess.run(["ackrep", "--update-parameter-tex", "UXMFA"], capture_output=True)
-        res.exited = res.returncode
-        res.stdout = utf8decode(res.stdout)
-        res.stderr = utf8decode(res.stderr)
-        if res.returncode != 0:
-            print(res.stderr)
+        res = run_command(["ackrep", "--update-parameter-tex", "UXMFA"])
 
         self.assertEqual(res.returncode, 0)
 
@@ -429,12 +414,7 @@ class TestCases3(SimpleTestCase):
 
         # first check if pdflatex is installed and included in path
         # TODO: if there is a problem with this, `shell=True` might solve it on Windows
-        res = subprocess.run(["pdflatex", "--help"], capture_output=True)
-        res.exited = res.returncode
-        res.stdout = utf8decode(res.stdout)
-        res.stderr = utf8decode(res.stderr)
-        if res.returncode != 0:
-            print(res.stderr)
+        res = run_command(["pdflatex", "--help"])
         self.assertEqual(res.returncode, 0, msg="pdflatex not found! Check installation and its existence in PATH!")
 
         system_model_entity = core.model_utils.get_entity("UXMFA")
@@ -456,12 +436,7 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(len(files_dict[".tex"]), 2)
 
         ## call command line
-        res = subprocess.run(["ackrep", "--create-pdf", "UXMFA"], capture_output=True)
-        res.exited = res.returncode
-        res.stdout = utf8decode(res.stdout)
-        res.stderr = utf8decode(res.stderr)
-        if res.returncode != 0:
-            print(res.stderr)
+        res = run_command(["ackrep", "--create-pdf", "UXMFA"])
         self.assertEqual(res.returncode, 0)
 
         # # check leftover files
@@ -491,11 +466,11 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-csm", "UXMFA", "--log 50"])
+        res = run_command(["ackrep", "-csm", "UXMFA"], supress_output=True)
         self.assertNotEqual(res.returncode, 0)
 
         # check error message for existance (and readability?)
-        self.assertIn(res.stdout, "SyntaxError: invalid syntax (parameters.py, line")
+        self.assertIn("SyntaxError: invalid syntax (parameters.py, line", res.stdout)
 
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)
@@ -518,11 +493,12 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-cs", "UKJZI", "--log 50"])
+        res = run_command(["ackrep", "-cs", "UKJZI"], supress_output=True)
         self.assertNotEqual(res.returncode, 0)
 
         # check error message for existance (and readability?)
-        self.assertIn(res.stdout, "SyntaxError: invalid syntax (problem.py, line")
+
+        self.assertIn("SyntaxError: invalid syntax (problem.py, line", res.stdout)
 
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)

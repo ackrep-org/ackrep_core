@@ -431,20 +431,20 @@ def import_parameters(key):
     parameters.base_path = base_path
 
     parameters.parameter_check = check_system_parameters(parameters)
-    assert parameters.parameter_check == 0
+    if parameters.parameter_check == 0:
+    
+        pp_nv = list(sp.Matrix(parameters.pp_sf).subs(parameters.pp_subs_list))
+        pp_dict = {parameters.pp_symb[i]: pp_nv[i] for i in range(len(parameters.pp_symb))}
 
-    pp_nv = list(sp.Matrix(parameters.pp_sf).subs(parameters.pp_subs_list))
-    pp_dict = {parameters.pp_symb[i]: pp_nv[i] for i in range(len(parameters.pp_symb))}
+        def get_default_parameters():
+            return pp_dict
 
-    def get_default_parameters():
-        return pp_dict
+        def get_symbolic_parameters():
+            return parameters.pp_symb
 
-    def get_symbolic_parameters():
-        return parameters.pp_symb
-
-    parameters.get_default_parameters = get_default_parameters
-    parameters.get_symbolic_parameters = get_symbolic_parameters
-
+        parameters.get_default_parameters = get_default_parameters
+        parameters.get_symbolic_parameters = get_symbolic_parameters
+    
     return parameters
 
 

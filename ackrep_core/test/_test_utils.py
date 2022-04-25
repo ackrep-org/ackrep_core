@@ -78,7 +78,7 @@ def strip_decode(obj) -> str:
     return utf8decode(obj)
 
 
-def run_command(arglist, capture_output=True, **kwargs):
+def run_command(arglist, supress_output=False, capture_output=True, **kwargs):
     """
     Unified handling of calling commands.
     Automatically prints an error message if necessary.
@@ -87,7 +87,7 @@ def run_command(arglist, capture_output=True, **kwargs):
     res.exited = res.returncode
     res.stdout = strip_decode(res.stdout)
     res.stderr = strip_decode(res.stderr)
-    if res.returncode != 0:
+    if res.returncode != 0 and not supress_output:
         msg = f"""
         The command `{' '.join(arglist)}` exited with returncode {res.returncode}.
 
