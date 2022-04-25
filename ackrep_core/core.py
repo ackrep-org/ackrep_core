@@ -673,11 +673,17 @@ def _run_execscript_from_template(entity, c, type):
 
     # TODO: plug in containerization here:
     # Note: this hangs on any interactive element inside the script (such as IPS)
-    res = subprocess.run(["python", scriptpath], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    res = subprocess.run(["python", scriptpath], text=True, capture_output=True)
     res.exited = res.returncode
     if res.returncode != 0:
         logger.error(f"Error in execscript: {scriptpath}")
+        # some error messages live on stderr, some on stderr
         logger.error(res.stdout)
+        logger.error(res.stderr)
+        # TODO: this is not very elegant
+        # clear stdout of error messages to prevent them from showing on gui
+        if not settings.DEBUG:
+            res.stdout = ""
 
     return res
 

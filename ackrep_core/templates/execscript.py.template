@@ -46,7 +46,8 @@ solution_data = solution.solve(ps.ProblemSpecification)
 # evaluate the solution (-> ResultContainer)
 rc = ps.evaluate_solution(solution_data)
 
-print(rc.success)
+if not rc.success:
+    print(rc.success)
 
 if rc.success:
     # returncode 0 means: no errors (general convention)
