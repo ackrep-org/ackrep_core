@@ -432,7 +432,7 @@ def import_parameters(key):
 
     parameters.parameter_check = check_system_parameters(parameters)
     if parameters.parameter_check == 0:
-    
+
         pp_nv = list(sp.Matrix(parameters.pp_sf).subs(parameters.pp_subs_list))
         pp_dict = {parameters.pp_symb[i]: pp_nv[i] for i in range(len(parameters.pp_symb))}
 
@@ -444,7 +444,7 @@ def import_parameters(key):
 
         parameters.get_default_parameters = get_default_parameters
         parameters.get_symbolic_parameters = get_symbolic_parameters
-    
+
     return parameters
 
 
