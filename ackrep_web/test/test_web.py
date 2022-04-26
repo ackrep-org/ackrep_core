@@ -1,8 +1,11 @@
-from django.test import TestCase as DjangoTestCase, LiveServerTestCase
+from django.test import SimpleTestCase, TestCase as DjangoTestCase, LiveServerTestCase
 from django.urls import reverse
 from unittest import skipUnless
+from ackrep_core.test._test_utils import load_repo_to_db_for_ut, reset_repo, run_command, utf8decode, strip_decode
 import re
 import json
+import os
+from ackrep_core_django_settings import settings
 
 try:
     # noinspection PyPackageRequirements
@@ -25,10 +28,24 @@ url_of_external_test_repo = "https://codeberg.org/cknoll/ackrep_data_demo_fork.g
 This module contains the tests for the web application module (not ackrep_core)
 
 
-python3 manage.py test --nocapture --rednose --ips ackrep_web.test.test_web:TestCases1
+python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_web.test.test_web:TestCases1
+python manage.py test --keepdb --nocapture ackrep_web.test.test_web:TestCases1
 
 For more infos see doc/devdoc/README.md.
 """
+
+# inform the core module which path it should consinder as data repo
+ackrep_data_test_repo_path = core.data_path = os.path.join(core.root_path, "ackrep_data_for_unittests")
+# this must also be set as env var because the tests will call some functions of ackrep
+# via command line
+os.environ["ACKREP_DATA_PATH"] = ackrep_data_test_repo_path
+
+# due to the command line callings we also need to specify the test-database
+os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core", "db_for_unittests.sqlite3")
+
+# prevent cli commands to get stuck in unexpected IPython shell on error
+# (comment out for debugging)
+os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
 
 class TestCases1(DjangoTestCase):
@@ -62,13 +79,15 @@ class TestCases1(DjangoTestCase):
         self.assertNotContains(response, "utc_entity_full")
 
 
-class TestCases2(DjangoTestCase):
+class TestCases2(SimpleTestCase):
     """
     These tests expect the database to be loaded
     """
 
+    databases = "__all__"
+
     def setUp(self):
-        core.load_repo_to_db(core.data_test_repo_path)
+        load_repo_to_db_for_ut(ackrep_data_test_repo_path)
 
     def test_entity_detail(self):
         url = reverse("entity-detail", kwargs={"key": "UKJZI"})
@@ -130,7 +149,7 @@ class TestBugs(DjangoTestCase):
     """
 
     def setUp(self):
-        core.load_repo_to_db(core.data_test_repo_path)
+        load_repo_to_db_for_ut(ackrep_data_test_repo_path)
 
     def test_entity_detail(self):
         url = reverse("entity-detail", kwargs={"key": "YJBOX"})
@@ -146,7 +165,7 @@ class TestUI(LiveServerTestCase):
     Itegration tests via browser automation (package: splinter)
     """
 
-    # live_server_url = "http://localhost:8082/"
+    live_server_url = "http://127.0.0.1:8000"
 
     def setUp(self):
         d = dict()

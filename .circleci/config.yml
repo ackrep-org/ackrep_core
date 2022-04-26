@@ -38,6 +38,13 @@ jobs: # A basic unit of work in a run
             python manage.py makemigrations
             ackrep --bootstrap-test-db
             python manage.py test --keepdb ackrep_core.test.test_core
+      - run:
+          name: Test Web
+          command: | 
+            . venv/bin/activate
+            python manage.py makemigrations
+            ackrep --bootstrap-test-db
+            python manage.py test --keepdb ackrep_web.test.test_web
             
 
       # - persist_to_workspace:
