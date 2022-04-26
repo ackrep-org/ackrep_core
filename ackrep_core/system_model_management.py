@@ -18,7 +18,6 @@ import subprocess
 from . import core
 from .util import root_path
 
-
 class GenericModel:
     t_symb = sp.Symbol("t")
 
@@ -431,19 +430,19 @@ def import_parameters(key):
     parameters.base_path = base_path
 
     parameters.parameter_check = check_system_parameters(parameters)
-    if parameters.parameter_check == 0:
+    assert parameters.parameter_check == 0, "Parameter file of system model is missing mandatory attributes!"
 
-        pp_nv = list(sp.Matrix(parameters.pp_sf).subs(parameters.pp_subs_list))
-        pp_dict = {parameters.pp_symb[i]: pp_nv[i] for i in range(len(parameters.pp_symb))}
+    pp_nv = list(sp.Matrix(parameters.pp_sf).subs(parameters.pp_subs_list))
+    pp_dict = {parameters.pp_symb[i]: pp_nv[i] for i in range(len(parameters.pp_symb))}
 
-        def get_default_parameters():
-            return pp_dict
+    def get_default_parameters():
+        return pp_dict
 
-        def get_symbolic_parameters():
-            return parameters.pp_symb
+    def get_symbolic_parameters():
+        return parameters.pp_symb
 
-        parameters.get_default_parameters = get_default_parameters
-        parameters.get_symbolic_parameters = get_symbolic_parameters
+    parameters.get_default_parameters = get_default_parameters
+    parameters.get_symbolic_parameters = get_symbolic_parameters
 
     return parameters
 
@@ -455,24 +454,34 @@ def check_system_parameters(parameters):
         parameters (module):
     """
     if not hasattr(parameters, "model_name"):
+        core.logger.error("model_name attribute missing in parameters.py")
         return 1
     if not hasattr(parameters, "pp_symb"):
+        core.logger.error("pp_symb attribute missing in parameters.py")
         return 2
     if not hasattr(parameters, "pp_sf"):
+        core.logger.error("pp_sf attribute missing in parameters.py")
         return 3
     if not hasattr(parameters, "pp_subs_list"):
+        core.logger.error("pp_subs_list attribute missing in parameters.py")
         return 4
     if not hasattr(parameters, "latex_names"):
+        core.logger.error("latex_names attribute missing in parameters.py")
         return 5
     if not hasattr(parameters, "tabular_header"):
+        core.logger.error("tabular_header attribute missing in parameters.py")
         return 6
     if not hasattr(parameters, "col_alignment"):
+        core.logger.error("col_alignment attribute missing in parameters.py")
         return 7
     if not hasattr(parameters, "col_1"):
+        core.logger.error("col_1 attribute missing in parameters.py")
         return 8
     if not hasattr(parameters, "start_columns_list"):
+        core.logger.error("start_columns_list attribute missing in parameters.py")
         return 9
     if not hasattr(parameters, "end_columns_list"):
+        core.logger.error("end_columns_list attribute missing in parameters.py")
         return 10
 
     return 0
