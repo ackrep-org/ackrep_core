@@ -447,41 +447,45 @@ def import_parameters(key):
     return parameters
 
 
-def check_system_parameters(parameters):
+def check_system_parameters(parameters, suppress_log_msg=False):
     """check if parameter module has correct attributes
     # TODO: check if attributes are of correct type etc. (pydantic)
     Args:
         parameters (module):
     """
+    returncode = 0
     if not hasattr(parameters, "model_name"):
-        core.logger.error("model_name attribute missing in parameters.py")
-        return 1
-    if not hasattr(parameters, "pp_symb"):
-        core.logger.error("pp_symb attribute missing in parameters.py")
-        return 2
-    if not hasattr(parameters, "pp_sf"):
-        core.logger.error("pp_sf attribute missing in parameters.py")
-        return 3
-    if not hasattr(parameters, "pp_subs_list"):
-        core.logger.error("pp_subs_list attribute missing in parameters.py")
-        return 4
-    if not hasattr(parameters, "latex_names"):
-        core.logger.error("latex_names attribute missing in parameters.py")
-        return 5
-    if not hasattr(parameters, "tabular_header"):
-        core.logger.error("tabular_header attribute missing in parameters.py")
-        return 6
-    if not hasattr(parameters, "col_alignment"):
-        core.logger.error("col_alignment attribute missing in parameters.py")
-        return 7
-    if not hasattr(parameters, "col_1"):
-        core.logger.error("col_1 attribute missing in parameters.py")
-        return 8
-    if not hasattr(parameters, "start_columns_list"):
-        core.logger.error("start_columns_list attribute missing in parameters.py")
-        return 9
-    if not hasattr(parameters, "end_columns_list"):
-        core.logger.error("end_columns_list attribute missing in parameters.py")
-        return 10
+        log_msg = "model_name attribute missing in parameters.py"
+        returncode =  1
+    elif not hasattr(parameters, "pp_symb"):
+        log_msg = "pp_symb attribute missing in parameters.py"
+        returncode =  2
+    elif not hasattr(parameters, "pp_sf"):
+        log_msg = "pp_sf attribute missing in parameters.py"
+        returncode =  3
+    elif not hasattr(parameters, "pp_subs_list"):
+        log_msg = "pp_subs_list attribute missing in parameters.py"
+        returncode =  4
+    elif not hasattr(parameters, "latex_names"):
+        log_msg = "latex_names attribute missing in parameters.py"
+        returncode =  5
+    elif not hasattr(parameters, "tabular_header"):
+        log_msg = "tabular_header attribute missing in parameters.py"
+        returncode =  6
+    elif not hasattr(parameters, "col_alignment"):
+        log_msg = "col_alignment attribute missing in parameters.py"
+        returncode =  7
+    elif not hasattr(parameters, "col_1"):
+        log_msg = "col_1 attribute missing in parameters.py"
+        returncode =  8
+    elif not hasattr(parameters, "start_columns_list"):
+        log_msg = "start_columns_list attribute missing in parameters.py"
+        returncode =  9
+    elif not hasattr(parameters, "end_columns_list"):
+        log_msg = "end_columns_list attribute missing in parameters.py"
+        returncode =  10
 
-    return 0
+    if not suppress_log_msg and returncode != 0:
+        core.logger.error(msg=log_msg)
+
+    return returncode

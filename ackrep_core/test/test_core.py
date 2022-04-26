@@ -24,6 +24,7 @@ The order of classes in the file reflects the execution order, see also
 Possibilities to run (some of) the tests:
 
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core`
+`python manage.py test --keepdb --nocapture ackrep_core.test.test_core`
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases1`
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases3.test_get_metadata_path_from_key`
 
@@ -524,11 +525,11 @@ class TestCases4(DjangoTestCase):
 
         # test with incorrect data
         delattr(parameters, "pp_sf")
-        res = system_model_management.check_system_parameters(parameters)
+        res = system_model_management.check_system_parameters(parameters, suppress_log_msg=True)
         self.assertEqual(res, 3)
 
         delattr(parameters, "pp_symb")
-        res = system_model_management.check_system_parameters(parameters)
+        res = system_model_management.check_system_parameters(parameters, suppress_log_msg=True)
         self.assertEqual(res, 2)
 
 
