@@ -279,13 +279,13 @@ class GenericModel:
     # ----------- CREATE SYMBOLIC INPUT VECTOR ---------- #
 
     def _create_symb_uu(self, u_dim):
-        self.uu_symb = [sp.Symbol("u" + str(i)) for i in range(0, self.u_dim)]
+        self.uu_symb = [sp.Symbol("u" + str(i+1)) for i in range(0, self.u_dim)]
 
     # ----------- CREATE SYMBOLIC STATE AND COMBINED VECTOR ---------- #
 
     def _create_symb_xx_xxuu(self):
         # create new symbolic state vector
-        self.xx_symb = [sp.Symbol("x" + str(i)) for i in range(0, self.n)]
+        self.xx_symb = [sp.Symbol("x" + str(i+1)) for i in range(0, self.n)]
         self._xxuu_symb = self.xx_symb + self.uu_symb
 
     # ----------- CREATE SYMBOLIC PARAMETER VECTOR ---------- #
