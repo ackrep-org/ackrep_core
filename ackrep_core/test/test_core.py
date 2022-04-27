@@ -518,19 +518,25 @@ class TestCases4(DjangoTestCase):
     def setUp(self):
         core.load_repo_to_db(ackrep_data_test_repo_path)
 
-    def test_parameter_import(self, key="UXMFA"):
+    def test_import_parameters(self, key="UXMFA"):
         # test with correct data
         parameters = system_model_management.import_parameters(key)
         self.assertEqual(parameters.parameter_check, 0)
 
+        # supress incoming error logs
+        loglevel = core.logger.level
+        core.logger.setLevel(50)
+
         # test with incorrect data
         delattr(parameters, "pp_sf")
-        res = system_model_management.check_system_parameters(parameters, suppress_log_msg=True)
+        res = system_model_management.check_system_parameters(parameters)
         self.assertEqual(res, 3)
 
         delattr(parameters, "pp_symb")
-        res = system_model_management.check_system_parameters(parameters, suppress_log_msg=True)
+        res = system_model_management.check_system_parameters(parameters)
         self.assertEqual(res, 2)
+
+        core.logger.setLevel(loglevel)
 
 
 def get_data_files_dict(path, endings=[]):

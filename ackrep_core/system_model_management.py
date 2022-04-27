@@ -18,6 +18,7 @@ import subprocess
 from . import core
 from .util import root_path
 
+
 class GenericModel:
     t_symb = sp.Symbol("t")
 
@@ -278,13 +279,13 @@ class GenericModel:
     # ----------- CREATE SYMBOLIC INPUT VECTOR ---------- #
 
     def _create_symb_uu(self, u_dim):
-        self.uu_symb = [sp.Symbol("u" + str(i+1)) for i in range(0, self.u_dim)]
+        self.uu_symb = [sp.Symbol("u" + str(i + 1)) for i in range(0, self.u_dim)]
 
     # ----------- CREATE SYMBOLIC STATE AND COMBINED VECTOR ---------- #
 
     def _create_symb_xx_xxuu(self):
         # create new symbolic state vector
-        self.xx_symb = [sp.Symbol("x" + str(i+1)) for i in range(0, self.n)]
+        self.xx_symb = [sp.Symbol("x" + str(i + 1)) for i in range(0, self.n)]
         self._xxuu_symb = self.xx_symb + self.uu_symb
 
     # ----------- CREATE SYMBOLIC PARAMETER VECTOR ---------- #
@@ -447,7 +448,7 @@ def import_parameters(key):
     return parameters
 
 
-def check_system_parameters(parameters, suppress_log_msg=False):
+def check_system_parameters(parameters):
     """check if parameter module has correct attributes
     # TODO: check if attributes are of correct type etc. (pydantic)
     Args:
@@ -456,36 +457,36 @@ def check_system_parameters(parameters, suppress_log_msg=False):
     returncode = 0
     if not hasattr(parameters, "model_name"):
         log_msg = "model_name attribute missing in parameters.py"
-        returncode =  1
+        returncode = 1
     elif not hasattr(parameters, "pp_symb"):
         log_msg = "pp_symb attribute missing in parameters.py"
-        returncode =  2
+        returncode = 2
     elif not hasattr(parameters, "pp_sf"):
         log_msg = "pp_sf attribute missing in parameters.py"
-        returncode =  3
+        returncode = 3
     elif not hasattr(parameters, "pp_subs_list"):
         log_msg = "pp_subs_list attribute missing in parameters.py"
-        returncode =  4
+        returncode = 4
     elif not hasattr(parameters, "latex_names"):
         log_msg = "latex_names attribute missing in parameters.py"
-        returncode =  5
+        returncode = 5
     elif not hasattr(parameters, "tabular_header"):
         log_msg = "tabular_header attribute missing in parameters.py"
-        returncode =  6
+        returncode = 6
     elif not hasattr(parameters, "col_alignment"):
         log_msg = "col_alignment attribute missing in parameters.py"
-        returncode =  7
+        returncode = 7
     elif not hasattr(parameters, "col_1"):
         log_msg = "col_1 attribute missing in parameters.py"
-        returncode =  8
+        returncode = 8
     elif not hasattr(parameters, "start_columns_list"):
         log_msg = "start_columns_list attribute missing in parameters.py"
-        returncode =  9
+        returncode = 9
     elif not hasattr(parameters, "end_columns_list"):
         log_msg = "end_columns_list attribute missing in parameters.py"
-        returncode =  10
+        returncode = 10
 
-    if not suppress_log_msg and returncode != 0:
+    if returncode != 0:
         core.logger.error(msg=log_msg)
 
     return returncode
