@@ -414,7 +414,6 @@ def import_parameters(key):
     Returns:
         module: parameters
     """
-    # TODO: root_path is incorrect when running unittests
     sys.path.insert(0, root_path)
 
     system_model_entity = core.model_utils.get_entity(key)

@@ -523,7 +523,7 @@ class TestCases4(DjangoTestCase):
         parameters = system_model_management.import_parameters(key)
         self.assertEqual(parameters.parameter_check, 0)
 
-        # supress incoming error logs
+        # prevent expected error logs from showing during test
         loglevel = core.logger.level
         core.logger.setLevel(50)
 

@@ -20,13 +20,19 @@ def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("--key", help="print a random key and exit", action="store_true")
     argparser.add_argument(
-        "-cs", "--check-solution", metavar="metadatafile", help="check solution (specified by metadata file)"
+        "-cs",
+        "--check-solution",
+        metavar="metadatafile",
+        help="check solution (specified by path to metadata file or key)",
     )
     argparser.add_argument(
         "--check-all-solutions", help="check all solutions (may take some time)", action="store_true"
     )
     argparser.add_argument(
-        "-csm", "--check-system-model", metavar="metadatafile", help="check system_model (specified by metadata file)"
+        "-csm",
+        "--check-system-model",
+        metavar="metadatafile",
+        help="check system_model (specified by path to metadata file or key)",
     )
     argparser.add_argument(
         "--check-all-system-models", help="check all system models (may take some time)", action="store_true"
@@ -34,12 +40,12 @@ def main():
     argparser.add_argument(
         "--update-parameter-tex",
         metavar="metadatafile",
-        help="update parameters in tex file (entity is specified by metadata file)",
+        help="update parameters of system model in tex file (system model entity is specified by metadata file or key)",
     )
     argparser.add_argument(
         "--create-pdf",
         metavar="metadatafile",
-        help="create pdf of system model from tex file (entity is specified by metadata file)",
+        help="create pdf of system model from tex file (system model entity is specified by metadata file or key)",
     )
     argparser.add_argument(
         "--get-metadata-abs-path-from-key", metavar="key", help="return absolute path to metadata file for a given key"
@@ -192,6 +198,7 @@ def check_all_solutions():
         print("---")
 
     return sum(returncodes)
+
 
 def check_all_system_models():
 

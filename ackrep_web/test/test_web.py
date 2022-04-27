@@ -148,6 +148,7 @@ class TestCases2(SimpleTestCase):
         file.writelines(lines)
         file.close()
 
+        # prevent expected error logs from showing during test
         loglevel = core.logger.level
         core.logger.setLevel(50)
 
