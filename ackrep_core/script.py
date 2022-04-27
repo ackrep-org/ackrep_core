@@ -48,6 +48,11 @@ def main():
         help="create pdf of system model from tex file (system model entity is specified by metadata file or key)",
     )
     argparser.add_argument(
+        "--create-system-model-list-pdf",
+        help="create pdf of all known system models, stored in <root_dir>/local_outputs",
+        action="store_true",
+    )
+    argparser.add_argument(
         "--get-metadata-abs-path-from-key", metavar="key", help="return absolute path to metadata file for a given key"
     )
     argparser.add_argument(
@@ -138,6 +143,8 @@ def main():
     elif args.create_pdf:
         metadatapath = args.create_pdf
         create_pdf(metadatapath)
+    elif args.create_system_model_list_pdf:
+        create_system_model_list_pdf()
     elif args.metadata or args.md:
         if args.md:
             args.metadata = "metadata.yml"
@@ -355,6 +362,19 @@ def create_pdf(arg0: str, exitflag: bool = True):
     assert isinstance(entity, models.SystemModel)
     # IPS()
     res = system_model_management.create_pdf(key=key)
+    if res.returncode == 0:
+        print(bgreen("Success."))
+    else:
+        print(bred("Fail."))
+
+    if exitflag:
+        exit(res.returncode)
+    else:
+        return res
+
+
+def create_system_model_list_pdf(exitflag: bool = True):
+    res = system_model_management.create_system_model_list_pdf()
     if res.returncode == 0:
         print(bgreen("Success."))
     else:

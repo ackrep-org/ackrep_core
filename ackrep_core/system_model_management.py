@@ -17,6 +17,8 @@ import subprocess
 
 from . import core
 from .util import root_path
+from . import models
+from ipydex import IPS
 
 
 class GenericModel:
@@ -489,3 +491,94 @@ def check_system_parameters(parameters):
         core.logger.error(msg=log_msg)
 
     return returncode
+
+
+def create_system_model_list_pdf(outputpath=None):
+    """create a pdf file of all know system models"""
+    res = subprocess.run(["pdflatex", "--help"])
+    assert res.returncode == 0, "Command 'pdflatex' not recognized. Check installation and availability in PATH."
+
+    # put tex and pdf in root directory
+    output_dir = os.path.join(core.root_path, "local_outputs")
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+    os.chdir(output_dir)
+
+    tex_file_name = "system_model_list.tex"
+    try:
+        os.unlink(tex_file_name)
+    except FileNotFoundError:
+        pass
+    tex_file = open(tex_file_name, "a")
+
+    header = []
+    body = []
+    # iterate all models
+    for sm in models.SystemModel.objects.all():
+        model_file_path = os.path.join(
+            core.data_path, os.pardir, sm.base_path, "_system_model_data", "documentation.tex"
+        )
+        model_file = open(model_file_path, "r")
+        lines = model_file.readlines()
+        begin = None
+        end = None
+
+        for i, v in enumerate(lines):
+            # strip lines of repetetive headers etc.
+            if "\\begin{document}" in v:
+                begin = i + 1
+            if "\\end{document}" in v:
+                end = i
+            # change captions for uniform look
+            if "\\part*{Model Documentation of the:}" in v:
+                lines[i] = "\n"
+            if "Add Model Name" in v:
+                lines[i] = "\\part{" + sm.name + "}\n"
+            if "\\input{parameters.tex}" in v:
+                lines[i] = (
+                    "\\input{"
+                    + str(
+                        os.path.join(
+                            core.data_path, os.pardir, sm.base_path, "_system_model_data", "parameters.tex"
+                        ).replace("\\", "/")
+                    )
+                    + "}\n"
+                )
+
+        assert isinstance(begin, int) and isinstance(
+            end, int
+        ), f"documentation.tex of {sm.name} is missing \\begin / \\end of document. "
+        new_header = lines[0:begin]
+        if len(header) == 0:
+            header = new_header
+        else:
+            for line in new_header:
+                if not line in header:
+                    header.insert(len(header) - 1, line)
+
+        body = body + lines[begin:end]
+        body.append("\n\\newpage\n")
+        model_file.close()
+
+    # reset section counter with each model
+    header.insert(len(header) - 1, "\\usepackage{chngcntr}\n\\counterwithin*{section}{part}\n")
+
+    tex_file.writelines(header)
+    tex_file.write("\n\\title{Model Documentation}\n\\maketitle\n\\newpage\n")
+    tex_file.writelines(body)
+    tex_file.write("\n\\end{document}")
+    tex_file.close()
+
+    res = subprocess.run(["pdflatex", "-halt-on-error", tex_file_name], capture_output=True)
+    res.exited = res.returncode
+    res.stdout = res.stdout.decode("utf8")
+    res.stderr = res.stderr.decode("utf8")
+    if res.returncode != 0:
+        core.logger.error(f"Error when executing pdflatex.")
+        # some error messages live on stderr, some on stderr
+        if res.stdout:
+            core.logger.error(res.stdout)
+        if res.stderr:
+            core.logger.error(res.stderr)
+
+    return res
