@@ -210,8 +210,8 @@ def check_all_solutions():
 def check_all_system_models():
 
     returncodes = []
-    for ps in models.SystemModel.objects.all():
-        res = check_system_model(ps.key, exitflag=False)
+    for sm in models.SystemModel.objects.all():
+        res = check_system_model(sm.key, exitflag=False)
         returncodes.append(res.returncode)
         print("---")
 

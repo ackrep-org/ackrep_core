@@ -369,17 +369,24 @@ def create_pdf(key, output_path=None):
     tex_path = os.path.join(root_path, base_path, "_system_model_data")
     os.chdir(tex_path)
     if output_path is None:
-        res = subprocess.run(["pdflatex", "documentation.tex"], capture_output=True)
+        res = subprocess.run(["pdflatex", "-halt-on-error", "documentation.tex"], capture_output=True)
     else:
         test_dir = os.path.join(tex_path, output_path)
         if not os.path.isdir(test_dir):
             os.mkdir(test_dir)
-        res = subprocess.run(["pdflatex", "-output-directory", output_path, "documentation.tex"], capture_output=True)
+        res = subprocess.run(
+            ["pdflatex", "-halt-on-error", "-output-directory", output_path, "documentation.tex"], capture_output=True
+        )
     res.exited = res.returncode
     res.stdout = res.stdout.decode("utf8")
     res.stderr = res.stderr.decode("utf8")
     if res.returncode != 0:
-        print(res.stderr, file=sys.stderr)
+        core.logger.error(f"Error when executing pdflatex.")
+        # some error messages live on stderr, some on stderr
+        if res.stdout:
+            core.logger.error(res.stdout)
+        if res.stderr:
+            core.logger.error(res.stderr)
 
     # clean up auxiliary files
     import time
