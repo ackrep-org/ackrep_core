@@ -29,6 +29,9 @@ def main():
         "-csm", "--check-system-model", metavar="metadatafile", help="check system_model (specified by metadata file)"
     )
     argparser.add_argument(
+        "--check-all-system-models", help="check all system models (may take some time)", action="store_true"
+    )
+    argparser.add_argument(
         "--update-parameter-tex",
         metavar="metadatafile",
         help="update parameters in tex file (entity is specified by metadata file)",
@@ -113,6 +116,8 @@ def main():
         metadatapath = args.check_system_model
         exitflag = not args.show_debug
         check_system_model(metadatapath, exitflag=exitflag)
+    elif args.check_all_system_models:
+        check_all_system_models()
     elif args.get_metadata_abs_path_from_key:
         key = args.get_metadata_abs_path_from_key
         exitflag = not args.show_debug
@@ -183,6 +188,16 @@ def check_all_solutions():
     returncodes = []
     for ps in models.ProblemSolution.objects.all():
         res = check_solution(ps.key, exitflag=False)
+        returncodes.append(res.returncode)
+        print("---")
+
+    return sum(returncodes)
+
+def check_all_system_models():
+
+    returncodes = []
+    for ps in models.SystemModel.objects.all():
+        res = check_system_model(ps.key, exitflag=False)
         returncodes.append(res.returncode)
         print("---")
 
