@@ -1,5 +1,6 @@
 from django.test import SimpleTestCase, TestCase as DjangoTestCase, LiveServerTestCase
 from django.urls import reverse
+from django.test.utils import override_settings
 from unittest import skipUnless
 from ackrep_core.test._test_utils import load_repo_to_db_for_ut, reset_repo, run_command, utf8decode, strip_decode
 import re
@@ -127,6 +128,45 @@ class TestCases2(SimpleTestCase):
         response = self.client.get(img_url)
 
         # TODO test that this url returns a file
+
+    @override_settings(DEBUG=True)
+    def test_debug_message_printing(self):
+
+        url = reverse("check-system_model", kwargs={"key": "UXMFA"})
+
+        # create syntax error in file
+        parameter_path = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
+        os.chdir(parameter_path)
+        file = open("parameters.py", "rt+")
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if "=" in line:
+                lines[i] = line.replace("=", "=_")
+                break
+
+        file.seek(0)
+        file.writelines(lines)
+        file.close()
+
+        loglevel = core.logger.level
+        core.logger.setLevel(50)
+
+        # first: check if debug message shows when it should
+        settings.DEBUG = True
+        response = self.client.get(url)
+        self.assertContains(response, "utc_debug")
+        self.assertContains(response, "SyntaxError: invalid syntax (parameters.py, line")
+        self.assertNotContains(response, "utc_output")
+
+        # second: check if debug message shows when it shouldn't
+        settings.DEBUG = False
+        response = self.client.get(url)
+        self.assertNotContains(response, "utc_debug")
+        self.assertNotContains(response, "SyntaxError: invalid syntax (parameters.py, line")
+        self.assertNotContains(response, "utc_output")
+
+        core.logger.setLevel(loglevel)
+        reset_repo(ackrep_data_test_repo_path)
 
     def test_sparql_query(self):
 
