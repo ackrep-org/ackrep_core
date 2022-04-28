@@ -135,6 +135,10 @@
         <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
         <br>
         <a href="{% url 'check-solution' entity.key %}">check this solution</a> (this might take some time)
+    {% elif entity.type == "system_model"%}
+        <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
+        <br>
+        <a href="{% url 'check-system_model' entity.key %}">simulate this model</a> (this might take some time)
     {% endif %}
 {% endif %} {#display full#}
 </div>

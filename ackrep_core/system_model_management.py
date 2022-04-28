@@ -500,7 +500,7 @@ def check_system_parameters(parameters):
     return returncode
 
 
-def create_system_model_list_pdf(outputpath=None):
+def create_system_model_list_pdf():
     """create a pdf file of all know system models"""
     res = subprocess.run(["pdflatex", "--help"])
     assert res.returncode == 0, "Command 'pdflatex' not recognized. Check installation and availability in PATH."
