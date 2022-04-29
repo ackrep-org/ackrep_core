@@ -18,6 +18,7 @@ from .util import *
 
 def main():
     argparser = argparse.ArgumentParser()
+    argparser.add_argument("--say-hello", help="print hello message to verify installation", action="store_true")
     argparser.add_argument("--key", help="print a random key and exit", action="store_true")
     argparser.add_argument(
         "-cs",
@@ -167,6 +168,8 @@ def main():
         core.print_entity_info(key)
     elif args.test_logging:
         core.send_log_messages()
+    elif args.say_hello:
+        print(bgreen("Hello!"))
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
