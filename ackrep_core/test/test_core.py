@@ -414,7 +414,7 @@ class TestCases3(SimpleTestCase):
         # TODO: test this somehow with CI
 
         # first check if pdflatex is installed and included in path
-        # TODO: if there is a problem with this, `shell=True` might solve it on Windows
+        # Note: if there is a problem with this, `shell=True` might solve it on Windows
         res = run_command(["pdflatex", "--help"])
         self.assertEqual(res.returncode, 0, msg="pdflatex not found! Check installation and its existence in PATH!")
 

@@ -112,6 +112,7 @@ class EntityDetailView(View):
         c.entity = entity
         c.view_type = "detail"
         c.view_type_title = "Details for:"
+        c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
 
         context = {"c": c}
 
@@ -189,6 +190,7 @@ class SimulateSystemModelView(View):
 
         c.image_list = core.get_data_files(model_entity.base_path, endswith_str=".png", create_media_links=True)
         c.pdf_list = core.get_data_files(model_entity.base_path, endswith_str=".pdf", create_media_links=True)
+
         c.show_debug = False
 
         if cs_result.returncode == 0:

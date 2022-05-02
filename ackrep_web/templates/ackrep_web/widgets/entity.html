@@ -83,6 +83,11 @@
             <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a> &nbsp; |  &nbsp;
         {% endfor %}
         <br>
+        <b>Extensive Material:</b><br>
+        {% for pdf in c.pdf_list %}
+            <a href="{{pdf}}">Download pdf</a><br>
+        {% endfor %}
+
         {% if c.view_type == "detail" %}
             <!--utc_entity_detial -->
             <br>
@@ -92,12 +97,6 @@
         {% elif c.view_type == "check-system_model"%}
             <!--utc_check_system_model -->
             <b>Result:</b> <span class="cs_result {{c.cs_result_css_class}}">{{c.cs_verbal_result}}</span><br>
-            {% if c.pdf_list %}  
-                <b>Extensive Material:</b><br>
-                {% for pdf in c.pdf_list %}
-                    <a href="{{pdf}}">Download pdf</a><br>
-                {% endfor %}
-            {% endif %}
             {% if c.show_output %}
                 {% if c.cs_result.stdout %}
                     <!--utc_output -->
