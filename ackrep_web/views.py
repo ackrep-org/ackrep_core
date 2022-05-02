@@ -112,7 +112,8 @@ class EntityDetailView(View):
         c.entity = entity
         c.view_type = "detail"
         c.view_type_title = "Details for:"
-        c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
+        if type(entity) == core.models.SystemModel:
+            c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
 
         context = {"c": c}
 
