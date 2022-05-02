@@ -52,7 +52,10 @@ footer {
 
     border-radius:2px;
     border: solid 1px;
-    border-color:hsl(10, 0%, 80%);
+    border-color:rgb(77, 62, 62);
+}
+.cs_inaccurate {
+    color:hsl(34, 90%, 45%);
 }
 .cs_success {
     color:hsl(120, 60%, 30%);
@@ -61,6 +64,7 @@ footer {
 .cs_fail {
     color:hsl(0, 90%, 45%);
 }
+
 
 .errorbox {
     background-color:hsl(0, 90%, 75%);

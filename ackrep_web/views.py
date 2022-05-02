@@ -198,6 +198,11 @@ class SimulateSystemModelView(View):
             c.cs_result_css_class = "cs_success"
             c.cs_verbal_result = "Success"
             c.show_output = True
+        # no major error but numerical result was unexpected
+        elif cs_result.returncode == 2:
+            c.cs_result_css_class = "cs_inaccurate"
+            c.cs_verbal_result = "Inaccurate (different result than expected)."
+            c.show_output = True
         else:
             c.cs_result_css_class = "cs_fail"
             c.cs_verbal_result = "Fail"

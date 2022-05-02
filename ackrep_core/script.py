@@ -285,6 +285,8 @@ def check_system_model(arg0: str, exitflag: bool = True):
     res = core.check_system_model(key=key)
     if res.returncode == 0:
         print(bgreen("Success."))
+    elif res.returncode == 2:
+        print(yellow("Inaccurate."))
     else:
         print(bred("Fail."))
 
