@@ -79,8 +79,6 @@ class GenericModel:
 
         """
         # Initialize all Parameters of the Model-Object with None
-        # Indicator for the existance of parameters
-        self.has_params = None
         # System Dimension
         self.n = None
         # Symbolic State Vector
@@ -99,6 +97,37 @@ class GenericModel:
         self.pp_subs_list = None
         # Input function
         self.uu_func = None
+
+        self.params = None
+
+        if x_dim is None and self.sys_dim is None:
+            self.sys_dim = self.default_param_sys_dim
+
+        try:
+            self.params.get_default_parameters()
+        except AttributeError:
+            self.has_params = False
+    
+        # Set self.n
+        self._set_dimension(self.sys_dim)        
+        # Create symbolic input vector
+        self._create_symb_uu(self.u_dim)
+        # Create symbolic xx and xxuu
+        self._create_symb_xx_xxuu()
+        # Create parameter dict, subs_list and symbolic parameter vector
+        self.set_parameters(pp)
+        # Create Symbolic parameter vector and subs list
+        self._create_symb_pp()
+        # Create Substitution list
+        self._create_subs_list()      
+        # choose input function
+        self.set_input_func(self.uu_default_func())
+        if u_func is not None:
+            self.set_input_func(u_func)     
+
+
+
+
 
     # ----------- SET NEW INPUT FUNCTION ---------- #
     # --------------- Only for non-autonomous Systems
@@ -311,8 +340,71 @@ class GenericModel:
         self.pp_subs_list = list(self.pp_dict.items())
 
 
+    
+    # ----------- SET_PARAMETERS ---------- #
+ 
+    def set_parameters(self, pp):
+        """
+        :param pp:(vector or dict-type with floats>0) parameter values
+        :param x_dim:(positive int)
+        """       
+        # Case: System doesn't have parameters
+        if not self.has_params:
+            return  
+        
+        # Case: No symbolic parameters created
+        if self.pp_symb is None: 
+            try:
+                symb_pp = self._create_n_dim_symb_parameters()
+            except AttributeError: # To ensure compatibility with old classes
+                symb_pp = None
+            # Check if system has constant dimension
+            if  symb_pp is None:
+                symb_pp = list(self.params.get_default_parameters().keys())
+            self._create_symb_pp(symb_pp)
+
+        # Case: Use Default Parameters
+        if pp is None:
+            pp_dict = self.params.get_default_parameters()
+            # Check if a possibly given system dimension fits to the default
+            # parameter length
+            assert len(self.pp_symb) == len(pp_dict), \
+                "Expected :param pp: to be given, because the amount of \
+                    parameters needed (" + str(len(self.pp_symb)) +") \
+                    for the system of given dimension (" + str(self.n) + ") \
+                    doesn't fit to the number of default parameters (" \
+                        + str(len(pp_dict)) + ")."
+            self.pp_dict = pp_dict
+            return
+        
+        # Check if pp is list or dict type
+        assert isinstance(pp, dict) or isinstance(pp, list),\
+                            ":param pp: must be a dict or list type object"
+                            
+        # Case: Individual parameter (list or dict type) variable is given
+        if pp is not None:
+            # Check if pp has correct length                    
+            assert len(self.pp_symb) == len(pp), \
+                    ":param pp: Given Dimension: " + str(len(pp)) \
+                    + ", Expected Dimension: " + str(len(self.pp_symb))
+            # Case: parameter dict ist given -> individual parameter symbols 
+            # and values
+            if isinstance(pp, dict):
+                self._create_individual_p_dict(pp)
+                return
+            # Case: Use individual parameter values
+            else:                     
+                self._create_individual_p_dict(pp, self.pp_symb)
+                return
+        
+        # Case: Should never happen.
+        raise Exception("Critical Error: Check Source Code of set_parameters.") 
+    
+
+
 ### Parameter fetching and tex-ing ###
 
+   
 
 def update_parameter_tex(key):
     """search for parameter file of system_model key
