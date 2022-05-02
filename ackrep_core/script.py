@@ -15,10 +15,11 @@ from . import core
 from . import models
 from .util import *
 
+version = "1.0"
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--say-hello", help="print hello message to verify installation", action="store_true")
+    argparser.add_argument("--version", help="version of the ackrep_core framework", action="store_true")
     argparser.add_argument("--key", help="print a random key and exit", action="store_true")
     argparser.add_argument(
         "-cs",
@@ -168,8 +169,8 @@ def main():
         core.print_entity_info(key)
     elif args.test_logging:
         core.send_log_messages()
-    elif args.say_hello:
-        print(bgreen("Hello!"))
+    elif args.version:
+        print("Version", version)
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()

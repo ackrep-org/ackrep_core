@@ -502,7 +502,7 @@ def check_system_parameters(parameters):
 
 def create_system_model_list_pdf():
     """create a pdf file of all know system models"""
-    res = subprocess.run(["pdflatex", "--help"])
+    res = subprocess.run(["pdflatex", "-version"], capture_output=False)
     assert res.returncode == 0, "Command 'pdflatex' not recognized. Check installation and availability in PATH."
 
     # put tex and pdf in root directory
@@ -540,7 +540,7 @@ def create_system_model_list_pdf():
             if "\\part*{Model Documentation of the:}" in v:
                 lines[i] = "\n"
             if "Add Model Name" in v:
-                lines[i] = "\\part{" + sm.name + "}\n"
+                lines[i] = "\\part{" + sm.name + "}\n" + "ACKREP-Key: " + sm.key
             if "\\input{parameters.tex}" in v:
                 lines[i] = (
                     "\\input{"
@@ -551,6 +551,8 @@ def create_system_model_list_pdf():
                     )
                     + "}\n"
                 )
+            if "\\begin{thebibliography}" in v:
+                lines[i] = _import_png_to_tex(sm) + lines[i]
 
         assert isinstance(begin, int) and isinstance(
             end, int
@@ -589,3 +591,21 @@ def create_system_model_list_pdf():
             core.logger.error(res.stderr)
 
     return res
+
+def _import_png_to_tex(system_model_entity):
+    assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel" 
+    res = core.check_system_model(system_model_entity.key)
+    png_path = os.path.join(
+            core.data_path, os.pardir, system_model_entity.base_path, "_system_model_data", "plot.png"
+        ).replace("\\", "/")
+    line = "\n\\section{Simulation}\n" + \
+        "\\begin{figure}[H]\n" + \
+        "\\centering\n" + \
+        "\\includegraphics[width=\\linewidth]{" + png_path +"}\n" + \
+        "\\caption{Simulation of the " + system_model_entity.name + ".}\n" + \
+        "\\label{fig:" + system_model_entity.name + "}\n" + \
+        "\\end{figure}\n"
+
+
+
+    return line
