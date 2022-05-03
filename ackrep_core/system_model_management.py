@@ -98,7 +98,7 @@ class GenericModel:
         # Input function
         self.uu_func = None
 
-        self.params = None
+        
 
         if x_dim is None and self.sys_dim is None:
             self.sys_dim = self.default_param_sys_dim
