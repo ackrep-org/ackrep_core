@@ -114,7 +114,7 @@ class TestCases2(SimpleTestCase):
         # TODO test that this url returns a file
 
     def test_check_system_model(self):
-        url = reverse("check-system_model", kwargs={"key": "UXMFA"})
+        url = reverse("check-system-model", kwargs={"key": "UXMFA"})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -132,7 +132,7 @@ class TestCases2(SimpleTestCase):
     @override_settings(DEBUG=True)
     def test_debug_message_printing(self):
 
-        url = reverse("check-system_model", kwargs={"key": "UXMFA"})
+        url = reverse("check-system-model", kwargs={"key": "UXMFA"})
 
         # create syntax error in file
         parameter_path = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")

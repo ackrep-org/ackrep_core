@@ -18,10 +18,8 @@ urlpatterns = [
     path("search-sparql", views.SearchSparqlView.as_view(), name="search-sparql"),
     re_path("mr/(?P<key>[A-Z0-9_]{5})", views.MergeRequestDetailView.as_view(), name="merge-request"),
     re_path("e/(?P<key>[A-Z0-9_]{5})", views.EntityDetailView.as_view(), name="entity-detail"),
-    re_path("check-solution/(?P<key>[A-Z0-9_]{5})", views.CheckSolutionView.as_view(), name="check-solution"),
-    re_path(
-        "check-system_model/(?P<key>[A-Z0-9_]{5})", views.SimulateSystemModelView.as_view(), name="check-system_model"
-    ),
+    re_path("check-solution/(?P<key>[A-Z0-9_]{5})", views.CheckView.as_view(), name="check-solution"),
+    re_path("check-system-model/(?P<key>[A-Z0-9_]{5})", views.CheckView.as_view(), name="check-system-model"),
     # placeholders
     path("imprint", views.LandingPageView.as_view(), name="imprint-page"),
     path("privacy", views.LandingPageView.as_view(), name="privacy-page"),

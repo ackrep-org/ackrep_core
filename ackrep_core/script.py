@@ -17,6 +17,7 @@ from .util import *
 
 version = "1.0"
 
+
 def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("--version", help="version of the ackrep_core framework", action="store_true")

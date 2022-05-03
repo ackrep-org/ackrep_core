@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.contrib import messages
 from ackrep_core import util
 from ackrep_core import core
+from ackrep_core import models
 from git.exc import GitCommandError
 from ackrep_core_django_settings import settings
 
@@ -123,94 +124,57 @@ class EntityDetailView(View):
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
-class CheckSolutionView(View):
-    # noinspection PyMethodMayBeStatic
+class CheckView(View):
     def get(self, request, key):
-
         try:
-            sol_entity = core.get_entity(key)
+            entity = core.get_entity(key)
         except ValueError as ve:
             raise Http404(ve)
 
         # TODO: spawn a new container and shown some status updates while the user is waiting
 
-        core.resolve_keys(sol_entity)
-
+        core.resolve_keys(entity)
         c = core.Container()
+        c.entity = entity
         ts1 = timezone.now()
-        cs_result = core.check_solution(key)
         c.diff_time_str = util.smooth_timedelta(ts1)
 
-        c.entity = sol_entity
-        c.view_type = "check-solution"
-        c.view_type_title = "Check Solution for:"
-        c.cs_result = cs_result
+        if type(entity) == models.ProblemSolution:
+            cs_result = core.check_solution(key)
+            c.view_type = "check-solution"
+            c.view_type_title = "Check Solution for:"
+            c.image_list = core.get_data_files(entity.base_path, endswith_str=".png", create_media_links=True)
 
-        c.image_list = core.get_data_files(sol_entity.base_path, endswith_str=".png", create_media_links=True)
-        c.show_debug = False
+        elif type(entity) == models.SystemModel:
+            cs_result = core.check_system_model(key)
+            c.view_type = "check-system-model"
+            c.view_type_title = "Simulation for:"
+            c.image_list = core.get_data_files(entity.base_path, endswith_str=".png", create_media_links=True)
+            c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
 
-        if cs_result.returncode == 0:
-            c.cs_result_css_class = "cs_success"
-            c.cs_verbal_result = "Success"
-            c.show_output = True
         else:
-            c.cs_result_css_class = "cs_fail"
-            c.cs_verbal_result = "Fail"
-            c.show_debug = settings.DEBUG
-            c.show_output = False
+            raise TypeError(f"{entity} has to be of type ProblemSolution or SystemModel.")
 
-        context = {"c": c}
-
-        # create an object container (entity.oc) where for each string-key the real object is available
-
-        return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
-
-
-class SimulateSystemModelView(View):
-    # noinspection PyMethodMayBeStatic
-    def get(self, request, key):
-
-        try:
-            model_entity = core.get_entity(key)
-        except ValueError as ve:
-            raise Http404(ve)
-
-        # TODO: spawn a new container and shown some status updates while the user is waiting
-
-        core.resolve_keys(model_entity)
-
-        c = core.Container()
-        ts1 = timezone.now()
-        cs_result = core.check_system_model(key)
-        c.diff_time_str = util.smooth_timedelta(ts1)
-
-        c.entity = model_entity
-        c.view_type = "check-system_model"
-        c.view_type_title = "Simulation for:"
         c.cs_result = cs_result
-
-        c.image_list = core.get_data_files(model_entity.base_path, endswith_str=".png", create_media_links=True)
-        c.pdf_list = core.get_data_files(model_entity.base_path, endswith_str=".pdf", create_media_links=True)
 
         c.show_debug = False
 
         if cs_result.returncode == 0:
             c.cs_result_css_class = "cs_success"
-            c.cs_verbal_result = "Success"
+            c.cs_verbal_result = "Success."
             c.show_output = True
         # no major error but numerical result was unexpected
         elif cs_result.returncode == 2:
             c.cs_result_css_class = "cs_inaccurate"
-            c.cs_verbal_result = "Inaccurate (different result than expected)."
+            c.cs_verbal_result = "Inaccurate. (Different result than expected.)"
             c.show_output = True
         else:
             c.cs_result_css_class = "cs_fail"
-            c.cs_verbal_result = "Fail"
+            c.cs_verbal_result = "Script Error."
             c.show_debug = settings.DEBUG
             c.show_output = False
 
         context = {"c": c}
-
         # create an object container (entity.oc) where for each string-key the real object is available
 
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)

@@ -93,8 +93,8 @@
             <br>
             <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
             <br>
-            <a href="{% url 'check-system_model' entity.key %}">simulate this model</a> (this might take some time)<br>
-        {% elif c.view_type == "check-system_model"%}
+            <a href="{% url 'check-system-model' entity.key %}">simulate this model</a> (this might take some time)<br>
+        {% elif c.view_type == "check-system-model"%}
             <!--utc_check_system_model -->
             <b>Result:</b> <span class="cs_result {{c.cs_result_css_class}}">{{c.cs_verbal_result}}</span><br>
             {% if c.show_output %}
@@ -137,7 +137,7 @@
     {% elif entity.type == "system_model"%}
         <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
         <br>
-        <a href="{% url 'check-system_model' entity.key %}">simulate this model</a> (this might take some time)
+        <a href="{% url 'check-system-model' entity.key %}">simulate this model</a> (this might take some time)
     {% endif %}
 {% endif %} {#display full#}
 </div>

@@ -49,4 +49,5 @@ if rc.success:
 else:
     # returncode 2 means: numerically wrong result (our convention)
     print("\nNumerical calculation finished with unexpected result!\n")
+    print("Discrepancy between calculated and expected state values at end of simualtion:", rc.target_state_errors)
     exit(2)

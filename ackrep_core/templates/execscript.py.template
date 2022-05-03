@@ -53,5 +53,6 @@ if rc.success:
     # returncode 0 means: no errors (general convention)
     exit(0)
 else:
-    # returncode 1 means: wrong result (our convention)
-    exit(1)
+    # returncode 2 means: numerically wrong result (our convention)
+    print("\nNumerical calculation finished with unexpected result!\n")
+    exit(2)
