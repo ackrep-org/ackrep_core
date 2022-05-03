@@ -98,7 +98,7 @@ class GenericModel:
         # Input function
         self.uu_func = None
 
-        self.params = None
+        
 
         if x_dim is None and self.sys_dim is None:
             self.sys_dim = self.default_param_sys_dim
@@ -115,6 +115,7 @@ class GenericModel:
         # Create symbolic xx and xxuu
         self._create_symb_xx_xxuu()
         # Create parameter dict, subs_list and symbolic parameter vector
+        IPS()
         self.set_parameters(pp)
         # Create Symbolic parameter vector and subs list
         self._create_symb_pp()
