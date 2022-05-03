@@ -13,6 +13,8 @@ from ackrep_core import core
 from ackrep_core import models
 from git.exc import GitCommandError
 from ackrep_core_django_settings import settings
+from git import Repo, InvalidGitRepositoryError
+import os
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
@@ -115,6 +117,7 @@ class EntityDetailView(View):
         c.view_type_title = "Details for:"
         if type(entity) == core.models.SystemModel:
             c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
+        c.source_code_links = _create_source_code_links(entity)
 
         context = {"c": c}
 
@@ -156,6 +159,8 @@ class CheckView(View):
             raise TypeError(f"{entity} has to be of type ProblemSolution or SystemModel.")
 
         c.cs_result = cs_result
+
+        
 
         c.show_debug = False
 
@@ -273,3 +278,22 @@ class NotYetImplementedView(View):
         context = {}
 
         return TemplateResponse(request, "ackrep_web/not_yet_implemented.html", context)
+
+
+def _create_source_code_links(entity):
+    # core_path = os.path.join(core.root_path, "ackrep_core")
+    try:
+        repo = Repo(core.data_path)
+    except InvalidGitRepositoryError():
+        assert False, f"The directory {core.data_path} is not a git repository!"
+
+    links = []
+
+    base_url = repo.remote().url
+    branch_name = repo.active_branch.name
+    rel_code_path = entity.base_path.replace("\\", "/").split("ackrep_data")[-1]
+    links.append(base_url.split(".git")[0] + "/tree/" + branch_name + "/" + rel_code_path)
+
+    return links
+    
+

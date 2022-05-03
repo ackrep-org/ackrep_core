@@ -203,3 +203,21 @@ padding-left: 90px; /* same size as the label elements */
 margin-left: .5em;
 }
 
+input {
+    display:none;
+}
+
+span#content {
+    display:none;
+}
+input#show:checked ~ span#content {
+  display:block;
+}
+
+input#hide:checked ~ span#content {
+    display:none;
+}
+
+.fake_link{
+    color:hsl(236, 100%, 50%);
+}

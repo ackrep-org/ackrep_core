@@ -251,6 +251,8 @@ def check_solution(arg0: str, exitflag: bool = True):
 
     if res.returncode == 0:
         print(bgreen("Success."))
+    elif res.returncode == 2:
+        print(yellow("Inaccurate."))
     else:
         print(bred("Fail."))
 

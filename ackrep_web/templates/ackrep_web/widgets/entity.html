@@ -11,7 +11,23 @@
     <!--utc_entity_full -->
     <b>Short Description:</b> {{entity.short_description}}<br>
     <b>Created:</b> {{entity.creation_date}}<br>
-
+    <b>Source Code</b>
+    <label for="show">
+        <span class="fake_link">[Show/</span>
+    </label>
+    <input type=radio id="show" name="group">
+    <label for="hide">
+        <span class="fake_link"> Hide]</span> 
+    </label>    
+    <input type=radio id="hide" name="group">
+    <span id="content">
+        {% if c.source_code_links %}
+            {% for link in c.source_code_links %}
+                <a href={{link}}>{{link}}</a>
+                <br>
+            {% endfor %}
+        {% endif %}</span>
+    <br>
 {#--------------------------------------------------------------------------------------------------------------------#}
     {% if entity.type == "problem_solution"%}
         <b>Solved Problems:</b>
@@ -141,6 +157,8 @@
     {% endif %}
 {% endif %} {#display full#}
 </div>
+
+
 
 
 
