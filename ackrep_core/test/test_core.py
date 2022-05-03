@@ -46,7 +46,7 @@ os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core",
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
 # use `git log -1` to display the full hash
-default_repo_head_hash = "c931f25b3eacad8e0ca495de49c3c488135bdb61"  # 2022-04-16 branch for_unittests
+default_repo_head_hash = "ba4f743527eb506db2ca943e0f164dded5517ac4"  # 2022-05-03 branch for_unittests
 
 
 class TestCases1(DjangoTestCase):
