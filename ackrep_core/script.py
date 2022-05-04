@@ -209,7 +209,7 @@ def check_all_solutions():
         returncodes.append(res.returncode)
         print("---")
 
-    return sum(returncodes)
+    exit(sum(returncodes))
 
 
 def check_all_system_models():
@@ -219,8 +219,10 @@ def check_all_system_models():
         res = check_system_model(sm.key, exitflag=False)
         returncodes.append(res.returncode)
         print("---")
-
-    return sum(returncodes)
+    # if sum(returncodes) != 0:
+    #     raise ValueError("Fail.")
+    exit(1)
+    # return sum(returncodes)
 
 
 # def check_solution(metadatapath=None, key=None, exitflag=True):
