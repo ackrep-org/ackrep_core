@@ -15,6 +15,7 @@ from git.exc import GitCommandError
 from ackrep_core_django_settings import settings
 from git import Repo, InvalidGitRepositoryError
 import os
+import numpy as np
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
@@ -118,6 +119,7 @@ class EntityDetailView(View):
         if type(entity) == core.models.SystemModel:
             c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
         c.source_code_links = _create_source_code_links(entity)
+        c.source_code_container = _get_source_code(entity)
 
         context = {"c": c}
 
@@ -281,7 +283,6 @@ class NotYetImplementedView(View):
 
 
 def _create_source_code_links(entity):
-    # core_path = os.path.join(core.root_path, "ackrep_core")
     try:
         repo = Repo(core.data_path)
     except InvalidGitRepositoryError():
@@ -296,4 +297,22 @@ def _create_source_code_links(entity):
 
     return links
     
+def _get_source_code(entity):
+    c = core.Container()
+    abs_base_path = os.path.join(core.root_path, entity.base_path)
+    c.object_list = []
+
+    for i, file in enumerate(os.listdir(abs_base_path)):
+        if ".py" in file:
+            c.object_list.append(core.Container())
+            py_path = os.path.join(abs_base_path, file)
+            py_file = open(py_path)
+
+            c.object_list[-1].source_code = py_file.read()
+            c.object_list[-1].file_name= file
+            c.object_list[-1].id = "python_code_" + str(i)
+
+            py_file.close()
+
+    return c
 

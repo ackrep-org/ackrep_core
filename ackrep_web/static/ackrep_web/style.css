@@ -218,6 +218,6 @@ input#hide:checked ~ span#content {
     display:none;
 }
 
-.fake_link{
+.fake_button{
     color:hsl(236, 100%, 50%);
 }
