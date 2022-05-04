@@ -129,40 +129,29 @@ class EntityDetailView(View):
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
-class CheckView(View):
+class CheckView(EntityDetailView):
     def get(self, request, key):
-        try:
-            entity = core.get_entity(key)
-        except ValueError as ve:
-            raise Http404(ve)
+        # inherit cotext data from EntityDetailView like source code and pdf
+        c = super().get(request, key).context_data["c"]
 
-        # TODO: spawn a new container and shown some status updates while the user is waiting
-
-        core.resolve_keys(entity)
-        c = core.Container()
-        c.entity = entity
         ts1 = timezone.now()
         c.diff_time_str = util.smooth_timedelta(ts1)
 
-        if type(entity) == models.ProblemSolution:
+        if type(c.entity) == models.ProblemSolution:
             cs_result = core.check_solution(key)
             c.view_type = "check-solution"
             c.view_type_title = "Check Solution for:"
-            c.image_list = core.get_data_files(entity.base_path, endswith_str=".png", create_media_links=True)
 
-        elif type(entity) == models.SystemModel:
+        elif type(c.entity) == models.SystemModel:
             cs_result = core.check_system_model(key)
             c.view_type = "check-system-model"
             c.view_type_title = "Simulation for:"
-            c.image_list = core.get_data_files(entity.base_path, endswith_str=".png", create_media_links=True)
-            c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
 
         else:
-            raise TypeError(f"{entity} has to be of type ProblemSolution or SystemModel.")
+            raise TypeError(f"{c.entity} has to be of type ProblemSolution or SystemModel.")
 
         c.cs_result = cs_result
-
-        
+        c.image_list = core.get_data_files(c.entity.base_path, endswith_str=".png", create_media_links=True)
 
         c.show_debug = False
 
