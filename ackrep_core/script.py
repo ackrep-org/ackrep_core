@@ -9,13 +9,13 @@ from ipydex import IPS, activate_ips_on_exception
 
 from ackrep_core import system_model_management
 
+from ackrep_core import release
+
 activate_ips_on_exception()
 
 from . import core
 from . import models
 from .util import *
-
-version = "1.0"
 
 
 def main():
@@ -171,7 +171,7 @@ def main():
     elif args.test_logging:
         core.send_log_messages()
     elif args.version:
-        print("Version", version)
+        print("Version", release.__version__)
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -221,7 +221,6 @@ def check_all_system_models():
         print("---")
 
     exit(sum(returncodes))
-
 
 
 # def check_solution(metadatapath=None, key=None, exitflag=True):
