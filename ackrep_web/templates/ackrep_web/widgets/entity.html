@@ -46,11 +46,8 @@
     <input type=radio id="hide" name="group">
     ]
     <span id="content">
-        {% if c.source_code_links %}
-            {% for link in c.source_code_links %}
-                <a href={{link}}>{{link}}</a>
-                <br>
-            {% endfor %}
+        {% if c.source_code_link %}
+            <a id="source_code_link" href={{c.source_code_link}}>{{c.source_code_link}}</a>
         {% endif %}
     
         <br>

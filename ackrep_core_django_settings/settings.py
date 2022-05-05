@@ -142,6 +142,9 @@ BACKUP_PATH = os.path.join(BASE_DIR, "db_backups")
 
 TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
 
+# static url of the current ackrep_data branch running on the server (used to show link to source code)
+ACKREP_DATA_BASE_URL = "https://github.com/ackrep-org/ackrep_data.git"
+ACKREP_DATA_BRANCH = "tree/systemModelsCatalog"
 
 # The following mechanism allows to incorporate custom settings (which are maintained
 # outside of the repository, see ackrep_deployment)

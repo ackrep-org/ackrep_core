@@ -103,9 +103,7 @@ class ExtendDatabaseView(View):
 
 
 class EntityDetailView(View):
-    # noinspection PyMethodMayBeStatic
-    def get(self, request, key):
-
+    def get_context_container(self, key):
         try:
             entity = core.get_entity(key)
         except ValueError as ve:
@@ -118,13 +116,18 @@ class EntityDetailView(View):
         c.view_type_title = "Details for:"
         if type(entity) == core.models.SystemModel:
             c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
-        c.source_code_links = _create_source_code_links(entity)
+        c.source_code_link = _create_source_code_link(entity)
         c.source_code_container = _get_source_code(entity)
-
-        context = {"c": c}
 
         # create an object container (entity.oc) where for each string-keys the real object is available
         core.resolve_keys(entity)
+
+        return c
+
+    # noinspection PyMethodMayBeStatic
+    def get(self, request, key):
+        c = self.get_context_container(key)
+        context = {"c": c}
 
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
@@ -132,7 +135,7 @@ class EntityDetailView(View):
 class CheckView(EntityDetailView):
     def get(self, request, key):
         # inherit cotext data from EntityDetailView like source code and pdf
-        c = super().get(request, key).context_data["c"]
+        c = self.get_context_container(key)
 
         ts1 = timezone.now()
         c.diff_time_str = util.smooth_timedelta(ts1)
@@ -271,21 +274,20 @@ class NotYetImplementedView(View):
         return TemplateResponse(request, "ackrep_web/not_yet_implemented.html", context)
 
 
-def _create_source_code_links(entity):
+def _create_source_code_link(entity):
     try:
         repo = Repo(core.data_path)
     except InvalidGitRepositoryError():
         assert False, f"The directory {core.data_path} is not a git repository!"
 
-    links = []
-
-    base_url = repo.remote().url
-    branch_name = repo.active_branch.name
+    base_url = settings.ACKREP_DATA_BASE_URL
+    branch_name = settings.ACKREP_DATA_BRANCH
     rel_code_path = entity.base_path.replace("\\", "/").split("ackrep_data")[-1]
-    links.append(base_url.split(".git")[0] + "/tree/" + branch_name + "/" + rel_code_path)
+    link = base_url.split(".git")[0] + "/" + branch_name + rel_code_path
 
-    return links
-    
+    return link
+
+
 def _get_source_code(entity):
     c = core.Container()
     abs_base_path = os.path.join(core.root_path, entity.base_path)
@@ -298,10 +300,9 @@ def _get_source_code(entity):
             py_file = open(py_path)
 
             c.object_list[-1].source_code = py_file.read()
-            c.object_list[-1].file_name= file
+            c.object_list[-1].file_name = file
             c.object_list[-1].id = "python_code_" + str(i)
 
             py_file.close()
 
     return c
-
