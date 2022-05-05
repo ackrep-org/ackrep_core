@@ -119,9 +119,13 @@ class GenericModel:
         # Create Substitution list
         self._create_subs_list()
         # choose input function
-        self.set_input_func(self.uu_default_func())
-        if u_func is not None:
-            self.set_input_func(u_func)
+        if self.u_dim == 0:
+            self.set_input_func(self.uu_autonomous_func())
+        else:
+            assert hasattr(self, "uu_default_func"), f"Your system has an input dimension of {self.u_dim} but no methode 'uu_default_func'."
+            self.set_input_func(self.uu_default_func())
+            if u_func is not None:
+                self.set_input_func(u_func)
 
     # ----------- SET NEW INPUT FUNCTION ---------- #
     # --------------- Only for non-autonomous Systems
@@ -160,32 +164,12 @@ class GenericModel:
     # --------------- Only for non-autonomous Systems
     # --------------- MODEL DEPENDENT
 
-    @abc.abstractmethod
-    def uu_default_func(self):
-        """
-        Creates a default input function for the given model.
-        The default input function has following purposes:
-            - model validation during implementation
-            - make generated model simulatable without additional effort to
-              create a new, nontrivial input
-            - give an example for the system response
-
-        :return:(function f) default input function
-
-            The returned function shall take two parameters :
-                t : scalar or list
-                    scalar: time at which the input function shall be
-                            evaluated
-                    list: times at which the input function shall be evaluated
-
-                xx_nv : list or list of lists
-                    list: state vector of the model at time t
-                    list of lists: state vectors of the model at the times in t
-
-            The returned function shall return :
-                list: values of input vector uu at time t
-                list of lists: values of input vectors at the times in t
-        """
+    def uu_autonomous_func(self):
+        """define a input function for autonomous systems"""
+        def uu_rhs(t, xx_nv):            
+            return []
+        
+        return uu_rhs
 
     # ----------- SET STATE VECTOR DIMENSION ---------- #
 
@@ -217,8 +201,6 @@ class GenericModel:
         # Check if pp is a dictionary type object
         if isinstance(pp, dict):
             p_values = list(pp.values())
-            # Check if parameter values are valid
-            self._validate_p_values(p_values)
             # Take Keys in the dict as parameter symbols
             self.pp_symb = list(pp.keys())
             assert isinstance(self.pp_symb, sp.Symbol), "param pp: keys aren't of type sp.Symbol"
@@ -228,8 +210,6 @@ class GenericModel:
                 pp_symb is not None
             ), "pp_symb is expected not to be None, \
                                     because pp is not a dict type object"
-            # Check if parameters are valid
-            self._validate_p_values(pp)
             # Define symbolic parameter vector
             self.pp_symb = pp_symb
             # create parameter dict
@@ -249,16 +229,6 @@ class GenericModel:
             self.xx_symb, self.uu_symb, self.pp_symb
 
         :return:(list) symbolic rhs-functions
-        """
-
-    # ----------- VALIDATE PARAMETER VALUES ---------- #
-
-    @abc.abstractmethod
-    def validate_p_values(self, p_value_list):
-        """Checks if the given parameter values are valid and
-        throws exception if values aren't valid.
-
-        :param p_value_list:(list) parameter values
         """
 
     # ----------- NUMERIC RHS FUNCTION ---------- #
@@ -686,7 +656,7 @@ def _import_png_to_tex(system_model_entity):
     png_path = os.path.join(
         core.data_path, os.pardir, system_model_entity.base_path, "_system_model_data", "plot.png"
     ).replace("\\", "/")
-    
+
     # ensure png actually exists
     if not os.path.exists(png_path):
         return "\n"
