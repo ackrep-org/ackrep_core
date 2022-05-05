@@ -155,15 +155,17 @@ class TestCases2(SimpleTestCase):
         # first: check if debug message shows when it should
         settings.DEBUG = True
         response = self.client.get(url)
-        self.assertContains(response, "utc_debug")
-        self.assertContains(response, "SyntaxError: invalid syntax (parameters.py, line")
+        expected_error_infos = ["utc_debug", "SyntaxError", "parameters.py", "line"]
+        for info in expected_error_infos:
+            self.assertContains(response, info)
         self.assertNotContains(response, "utc_output")
 
         # second: check if debug message shows when it shouldn't
         settings.DEBUG = False
         response = self.client.get(url)
-        self.assertNotContains(response, "utc_debug")
-        self.assertNotContains(response, "SyntaxError: invalid syntax (parameters.py, line")
+        expected_error_infos = ["utc_debug", "SyntaxError"]
+        for info in expected_error_infos:
+            self.assertNotContains(response, info)
         self.assertNotContains(response, "utc_output")
 
         core.logger.setLevel(loglevel)

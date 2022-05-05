@@ -43,7 +43,7 @@ try:
 
 except:
     traceback.print_exc()
-    sys.exit(1)
+    exit(1)
     
 
 if rc.success:

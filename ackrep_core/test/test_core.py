@@ -471,7 +471,9 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
-        self.assertIn("SyntaxError: invalid syntax (parameters.py, line", res.stdout)
+        expected_error_infos = ["SyntaxError", "parameters.py", "line"]
+        for info in expected_error_infos:
+            self.assertIn(info, res.stdout)
 
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)
@@ -499,7 +501,9 @@ class TestCases3(SimpleTestCase):
 
         # check error message for existance (and readability?)
 
-        self.assertIn("SyntaxError: invalid syntax (problem.py, line", res.stdout)
+        expected_error_infos = ["SyntaxError", "problem.py", "line"]
+        for info in expected_error_infos:
+            self.assertIn(info, res.stdout)
 
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)

@@ -685,10 +685,6 @@ def _run_execscript_from_template(entity, c, type):
             logger.error(res.stdout)
         if res.stderr:
             logger.error(res.stderr)
-        # TODO: this is not very elegant
-        # clear stdout of error messages to prevent them from showing on gui
-        if not settings.DEBUG:
-            res.stdout = ""
 
     return res
 
