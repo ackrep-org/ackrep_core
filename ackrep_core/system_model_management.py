@@ -686,6 +686,11 @@ def _import_png_to_tex(system_model_entity):
     png_path = os.path.join(
         core.data_path, os.pardir, system_model_entity.base_path, "_system_model_data", "plot.png"
     ).replace("\\", "/")
+    
+    # ensure png actually exists
+    if not os.path.exists(png_path):
+        return "\n"
+
     line = (
         "\n\\section{Simulation}\n"
         + "\\begin{figure}[H]\n"
