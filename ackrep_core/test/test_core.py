@@ -46,7 +46,7 @@ os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core",
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
 # use `git log -1` to display the full hash
-default_repo_head_hash = "c931f25b3eacad8e0ca495de49c3c488135bdb61"  # 2022-04-16 branch for_unittests
+default_repo_head_hash = "36d5e892fc7cf4a22a08362045cdc72edcd1e586"  # 2022-05-04 branch for_unittests
 
 
 class TestCases1(DjangoTestCase):
@@ -471,7 +471,9 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
-        self.assertIn("SyntaxError: invalid syntax (parameters.py, line", res.stdout)
+        expected_error_infos = ["SyntaxError", "parameters.py", "line"]
+        for info in expected_error_infos:
+            self.assertIn(info, res.stdout)
 
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)
@@ -499,7 +501,9 @@ class TestCases3(SimpleTestCase):
 
         # check error message for existance (and readability?)
 
-        self.assertIn("SyntaxError: invalid syntax (problem.py, line", res.stdout)
+        expected_error_infos = ["SyntaxError", "problem.py", "line"]
+        for info in expected_error_infos:
+            self.assertIn(info, res.stdout)
 
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)

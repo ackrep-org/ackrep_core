@@ -675,17 +675,16 @@ def _run_execscript_from_template(entity, c, type):
     # Note: this hangs on any interactive element inside the script (such as IPS)
     res = subprocess.run(["python", scriptpath], text=True, capture_output=True)
     res.exited = res.returncode
-    if res.returncode != 0:
+    if res.returncode == 2:
+        if res.stdout:
+            logger.warning(res.stdout)
+    elif res.returncode != 0:
         logger.error(f"Error in execscript: {scriptpath}")
         # some error messages live on stderr, some on stderr
         if res.stdout:
             logger.error(res.stdout)
         if res.stderr:
             logger.error(res.stderr)
-        # TODO: this is not very elegant
-        # clear stdout of error messages to prevent them from showing on gui
-        if not settings.DEBUG:
-            res.stdout = ""
 
     return res
 

@@ -1,5 +1,28 @@
 
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.61.0/lib/codemirror.min.css">
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.61.0/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.61.0/mode/python/python.min.js"></script>
+<script type="text/javascript">
+    window.onload = function(){
+        for (var i = 1; i < 4; i++){
+            var codeElement = document.getElementById("python_code_"+ String(i));
+            var code = codeElement.innerText;
+        
+            codeElement.innerHTML = "";
+        
+            var codeMirror = CodeMirror(
+            codeElement,
+            {
+                value: code,
+                mode: "python",
+                theme: "default",
+                lineNumbers: false,
+                readOnly: true
+            }
+            );
+        }
+    };
+</script>
 
 <div class="entity">
     <b>Name:</b> {{entity.name}}
@@ -11,7 +34,33 @@
     <!--utc_entity_full -->
     <b>Short Description:</b> {{entity.short_description}}<br>
     <b>Created:</b> {{entity.creation_date}}<br>
+    <b>Source Code</b>
+    [<label for="show">
+        <span class="fake_button">Show</span>
+    </label>
+    <input type=radio id="show" name="group">
+    /
+    <label for="hide">
+        <span class="fake_button"> Hide</span> 
+    </label>    
+    <input type=radio id="hide" name="group">
+    ]
+    <span id="content">
+        {% if c.source_code_link %}
+            <a id="source_code_link" href={{c.source_code_link}}>{{c.source_code_link}}</a>
+        {% endif %}
+    
+        <br>
 
+        {% for obj in c.source_code_container.object_list %}
+            <b>{{obj.file_name}}</b>
+            
+            <pre><code id="{{obj.id}}">{{obj.source_code}}</code></pre>
+           
+        {% endfor %}
+
+    </span>
+    <br>
 {#--------------------------------------------------------------------------------------------------------------------#}
     {% if entity.type == "problem_solution"%}
         <b>Solved Problems:</b>
@@ -93,8 +142,8 @@
             <br>
             <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
             <br>
-            <a href="{% url 'check-system_model' entity.key %}">simulate this model</a> (this might take some time)<br>
-        {% elif c.view_type == "check-system_model"%}
+            <a href="{% url 'check-system-model' entity.key %}">simulate this model</a> (this might take some time)<br>
+        {% elif c.view_type == "check-system-model"%}
             <!--utc_check_system_model -->
             <b>Result:</b> <span class="cs_result {{c.cs_result_css_class}}">{{c.cs_verbal_result}}</span><br>
             {% if c.show_output %}
@@ -137,10 +186,12 @@
     {% elif entity.type == "system_model"%}
         <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
         <br>
-        <a href="{% url 'check-system_model' entity.key %}">simulate this model</a> (this might take some time)
+        <a href="{% url 'check-system-model' entity.key %}">simulate this model</a> (this might take some time)
     {% endif %}
 {% endif %} {#display full#}
 </div>
+
+
 
 
 

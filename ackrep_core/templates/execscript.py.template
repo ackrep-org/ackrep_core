@@ -2,56 +2,62 @@
 
 # {{context.warning}}
 
-# prevent debugging scripts from unwanted interference
-import os
-os.environ["NO_IPS_EXCEPTHOOK"] = "True"
+try:
+    # prevent debugging scripts from unwanted interference
+    import os
+    os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
-import sys
+    import sys, traceback
 
-# ackrep_core path
-sys.path.insert(0, r"{{context.ackrep_core_path}}")
+    # ackrep_core path
+    sys.path.insert(0, r"{{context.ackrep_core_path}}")
 
-import ackrep_core
+    import ackrep_core
 
-from ipydex import IPS
+    from ipydex import IPS
 
-# method packages
-{% for package in context.method_package_list %}
-sys.path.insert(0, r"{{package}}")
-{% endfor %}
+    # method packages
+    {% for package in context.method_package_list %}
+    sys.path.insert(0, r"{{package}}")
+    {% endfor %}
 
-# the ProblemSpecification Entity
-sys.path.insert(0, r"{{context.problem_spec_path}}")
+    # the ProblemSpecification Entity
+    sys.path.insert(0, r"{{context.problem_spec_path}}")
 
-# the ProblemSolution Entity
-sys.path.insert(0, r"{{context.solution_path}}")
+    # the ProblemSolution Entity
+    sys.path.insert(0, r"{{context.solution_path}}")
 
-# uncomment for debugging
-# from ipydex import IPS, activate_ips_on_exception, TracerFactory
-# activate_ips_on_exception()
-# os.environ.pop("NO_IPS_EXCEPTHOOK", None)
-# activate_trace = TracerFactory()
-# activate_trace()
+    # uncomment for debugging
+    # from ipydex import IPS, activate_ips_on_exception, TracerFactory
+    # activate_ips_on_exception()
+    # os.environ.pop("NO_IPS_EXCEPTHOOK", None)
+    # activate_trace = TracerFactory()
+    # activate_trace()
 
-# IPS()
+    # IPS()
 
-# these statements assume standard filenames (`problem.py` and `solution.py`)
+    # these statements assume standard filenames (`problem.py` and `solution.py`)
 
-import problem as ps
-import solution
+    import problem as ps
+    import solution
 
-# perform the solution
-solution_data = solution.solve(ps.ProblemSpecification)
+    # perform the solution
+    solution_data = solution.solve(ps.ProblemSpecification)
 
-# evaluate the solution (-> ResultContainer)
-rc = ps.evaluate_solution(solution_data)
+    # evaluate the solution (-> ResultContainer)
+    rc = ps.evaluate_solution(solution_data)
 
-if not rc.success:
-    print(rc.success)
+    if not rc.success:
+        print(rc.success)
+
+except:
+    traceback.print_exc()
+    exit(1)
 
 if rc.success:
     # returncode 0 means: no errors (general convention)
     exit(0)
 else:
-    # returncode 1 means: wrong result (our convention)
-    exit(1)
+    # returncode 2 means: numerically wrong result (our convention)
+    print("\nNumerical calculation finished with unexpected result!\n")
+    exit(2)

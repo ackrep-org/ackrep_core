@@ -114,7 +114,7 @@ class TestCases2(SimpleTestCase):
         # TODO test that this url returns a file
 
     def test_check_system_model(self):
-        url = reverse("check-system_model", kwargs={"key": "UXMFA"})
+        url = reverse("check-system-model", kwargs={"key": "UXMFA"})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -132,7 +132,7 @@ class TestCases2(SimpleTestCase):
     @override_settings(DEBUG=True)
     def test_debug_message_printing(self):
 
-        url = reverse("check-system_model", kwargs={"key": "UXMFA"})
+        url = reverse("check-system-model", kwargs={"key": "UXMFA"})
 
         # create syntax error in file
         parameter_path = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
@@ -155,15 +155,17 @@ class TestCases2(SimpleTestCase):
         # first: check if debug message shows when it should
         settings.DEBUG = True
         response = self.client.get(url)
-        self.assertContains(response, "utc_debug")
-        self.assertContains(response, "SyntaxError: invalid syntax (parameters.py, line")
+        expected_error_infos = ["utc_debug", "SyntaxError", "parameters.py", "line"]
+        for info in expected_error_infos:
+            self.assertContains(response, info)
         self.assertNotContains(response, "utc_output")
 
         # second: check if debug message shows when it shouldn't
         settings.DEBUG = False
         response = self.client.get(url)
-        self.assertNotContains(response, "utc_debug")
-        self.assertNotContains(response, "SyntaxError: invalid syntax (parameters.py, line")
+        expected_error_infos = ["utc_debug", "SyntaxError"]
+        for info in expected_error_infos:
+            self.assertNotContains(response, info)
         self.assertNotContains(response, "utc_output")
 
         core.logger.setLevel(loglevel)

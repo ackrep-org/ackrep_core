@@ -2,45 +2,48 @@
 
 # {{context.warning}}
 
-# prevent debugging scripts from unwanted interference
-import os
-os.environ["NO_IPS_EXCEPTHOOK"] = "True"
+try:
+    # prevent debugging scripts from unwanted interference
+    import os
+    os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
-import sys
+    import sys, traceback
 
-# ackrep_core path
-sys.path.insert(0, r"{{context.ackrep_core_path}}")
+    # ackrep_core path
+    sys.path.insert(0, r"{{context.ackrep_core_path}}")
 
-import ackrep_core
+    import ackrep_core
 
-from ipydex import IPS
-
-
-# the SystemModel Entity
-sys.path.insert(0, r"{{context.system_model_path}}")
+    from ipydex import IPS
 
 
-# uncomment for debugging
-# from ipydex import IPS, activate_ips_on_exception, TracerFactory
-# activate_ips_on_exception()
-# os.environ.pop("NO_IPS_EXCEPTHOOK", None)
-# activate_trace = TracerFactory()
-# activate_trace()
-
-# IPS()
-
-# these statements assume standard filenames (`system_model.py`, `simulate.py`)
-
-import system_model
-import simulation
-
-# perform the simulation
-simulation_data = simulation.simulate()
-
-# evaluate the simulation (-> ResultContainer)
-rc = simulation.evaluate_simulation(simulation_data)
+    # the SystemModel Entity
+    sys.path.insert(0, r"{{context.system_model_path}}")
 
 
+    # uncomment for debugging
+    # from ipydex import IPS, activate_ips_on_exception, TracerFactory
+    # activate_ips_on_exception()
+    # os.environ.pop("NO_IPS_EXCEPTHOOK", None)
+    # activate_trace = TracerFactory()
+    # activate_trace()
+
+    # IPS()
+
+    # these statements assume standard filenames (`system_model.py`, `simulate.py`)
+
+    import system_model
+    import simulation
+
+    # perform the simulation
+    simulation_data = simulation.simulate()
+
+    # evaluate the simulation (-> ResultContainer)
+    rc = simulation.evaluate_simulation(simulation_data)
+
+except:
+    traceback.print_exc()
+    exit(1)
     
 
 if rc.success:
@@ -49,4 +52,5 @@ if rc.success:
 else:
     # returncode 2 means: numerically wrong result (our convention)
     print("\nNumerical calculation finished with unexpected result!\n")
+    print("Discrepancy between calculated and expected state values at end of simualtion:", rc.target_state_errors)
     exit(2)
