@@ -10,6 +10,8 @@ from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
+import sqlite3
+from ackrep_web.celery import app
 
 # settings might be accessed from other modules which import this one (core)
 # noinspection PyUnresolvedReferences
@@ -215,6 +217,14 @@ def get_files_by_pattern(directory, match_func):
 
 
 def clear_db():
+    # TODO: have this done by management
+    conn = sqlite3.connect(settings.DATABASES.get("default")["NAME"])
+    cur = conn.cursor()
+    cur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='active_jobs' ")
+    if cur.fetchone()[0] == 1:
+        cur.execute('DROP TABLE active_jobs')
+    conn.commit()
+    conn.close()
 
     logger.info("Clearing DB...")
     management.call_command("flush", "--no-input")
@@ -560,6 +570,7 @@ def get_entities_with_key(key, raise_error_on_empty=False):
     return entities_with_key
 
 
+@app.task
 def check_solution(key):
     """
 
@@ -598,7 +609,7 @@ def check_solution(key):
 
     return res
 
-
+@app.task
 def check_system_model(key):
     """
     run the script that executes the simulation

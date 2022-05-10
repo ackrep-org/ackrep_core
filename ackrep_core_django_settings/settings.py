@@ -146,6 +146,9 @@ TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
 ACKREP_DATA_BASE_URL = "https://github.com/ackrep-org/ackrep_data.git"
 ACKREP_DATA_BRANCH = "tree/systemModelsCatalog"
 
+# refresh rate of page when waiting for check to load [ms]
+REFRESH_TIMEOUT = 2000
+
 # The following mechanism allows to incorporate custom settings (which are maintained
 # outside of the repository, see ackrep_deployment)
 
