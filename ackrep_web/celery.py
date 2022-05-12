@@ -1,5 +1,4 @@
 from celery import Celery
-from celery.bin.base import CeleryCommand
 
 app = Celery('ackrep_core',
             #  broker='amqp://',

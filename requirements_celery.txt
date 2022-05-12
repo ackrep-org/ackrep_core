@@ -1,10 +1,3 @@
-celery
 flower
 redis
 kombu
-
-# This is a tested configuration
-# celery==5.1.2
-# flower==1.0.0
-# redis==3.5.3
-# kombu==5.1.0

@@ -13,3 +13,4 @@ pytrajectory
 tabulate
 
 
+celery
