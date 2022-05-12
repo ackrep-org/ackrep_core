@@ -163,6 +163,7 @@
 
                 </script>
             {% else %}
+                <b>Runtime:</b> {{c.diff_time_str}}s (estimated: {{entity.estimated_runtime}})<br>
                 <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
                 {% if c.show_output %}
                     {% if c.result.stdout %}

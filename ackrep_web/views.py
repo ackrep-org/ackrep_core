@@ -142,8 +142,6 @@ class CheckView(EntityDetailView):
         # inherit cotext data from EntityDetailView like source code and pdf
         c = self.get_context_container(key)
 
-        ts1 = timezone.now()
-        c.diff_time_str = util.smooth_timedelta(ts1)
         if type(c.entity) == models.ProblemSolution:
             c.view_type = "check-solution"
             c.view_type_title = "Check Solution for:"
@@ -195,13 +193,14 @@ class CheckView(EntityDetailView):
                 c.show_debug = settings.DEBUG
                 c.show_output = False
             
+            c.diff_time_str = round(time.time() - active_job["start_time"], 1)
             _remove_job_from_db(key)
             c.waiting = False
 
         # not yet done
         else:
             eta = c.entity.estimated_runtime
-            job_run_time = round(time.time() - active_job["start_time"],0)
+            job_run_time = round(time.time() - active_job["start_time"], 0)
             c.verbal_result = f"Waiting for job to be done. Estimated runtime: {job_run_time}s/{eta}."
             c.waiting = True
             c.refresh_timeout = settings.REFRESH_TIMEOUT
