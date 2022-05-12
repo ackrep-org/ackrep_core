@@ -149,6 +149,11 @@ ACKREP_DATA_BRANCH = "tree/systemModelsCatalog"
 # refresh rate of page when waiting for check to load [ms]
 REFRESH_TIMEOUT = 2000
 
+# celery urls for running in docker
+CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_RESULT_BACKEND = "redis://redis:6379/0"
+
+
 # The following mechanism allows to incorporate custom settings (which are maintained
 # outside of the repository, see ackrep_deployment)
 

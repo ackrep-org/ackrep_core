@@ -1,10 +1,12 @@
 from celery import Celery
+from celery.bin.base import CeleryCommand
 
 app = Celery('ackrep_core',
-             broker='amqp://',
-             backend='rpc://',
+            #  broker='amqp://',
+            #  backend='rpc://',
              include=['ackrep_core.core'])
 app.config_from_object('ackrep_web.celeryconfig')
+# CeleryCommand()
 
 # Optional configuration, see the application user guide.
 app.conf.update(
@@ -13,3 +15,8 @@ app.conf.update(
 
 if __name__ == '__main__':
     app.start()
+
+"""
+cd ackrep_core
+celery -A ackrep_web worker -c 2 --loglevel=INFO
+"""
