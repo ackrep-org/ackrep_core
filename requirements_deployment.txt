@@ -1,5 +1,1 @@
 uwsgi>=2.0,<2.1
-celery==5.1.2
-flower==1.0.0
-redis==3.5.3
-kombu==5.1.0
