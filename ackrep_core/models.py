@@ -240,3 +240,11 @@ class EnvironmentSpecification(GenericEntity):
 class MethodPackage(GenericEntity):
     _type = "method_package"
     compatible_environment_list = EntityKeyListField(max_length=500, null=True, blank=True,)
+
+
+class ActiveJobs(BaseModel):
+    _type = "active_jobs"
+    id = models.AutoField(primary_key=True)
+    key = models.CharField(max_length=5, null=False, blank=False,)
+    celery_id = models.CharField(max_length=100, null=False, blank=False,)
+    start_time = models.FloatField()

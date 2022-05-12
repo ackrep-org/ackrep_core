@@ -16,6 +16,7 @@ from ackrep_core_django_settings import settings
 from git import Repo, InvalidGitRepositoryError
 import os
 import numpy as np
+from ackrep_core.models import ActiveJobs
 
 from ackrep_web.celery import app
 import subprocess
@@ -157,10 +158,8 @@ class CheckView(EntityDetailView):
             if type(c.entity) == models.ProblemSolution:
                 res = core.check_solution.delay(key)
 
-
             elif type(c.entity) == models.SystemModel:
                 res = core.check_system_model.delay(key)
-
             
             else:
                 raise TypeError(f"{c.entity} has to be of type ProblemSolution or SystemModel.")
@@ -343,11 +342,7 @@ def _get_active_job_by_key(key):
     """queries the database for active jobs with the given key. if none are found, None is returned. If exactly one is 
     found, this job is returned. Otherwise an error is rasied.
     :return: tuple (key, celery_id)"""
-    conn, cur = open_db_conn()
-
-    cur.execute('SELECT * FROM active_jobs WHERE key=?', (key,))
-    active_job_list = cur.fetchall()
-
+    active_job_list = ActiveJobs.objects.filter(key=key).values()
     if len(active_job_list) == 0:
         active_job = None
     elif len(active_job_list) == 1:
@@ -355,42 +350,15 @@ def _get_active_job_by_key(key):
     else:
         assert 1 == 0, "There should not be multiple active jobs with the same key. Maybe job adding or removing is bugged."
 
-    close_db_conn(conn)
     return active_job
 
 def _add_job_to_db(key, celery_id):
     """add an entry to db with key and celery_id"""
-    conn, cur = open_db_conn()
-    cur.execute("INSERT INTO active_jobs VALUES (?,?,?)", (key, celery_id, time.time()))
-    close_db_conn(conn)
+    new_entry = ActiveJobs(key=key, celery_id=celery_id, start_time=time.time())
+    new_entry.save()
     return 0
 
 def _remove_job_from_db(key):
     """delete db entry with given key"""
-    conn, cur = open_db_conn()
-    cur.execute('DELETE FROM active_jobs WHERE key=?', (key,))
-    close_db_conn(conn)
+    ActiveJobs.objects.filter(key=key).delete()
     return 0
-
-def dict_factory(cursor, row):
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
-
-def open_db_conn():
-    """connect to db, 
-    return connection, cursor"""
-    conn = sqlite3.connect(settings.database_path)
-    conn.row_factory = dict_factory
-    cur = conn.cursor()
-    # TODO ensure this table exists on db creation
-    cur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='active_jobs' ")
-    if not cur.fetchone()['count(name)'] == 1:
-        cur.execute("CREATE TABLE active_jobs (key text, celery_id int, start_time float)")
-
-    return conn, cur
-
-def close_db_conn(conn):
-    conn.commit()
-    conn.close()

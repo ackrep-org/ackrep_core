@@ -217,15 +217,6 @@ def get_files_by_pattern(directory, match_func):
 
 
 def clear_db():
-    # TODO: have this done by management
-    conn = sqlite3.connect(settings.DATABASES.get("default")["NAME"])
-    cur = conn.cursor()
-    cur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='active_jobs' ")
-    if cur.fetchone()[0] == 1:
-        cur.execute('DROP TABLE active_jobs')
-    conn.commit()
-    conn.close()
-
     logger.info("Clearing DB...")
     management.call_command("flush", "--no-input")
 

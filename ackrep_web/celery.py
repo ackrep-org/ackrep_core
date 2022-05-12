@@ -5,7 +5,6 @@ app = Celery('ackrep_core',
             #  backend='rpc://',
              include=['ackrep_core.core'])
 app.config_from_object('ackrep_web.celeryconfig')
-# CeleryCommand()
 
 # Optional configuration, see the application user guide.
 app.conf.update(
