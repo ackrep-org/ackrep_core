@@ -67,6 +67,7 @@ def main():
     argparser.add_argument(
         "--bootstrap-test-db", help="delete database for unittests and recreate it (without data)", action="store_true"
     )
+    argparser.add_argument("--start-workers", help="start the celery workers", action="store_true")
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -172,6 +173,8 @@ def main():
         core.send_log_messages()
     elif args.version:
         print("Version", release.__version__)
+    elif args.start_workers:
+        start_workers()
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -491,3 +494,9 @@ def bootstrap_db(db: str) -> None:
 
     # return to old working dir
     os.chdir(old_workdir)
+
+def start_workers():
+    try:
+        res = subprocess.run(["celery", "-A", "ackrep_web", "worker", "--loglevel=INFO", "-c" "4"])
+    except KeyboardInterrupt:
+        exit(0)
