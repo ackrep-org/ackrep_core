@@ -1,3 +1,5 @@
-flower
+# packages for celery communication
 redis
-kombu
+
+# optional package to show active tasks in browser
+flower

@@ -169,7 +169,7 @@ class CheckView(EntityDetailView):
         
         active_job = _get_active_job_by_key(key)
         res = AsyncResult(active_job["celery_id"], app=app)
-        
+
         ## job already active -> check if done        
         if res.ready():
             c.result = res.get()
@@ -206,7 +206,7 @@ class CheckView(EntityDetailView):
 
         context = {"c": c}
         # create an object container (entity.oc) where for each string-key the real object is available
-
+        _purge_old_jobs()
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
@@ -362,3 +362,9 @@ def _remove_job_from_db(key):
     """delete db entry with given key"""
     ActiveJobs.objects.filter(key=key).delete()
     return 0
+
+def _purge_old_jobs():
+    active_job_list = ActiveJobs.objects.all().values()
+    for job in active_job_list:
+        if time.time() - job["start_time"] > settings.RESULT_EXPIRATION_TIME:
+            _remove_job_from_db(job["key"])

@@ -152,6 +152,7 @@ REFRESH_TIMEOUT = 2000
 # celery urls for running in docker
 CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_RESULT_BACKEND = "redis://redis:6379/0"
+RESULT_EXPIRATION_TIME = 10 # [ms]
 
 
 # The following mechanism allows to incorporate custom settings (which are maintained

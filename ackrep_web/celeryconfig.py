@@ -1,11 +1,20 @@
 import os
+from ackrep_core_django_settings import settings
+
 # default for cmd run, env var for docker run
-broker_url = os.environ.get("CELERY_BROKER_URL") if os.environ.get("CELERY_BROKER_URL") else 'pyamqp://guest@localhost//'
-result_backend = os.environ.get("CELERY_RESULT_BACKEND") if os.environ.get("CELERY_RESULT_BACKEND") else 'rpc://'
-# print("Using Celery broker", broker_url)
-# print("Using result backend", result_backend)
+if os.environ.get("USE_CELERY_BROKER_URL") == "True":
+    broker_url = settings.CELERY_BROKER_URL
+else:
+    broker_url = 'pyamqp://guest@localhost//'
+    
+if os.environ.get("USE_CELERY_RESULT_BACKEND") == "True" :
+    result_backend = settings.CELERY_RESULT_BACKEND
+else:
+    result_backend = 'rpc://'
+
 task_serializer = 'pickle'
 result_serializer = 'pickle'
 accept_content = ['pickle']
 timezone = 'Europe/Berlin'
 enable_utc = True
+result_expires = settings.RESULT_EXPIRATION_TIME
