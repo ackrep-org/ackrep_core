@@ -494,8 +494,11 @@ def get_data_files(base_path, endswith_str=None, create_media_links=False):
         for abs_path, rel_path in zip(abs_files, files):
             link = rel_path.replace(os.path.sep, "_")
             abs_path_link = os.path.join(settings.MEDIA_ROOT, link)
-            if not os.path.exists(abs_path_link):
-                os.link(abs_path, abs_path_link)
+            # always recreate link. In the previous version, removing and rebuilding the media file
+            # would not renew the link and thus show the ols file
+            if os.path.exists(abs_path_link):
+                os.unlink(abs_path_link)
+            os.link(abs_path, abs_path_link)
             result.append(f"{settings.MEDIA_URL}{link}")
 
         return result
