@@ -78,6 +78,17 @@ class GenericModel:
         can be changed.
 
         """
+
+        self.sys_dim = x_dim
+        self.default_param_sys_dim = None
+
+        self.initialize()
+
+        if x_dim is None and self.sys_dim is None:
+            self.sys_dim = self.default_param_sys_dim
+
+        assert isinstance(self.sys_dim, int), "not defined variable 'sys_dim'"
+
         # Initialize all Parameters of the Model-Object with None
         # System Dimension
         self.n = None
@@ -98,9 +109,7 @@ class GenericModel:
         # Input function
         self.uu_func = None
 
-        if x_dim is None and self.sys_dim is None:
-            self.sys_dim = self.default_param_sys_dim
-
+        
         try:
             self.params.get_default_parameters()
         except AttributeError:
@@ -113,7 +122,6 @@ class GenericModel:
         # Create symbolic xx and xxuu
         self._create_symb_xx_xxuu()
         # Create parameter dict, subs_list and symbolic parameter vector
-        IPS()
         self.set_parameters(pp)
         # Create Symbolic parameter vector and subs list
         self._create_symb_pp()
@@ -230,6 +238,15 @@ class GenericModel:
             self.xx_symb, self.uu_symb, self.pp_symb
 
         :return:(list) symbolic rhs-functions
+        """
+
+    # ----------- Init ---------- #
+    # --------------- MODEL DEPENDENT
+
+    @abc.abstractmethod
+    def initialize(self):
+        """
+        init
         """
 
     # ----------- NUMERIC RHS FUNCTION ---------- #
