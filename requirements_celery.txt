@@ -1,0 +1,5 @@
+# packages for celery communication
+redis
+
+# optional package to show active tasks in browser
+flower

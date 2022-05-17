@@ -16,6 +16,12 @@ from ackrep_core_django_settings import settings
 from git import Repo, InvalidGitRepositoryError
 import os
 import numpy as np
+from ackrep_core.models import ActiveJobs
+
+from ackrep_web.celery import app
+import subprocess
+from celery.result import AsyncResult
+import sqlite3
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
@@ -137,45 +143,70 @@ class CheckView(EntityDetailView):
         # inherit cotext data from EntityDetailView like source code and pdf
         c = self.get_context_container(key)
 
-        ts1 = timezone.now()
-        c.diff_time_str = util.smooth_timedelta(ts1)
-
         if type(c.entity) == models.ProblemSolution:
-            cs_result = core.check_solution(key)
             c.view_type = "check-solution"
             c.view_type_title = "Check Solution for:"
 
         elif type(c.entity) == models.SystemModel:
-            cs_result = core.check_system_model(key)
             c.view_type = "check-system-model"
             c.view_type_title = "Simulation for:"
 
+        # see if key is already in active job list
+        active_job = _get_active_job_by_key(key)
+        ## job not yet active -> add to queue
+        if active_job == None:
+            # if type(c.entity) == models.ProblemSolution:
+            #     res = core.check_solution.delay(key)
+
+            # elif type(c.entity) == models.SystemModel:
+            #     res = core.check_system_model.delay(key)
+            
+            # else:
+            #     raise TypeError(f"{c.entity} has to be of type ProblemSolution or SystemModel.")
+            res = core.check_whatever.delay(key)
+            _add_job_to_db(key, res.id)
+            
+        
+        active_job = _get_active_job_by_key(key)
+        res = AsyncResult(active_job["celery_id"], app=app)
+
+        ## job already active -> check if done        
+        if res.ready():
+            c.result = res.get()
+            c.image_list = core.get_data_files(c.entity.base_path, endswith_str=".png", create_media_links=True)
+
+            c.show_debug = False
+
+            if c.result.returncode == 0:
+                c.result_css_class = "success"
+                c.verbal_result = "Success."
+                c.show_output = True
+            # no major error but numerical result was unexpected
+            elif c.result.returncode == 2:
+                c.result_css_class = "inaccurate"
+                c.verbal_result = "Inaccurate. (Different result than expected.)"
+                c.show_output = True
+            else:
+                c.result_css_class = "fail"
+                c.verbal_result = "Script Error."
+                c.show_debug = settings.DEBUG
+                c.show_output = False
+            
+            c.diff_time_str = round(time.time() - active_job["start_time"], 1)
+            _remove_job_from_db(key)
+            c.waiting = False
+
+        # not yet done
         else:
-            raise TypeError(f"{c.entity} has to be of type ProblemSolution or SystemModel.")
-
-        c.cs_result = cs_result
-        c.image_list = core.get_data_files(c.entity.base_path, endswith_str=".png", create_media_links=True)
-
-        c.show_debug = False
-
-        if cs_result.returncode == 0:
-            c.cs_result_css_class = "cs_success"
-            c.cs_verbal_result = "Success."
-            c.show_output = True
-        # no major error but numerical result was unexpected
-        elif cs_result.returncode == 2:
-            c.cs_result_css_class = "cs_inaccurate"
-            c.cs_verbal_result = "Inaccurate. (Different result than expected.)"
-            c.show_output = True
-        else:
-            c.cs_result_css_class = "cs_fail"
-            c.cs_verbal_result = "Script Error."
-            c.show_debug = settings.DEBUG
-            c.show_output = False
+            eta = c.entity.estimated_runtime
+            job_run_time = round(time.time() - active_job["start_time"], 0)
+            c.verbal_result = f"Waiting for job to be done. Estimated runtime: {job_run_time}s/{eta}."
+            c.waiting = True
+            c.refresh_timeout = settings.REFRESH_TIMEOUT
 
         context = {"c": c}
         # create an object container (entity.oc) where for each string-key the real object is available
-
+        _purge_old_jobs()
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
@@ -306,3 +337,34 @@ def _get_source_code(entity):
             py_file.close()
 
     return c
+
+def _get_active_job_by_key(key):
+    """queries the database for active jobs with the given key. if none are found, None is returned. If exactly one is 
+    found, this job is returned. Otherwise an error is rasied.
+    :return: tuple (key, celery_id)"""
+    active_job_list = ActiveJobs.objects.filter(key=key).values()
+    if len(active_job_list) == 0:
+        active_job = None
+    elif len(active_job_list) == 1:
+        active_job = active_job_list[0]
+    else:
+        assert 1 == 0, "There should not be multiple active jobs with the same key. Maybe job adding or removing is bugged."
+
+    return active_job
+
+def _add_job_to_db(key, celery_id):
+    """add an entry to db with key and celery_id"""
+    new_entry = ActiveJobs(key=key, celery_id=celery_id, start_time=time.time())
+    new_entry.save()
+    return 0
+
+def _remove_job_from_db(key):
+    """delete db entry with given key"""
+    ActiveJobs.objects.filter(key=key).delete()
+    return 0
+
+def _purge_old_jobs():
+    active_job_list = ActiveJobs.objects.all().values()
+    for job in active_job_list:
+        if time.time() - job["start_time"] > settings.RESULT_EXPIRATION_TIME:
+            _remove_job_from_db(job["key"])
