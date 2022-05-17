@@ -173,6 +173,7 @@ class GenericEntity(BaseModel):
 class SystemModel(GenericEntity):
     _type = "system_model"
     estimated_runtime = models.CharField(max_length=500, null=True, blank=True,)
+    compatible_environment = EntityKeyField(max_length=500, null=True, blank=True,)
     system_model_file = models.CharField(max_length=500, null=True, blank=True, default="system_model.py")
     simulation_file = models.CharField(max_length=500, null=True, blank=True, default="simulation.py")
 
