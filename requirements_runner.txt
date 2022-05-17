@@ -1,14 +1,6 @@
 # This file contains requirements which are only used by some SolutionMethods
 # they should be migrated to the environment specification
-numpy
-scipy
-matplotlib
-sympy
-ipydex
-symbtools
 control
-pyblocksim
-
 # the following need additional system packages (see dockerfile): gfortran libblas-dev liblapack-dev
 slycot
 casadi

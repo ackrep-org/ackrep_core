@@ -1,5 +1,4 @@
-# main packages to run ackrep from the command line
-# ipydex
+ipydex
 pyyaml
 colorama
 questionary
@@ -13,5 +12,4 @@ symbtools
 pytrajectory
 tabulate
 
-# for command line usage of ackrep, celery is imported but not actively used
-celery
+

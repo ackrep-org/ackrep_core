@@ -10,8 +10,6 @@ from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
-import sqlite3
-from ackrep_web.celery import app
 
 # settings might be accessed from other modules which import this one (core)
 # noinspection PyUnresolvedReferences
@@ -45,8 +43,6 @@ from .util import (
 )
 
 from . import util
-
-from ackrep_core.test._test_utils import strip_decode
 
 # initialize logging with default loglevel (might be overwritten by command line option)
 # see https://docs.python.org/3/howto/logging-cookbook.html
@@ -219,6 +215,7 @@ def get_files_by_pattern(directory, match_func):
 
 
 def clear_db():
+
     logger.info("Clearing DB...")
     management.call_command("flush", "--no-input")
 
@@ -498,7 +495,7 @@ def get_data_files(base_path, endswith_str=None, create_media_links=False):
             link = rel_path.replace(os.path.sep, "_")
             abs_path_link = os.path.join(settings.MEDIA_ROOT, link)
             # always recreate link. In the previous version, removing and rebuilding the media file
-            # would not renew the link and thus show the old file
+            # would not renew the link and thus show the ols file
             if os.path.exists(abs_path_link):
                 os.unlink(abs_path_link)
             os.link(abs_path, abs_path_link)
@@ -566,7 +563,6 @@ def get_entities_with_key(key, raise_error_on_empty=False):
     return entities_with_key
 
 
-@app.task
 def check_solution(key):
     """
 
@@ -605,7 +601,7 @@ def check_solution(key):
 
     return res
 
-@app.task
+
 def check_system_model(key):
     """
     run the script that executes the simulation
@@ -814,39 +810,3 @@ def print_entity_info(key: str) -> None:
 
 
 AOM = ACKREP_OntologyManager()
-
-
-@app.task
-def check_whatever(key):
-    entity = get_entity(key)
-    is_solution = isinstance(entity, models.ProblemSolution)
-    is_system_model = isinstance(entity, models.SystemModel)
-    assert is_solution or is_system_model, \
-            f"key {key} is neither solution nor system model. Unsure what to do."
-
-    default_env_key = "YJBOX"
-    
-    env_key = entity.compatible_environment
-    if env_key == "":
-        logger.info("No environment specification found. Using default env.")
-        env_key = default_env_key
-    env_name = get_entity(env_key).name
-    logger.info(f"running with environment spec: {env_name}")
-
-    # check if container is built
-    container_name = "ackrep_deployment_" + env_name 
-    res = subprocess.run(["docker", "images", "-q", container_name], capture_output=True)
-    assert res.returncode == 0, "docker not reachable?"
-    assert strip_decode(res.stdout) is not None, "Environment Image not found."
-
-    # ! this works
-    res = subprocess.run(["docker", "run", "--rm", container_name, "python", "--version"], capture_output=True)
-    logger.info(f"Python version of runner container: {strip_decode(res.stdout)}")
-    if is_solution:
-        res = subprocess.run(["docker", "run", "--rm", container_name, "ackrep", "-cs", key], capture_output=True)
-    elif is_system_model:
-        res = subprocess.run(["docker", "run", "--rm", container_name, "ackrep", "-csm", key], capture_output=True)
-    else:
-        raise NotImplementedError
-
-    return res

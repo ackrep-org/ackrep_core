@@ -43,7 +43,7 @@ footer {
 }
 
 /*style the result of check-solution (success or fail)*/
-.result {
+.cs_result {
 
     font-size: 10pt;
     padding-left:3px;
@@ -54,14 +54,14 @@ footer {
     border: solid 1px;
     border-color:rgb(77, 62, 62);
 }
-.inaccurate {
+.cs_inaccurate {
     color:hsl(34, 90%, 45%);
 }
-.success {
+.cs_success {
     color:hsl(120, 60%, 30%);
 }
 
-.fail {
+.cs_fail {
     color:hsl(0, 90%, 45%);
 }
 
@@ -220,9 +220,4 @@ input#hide:checked ~ span#content {
 
 .fake_button{
     color:hsl(236, 100%, 50%);
-}
-
-.javascript_prompt{
-    font-size: large;
-    color:hsl(0, 98%, 35%);
 }

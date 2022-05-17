@@ -24,24 +24,13 @@
     };
 </script>
 
-<script type="text/javascript">
-    window.onload = function(){
-        document.getElementById("javascript_msg").style.display = "none";
-    }
-</script>
-{% if display == "full"%}
-    <span class="javascript_prompt" id="javascript_msg">
-        <b>You currently have javascript disabled. Some features will be unavailable. Please consider enabling javascript.</b>
-    </span>
-{% endif %}
-
 <div class="entity">
     <b>Name:</b> {{entity.name}}
     (Key: <a href="{% url 'entity-detail' entity.key %}" title="show details">{{entity.key}}</a>)<br>
     <b>Path:</b> <tt>{{entity.base_path}}</tt><br>
     <b>Type:</b> {{entity.type}}<br>
-    
-    {% if display == "full"%}
+
+{% if display == "full"%}
     <!--utc_entity_full -->
     <b>Short Description:</b> {{entity.short_description}}<br>
     <b>Created:</b> {{entity.creation_date}}<br>
@@ -95,43 +84,33 @@
         {% elif c.view_type == "check-solution"%}
             <!--utc_check_solution -->
             <br>
-            {% if c.waiting %}
-                <!--utc_waiting -->
-                <b>{{c.verbal_result}}</b>
-                <script type="text/javascript">
-                    window.setTimeout(function () {
-                        location.href = "{% url 'check-solution' entity.key %}";}, "{{c.refresh_timeout}}"); 
-
-                </script>
-            {% else %}
-                <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
-                <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
-                {% if c.show_output %}
-                    {% if c.result.stdout %}
-                        <!--utc_output -->
-                        <b>Output:</b><br>
-                        <pre>{{c.result.stdout}}</pre>
-                    {% endif %}
-                    {% if c.image_list %}
-                        <b>Plot:</b><br>
-                        {% for image in c.image_list %}
-                            <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
-                        {% endfor %}
-                    {% endif %}
+            <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
+            <b>Result:</b> <span class="cs_result {{c.cs_result_css_class}}">{{c.cs_verbal_result}}</span><br>
+            {% if c.show_output %}
+                {% if c.cs_result.stdout %}
+                    <!--utc_output -->
+                    <b>Output:</b><br>
+                    <pre>{{c.cs_result.stdout}}</pre>
                 {% endif %}
-                {% if c.show_debug %} {# TODO: take value from settings #}
-                    <!--utc_debug -->
-                    <b>Debug:</b>
-                    <div class="debug_output">
-                    Subprocess args:
-                    <pre>{{c.result.args}}</pre>
-                    stderr
-                    <pre>{{c.result.stderr}}</pre>
-                    stdout
-                    <pre>{{c.result.stdout}}</pre>
-                    </div>
+                {% if c.image_list %}
+                    <b>Plot:</b><br>
+                    {% for image in c.image_list %}
+                        <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
+                    {% endfor %}
                 {% endif %}
-            {% endif %} {#waiting#}
+            {% endif %}
+            {% if c.show_debug %} {# TODO: take value from settings #}
+                <!--utc_debug -->
+                <b>Debug:</b>
+                <div class="debug_output">
+                Subprocess args:
+                <pre>{{c.cs_result.args}}</pre>
+                stderr
+                <pre>{{c.cs_result.stderr}}</pre>
+                stdout
+                <pre>{{c.cs_result.stdout}}</pre>
+                </div>
+            {% endif %}
         {% endif %} {#viewtype#}
     {% elif entity.type == "problem_specification" %}
         <b>Available solutions:</b>
@@ -166,45 +145,33 @@
             <a href="{% url 'check-system-model' entity.key %}">simulate this model</a> (this might take some time)<br>
         {% elif c.view_type == "check-system-model"%}
             <!--utc_check_system_model -->
-            <br>
-            {% if c.waiting %}
-                <!--utc_waiting -->
-                <b>{{c.verbal_result}}</b>
-                <script type="text/javascript">
-                    window.setTimeout(function () {
-                        location.href = "{% url 'check-system-model' entity.key %}";}, "{{c.refresh_timeout}}"); 
-
-                </script>
-            {% else %}
-                <b>Runtime:</b> {{c.diff_time_str}}s (estimated: {{entity.estimated_runtime}})<br>
-                <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
-                {% if c.show_output %}
-                    {% if c.result.stdout %}
-                        <!--utc_output -->
-                        <b>Output:</b><br>
-                        <pre>{{c.result.stdout}}</pre>
-                    {% endif %}
-                
-                    {% if c.image_list %}
-                        <b>Plot:</b><br>
-                        {% for image in c.image_list %}
-                            <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
-                        {% endfor %}
-                    {% endif %}
+            <b>Result:</b> <span class="cs_result {{c.cs_result_css_class}}">{{c.cs_verbal_result}}</span><br>
+            {% if c.show_output %}
+                {% if c.cs_result.stdout %}
+                    <!--utc_output -->
+                    <b>Output:</b><br>
+                    <pre>{{c.cs_result.stdout}}</pre>
                 {% endif %}
-                {% if c.show_debug %} {# TODO: take value from settings #}
-                    <!--utc_debug -->
-                    <b>Debug:</b>
-                    <div class="debug_output">
-                    Subprocess args:
-                    <pre>{{c.result.args}}</pre>
-                    stderr
-                    <pre>{{c.result.stderr}}</pre>
-                    stdout
-                    <pre>{{c.result.stdout}}</pre>
-                    </div>
+            
+                {% if c.image_list %}
+                    <b>Plot:</b><br>
+                    {% for image in c.image_list %}
+                        <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
+                    {% endfor %}
                 {% endif %}
-            {% endif %} {#waiting#}
+            {% endif %}
+            {% if c.show_debug %} {# TODO: take value from settings #}
+                <!--utc_debug -->
+                <b>Debug:</b>
+                <div class="debug_output">
+                Subprocess args:
+                <pre>{{c.cs_result.args}}</pre>
+                stderr
+                <pre>{{c.cs_result.stderr}}</pre>
+                stdout
+                <pre>{{c.cs_result.stdout}}</pre>
+                </div>
+            {% endif %}
         {% endif %} {#viewtype#}
     {% endif %} {#entity.type#}
 {#--------------------------------------------------------------------------------------------------------------------#}
