@@ -155,15 +155,15 @@ class CheckView(EntityDetailView):
         active_job = _get_active_job_by_key(key)
         ## job not yet active -> add to queue
         if active_job == None:
-            if type(c.entity) == models.ProblemSolution:
-                res = core.check_solution.delay(key)
+            # if type(c.entity) == models.ProblemSolution:
+            #     res = core.check_solution.delay(key)
 
-            elif type(c.entity) == models.SystemModel:
-                res = core.check_system_model.delay(key)
+            # elif type(c.entity) == models.SystemModel:
+            #     res = core.check_system_model.delay(key)
             
-            else:
-                raise TypeError(f"{c.entity} has to be of type ProblemSolution or SystemModel.")
-
+            # else:
+            #     raise TypeError(f"{c.entity} has to be of type ProblemSolution or SystemModel.")
+            res = core.check_whatever.delay(key)
             _add_job_to_db(key, res.id)
             
         

@@ -11,7 +11,7 @@ if os.environ.get("USE_CELERY_RESULT_BACKEND") == "True" :
     result_backend = settings.CELERY_RESULT_BACKEND
 else:
     result_backend = 'rpc://'
-
+# print(os.environ.get("USE_CELERY_BROKER_URL"))
 task_serializer = 'pickle'
 result_serializer = 'pickle'
 accept_content = ['pickle']

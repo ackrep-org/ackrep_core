@@ -221,3 +221,8 @@ input#hide:checked ~ span#content {
 .fake_button{
     color:hsl(236, 100%, 50%);
 }
+
+.javascript_prompt{
+    font-size: large;
+    color:hsl(0, 98%, 35%);
+}

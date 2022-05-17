@@ -24,13 +24,24 @@
     };
 </script>
 
+<script type="text/javascript">
+    window.onload = function(){
+        document.getElementById("javascript_msg").style.display = "none";
+    }
+</script>
+{% if display == "full"%}
+    <span class="javascript_prompt" id="javascript_msg">
+        <b>You currently have javascript disabled. Some features will be unavailable. Please consider enabling javascript.</b>
+    </span>
+{% endif %}
+
 <div class="entity">
     <b>Name:</b> {{entity.name}}
     (Key: <a href="{% url 'entity-detail' entity.key %}" title="show details">{{entity.key}}</a>)<br>
     <b>Path:</b> <tt>{{entity.base_path}}</tt><br>
     <b>Type:</b> {{entity.type}}<br>
-
-{% if display == "full"%}
+    
+    {% if display == "full"%}
     <!--utc_entity_full -->
     <b>Short Description:</b> {{entity.short_description}}<br>
     <b>Created:</b> {{entity.creation_date}}<br>

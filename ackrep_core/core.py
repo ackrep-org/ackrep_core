@@ -46,6 +46,8 @@ from .util import (
 
 from . import util
 
+from ackrep_core.test._test_utils import strip_decode
+
 # initialize logging with default loglevel (might be overwritten by command line option)
 # see https://docs.python.org/3/howto/logging-cookbook.html
 defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.WARNING)
@@ -810,3 +812,39 @@ def print_entity_info(key: str) -> None:
 
 
 AOM = ACKREP_OntologyManager()
+
+
+@app.task
+def check_whatever(key):
+    entity = get_entity(key)
+    is_solution = isinstance(entity, models.ProblemSolution)
+    is_system_model = isinstance(entity, models.SystemModel)
+    assert is_solution or is_system_model, \
+            f"key {key} is neither solution nor system model. Unsure what to do."
+
+    default_env_key = "YJBOX"
+    
+    env_key = entity.compatible_environment
+    if env_key == "":
+        logger.info("No environment specification found. Using default env.")
+        env_key = default_env_key
+    env_name = get_entity(env_key).name
+    logger.info(f"running with environment spec: {env_name}")
+
+    # check if container is built
+    container_name = "ackrep_deployment_" + env_name 
+    res = subprocess.run(["docker", "images", "-q", container_name], capture_output=True)
+    assert res.returncode == 0, "docker not reachable?"
+    assert strip_decode(res.stdout) is not None, "Environment Image not found."
+
+    # ! this works
+    res = subprocess.run(["docker", "run", "--rm", container_name, "python", "--version"], capture_output=True)
+    logger.info(f"Python version of runner container: {strip_decode(res.stdout)}")
+    if is_solution:
+        res = subprocess.run(["docker", "run", "--rm", container_name, "ackrep", "-cs", key], capture_output=True)
+    elif is_system_model:
+        res = subprocess.run(["docker", "run", "--rm", container_name, "ackrep", "-csm", key], capture_output=True)
+    else:
+        raise NotImplementedError
+
+    return res
