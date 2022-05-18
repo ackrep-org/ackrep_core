@@ -10,7 +10,8 @@ from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core, system_model_management
 
-from ._test_utils import load_repo_to_db_for_ut, reset_repo, run_command, utf8decode, strip_decode
+from ._test_utils import load_repo_to_db_for_ut, reset_repo
+from ackrep_core.util import run_command, utf8decode, strip_decode
 
 from ipydex import IPS  # only for debugging
 

@@ -1,3 +1,4 @@
+from cgitb import strong
 import secrets
 import yaml
 import os, sys
@@ -42,11 +43,11 @@ from .util import (
     ResultContainer,
     InconsistentMetaDataError,
     DuplicateKeyError,
+    run_command,
 )
 
 from . import util
 
-from ackrep_core.test._test_utils import strip_decode
 
 # initialize logging with default loglevel (might be overwritten by command line option)
 # see https://docs.python.org/3/howto/logging-cookbook.html
@@ -678,9 +679,7 @@ def _run_execscript_from_template(entity, c, type):
 
     logger.info(f"  ... running exec-script {scriptpath} ... ")
 
-    # TODO: plug in containerization here:
-    # Note: this hangs on any interactive element inside the script (such as IPS)
-    res = subprocess.run(["python", scriptpath], text=True, capture_output=True)
+    res = run_command(["python", scriptpath], suppress_output=True, capture_output=True)
     res.exited = res.returncode
     if res.returncode == 2:
         if res.stdout:
@@ -692,6 +691,9 @@ def _run_execscript_from_template(entity, c, type):
             logger.error(res.stdout)
         if res.stderr:
             logger.error(res.stderr)
+    else:
+        # propagate output of execscript through multiple subprocesses
+        print((res.stdout), file=sys.stdout)
 
     return res
 
@@ -817,7 +819,7 @@ AOM = ACKREP_OntologyManager()
 
 
 @app.task
-def check_whatever(key):
+def check(key):
     entity = get_entity(key)
     is_solution = isinstance(entity, models.ProblemSolution)
     is_system_model = isinstance(entity, models.SystemModel)
@@ -833,20 +835,21 @@ def check_whatever(key):
     env_name = get_entity(env_key).name
     logger.info(f"running with environment spec: {env_name}")
 
-    # check if container is built
+    # check if image is built
     container_name = "ackrep_deployment_" + env_name 
-    res = subprocess.run(["docker", "images", "-q", container_name], capture_output=True)
+    res = run_command(["docker", "images", "-q", container_name], suppress_output=True, capture_output=True)
+    logger.info(f"{res.stdout} | {res.stderr}")
     assert res.returncode == 0, "docker not reachable?"
-    assert strip_decode(res.stdout) is not None, "Environment Image not found."
+    assert res.stdout is not None, "Environment Image not found."
 
     # ! this works
-    res = subprocess.run(["docker", "run", "--rm", container_name, "python", "--version"], capture_output=True)
-    logger.info(f"Python version of runner container: {strip_decode(res.stdout)}")
+    res = run_command(["docker", "run", "--rm", container_name, "python", "--version"], suppress_output=True, capture_output=True)
+    logger.info(f"Python version of runner container: {res.stdout}")
     if is_solution:
-        res = subprocess.run(["docker", "run", "--rm", container_name, "ackrep", "-cs", key], capture_output=True)
+        res = run_command(["docker", "run", "--rm", container_name, "ackrep", "-cs", key], suppress_output=True, capture_output=True)
     elif is_system_model:
-        res = subprocess.run(["docker", "run", "--rm", container_name, "ackrep", "-csm", key], capture_output=True)
+        res = run_command(["docker", "run", "--rm", container_name, "ackrep", "-csm", key], suppress_output=True, capture_output=True)
     else:
         raise NotImplementedError
-
+    
     return res

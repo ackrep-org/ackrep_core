@@ -23,10 +23,24 @@
         }
     };
 </script>
+<script>          
+    function setDefaultValue(id)
+    {
+      localStorage.setItem('status', id);
+    }
 
+    function getDefaultValue()
+    { 
+      var valId=localStorage.getItem('status'); 
+      document.getElementById("valId").checked = true;
+    //   localStorage.removeItem('status');
+    }
+</script>
 <script type="text/javascript">
     window.onload = function(){
         document.getElementById("javascript_msg").style.display = "none";
+        var valId=localStorage.getItem('status'); 
+        document.getElementById(valId).checked = true;
     }
 </script>
 {% if display == "full"%}
@@ -49,12 +63,12 @@
     [<label for="show">
         <span class="fake_button">Show</span>
     </label>
-    <input type=radio id="show" name="group">
+    <input type=radio id="show" name="group" value="show" onchange="setDefaultValue('show');">
     /
     <label for="hide">
         <span class="fake_button"> Hide</span> 
     </label>    
-    <input type=radio id="hide" name="group">
+    <input type=radio id="hide" name="group" value="hide" onchange="setDefaultValue('hide');">
     ]
     <span id="content">
         {% if c.source_code_link %}

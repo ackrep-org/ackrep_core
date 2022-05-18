@@ -163,7 +163,7 @@ class CheckView(EntityDetailView):
             
             # else:
             #     raise TypeError(f"{c.entity} has to be of type ProblemSolution or SystemModel.")
-            res = core.check_whatever.delay(key)
+            res = core.check.delay(key)
             _add_job_to_db(key, res.id)
             
         
