@@ -574,35 +574,9 @@ def check_solution(key):
     :param key:                 entity key of the ProblemSolution
     :return:
     """
-    sol_entity, c = _create_entity(key, "solution")
-
-    assert len(sol_entity.oc.solved_problem_list) >= 1
-
-    if sol_entity.oc.solved_problem_list == 0:
-        msg = f"{sol_entity}: Expected at least one solved problem."
-        raise InconsistentMetaDataError(msg)
-
-    elif len(sol_entity.oc.solved_problem_list) == 1:
-        problem_spec = sol_entity.oc.solved_problem_list[0]
-    else:
-        logger.warning("Applying a solution to multiple problems is not yet supported. Taking the last one.")
-        problem_spec = sol_entity.oc.solved_problem_list[-1]
-
-    if problem_spec.problem_file != "problem.py":
-        msg = "Arbitrary filename will be supported in the future"
-        raise NotImplementedError(msg)
-
-    # TODO: handle the filename (see also template)
-    c.problem_spec_path = os.path.join(root_path, problem_spec.base_path)
-
-    # list of the build_paths
-    c.method_package_list = []
-    for mp in sol_entity.oc.method_package_list:
-        full_build_path = make_method_build(mp, accept_existing=True)
-        assert os.path.isdir(full_build_path)
-        c.method_package_list.append(full_build_path)
-
-    res = _run_execscript_from_template(sol_entity, c, "solution")
+    sol_entity, c = create_entity(key)
+    scriptpath = create_execscript_from_template(sol_entity, c)
+    res = run_execscript(scriptpath)
 
     return res
 
@@ -614,41 +588,71 @@ def check_system_model(key):
     :param key:                 entity key of the SystemModel
     :return:    result of evaluation of simulation
     """
-    system_model_entity, c = _create_entity(key, "system_model")
-
-    res = _run_execscript_from_template(system_model_entity, c, "system_model")
+    system_model_entity, c = create_entity(key)
+    scriptpath = create_execscript_from_template(system_model_entity, c)
+    res = run_execscript(scriptpath)
 
     return res
 
 
-def _create_entity(key, type):
+def create_entity(key):
     """create entity for check solution and check system model"""
-    assert type in ("solution", "system_model")
 
     entity = get_entity(key)
     resolve_keys(entity)
 
+    entity_type = type(entity)
+    assert entity_type in (models.SystemModel, models.ProblemSolution)
+
     # test entity type and get path to relevant file
-    if type == "solution":
-        assert isinstance(entity, models.ProblemSolution)
+    if entity_type == models.ProblemSolution:
         python_file = entity.solution_file
         if python_file != "solution.py":
             msg = "Arbitrary filename will be supported in the future"
             raise NotImplementedError(msg)
 
-    else:
-        assert isinstance(entity, models.SystemModel)
+    elif entity_type == models.SystemModel:
         python_file = entity.system_model_file
         if python_file != "system_model.py":
             msg = "Arbitrary filename will be supported in the future"
             raise NotImplementedError(msg)
+    else: 
+        raise NotImplementedError
 
     c = Container()  # this will be our easily accessible context dict for the template
 
-    if type == "solution":
+    if entity_type == models.ProblemSolution:
         c.solution_path = os.path.join(root_path, entity.base_path)
-    else:
+        assert len(entity.oc.solved_problem_list) >= 1
+
+        if entity.oc.solved_problem_list == 0:
+            msg = f"{entity}: Expected at least one solved problem."
+            raise InconsistentMetaDataError(msg)
+
+        elif len(entity.oc.solved_problem_list) == 1:
+            problem_spec = entity.oc.solved_problem_list[0]
+        else:
+            logger.warning("Applying a solution to multiple problems is not yet supported. Taking the last one.")
+            problem_spec = entity.oc.solved_problem_list[-1]
+
+        if problem_spec.problem_file != "problem.py":
+            msg = "Arbitrary filename will be supported in the future"
+            raise NotImplementedError(msg)
+
+        # TODO: handle the filename (see also template)
+        c.problem_spec_path = os.path.join(root_path, problem_spec.base_path)
+
+        # list of the build_paths
+        c.method_package_list = []
+        for mp in entity.oc.method_package_list:
+            full_build_path = make_method_build(mp, accept_existing=True)
+            assert os.path.isdir(full_build_path)
+            c.method_package_list.append(full_build_path)
+
+    elif entity_type == models.SystemModel:
         c.system_model_path = os.path.join(root_path, entity.base_path)
+    else:
+        raise NotImplementedError
 
     c.ackrep_core_path = core_pkg_path
 
@@ -657,9 +661,12 @@ def _create_entity(key, type):
 
     return entity, c
 
-
-def _run_execscript_from_template(entity, c, type):
-    assert type in ("solution", "system_model")
+def create_execscript_from_template(entity, c, scriptpath=None):
+    """create execscript from template. if scriptpath is None, the default script path 
+    in the respective data repo is used. 
+    return scriptpath"""
+    entity_type = type(entity)
+    assert entity_type in (models.SystemModel, models.ProblemSolution)
 
     context = dict(c.item_list())
 
@@ -671,12 +678,21 @@ def _run_execscript_from_template(entity, c, type):
 
     # determine whether the entity comes from ackrep_data or ackrep_data_for_unittests ore ackrep_data_import
     data_repo_path = pathlib.Path(entity.base_path).parts[0]
-    scriptpath = os.path.join(root_path, data_repo_path, scriptname)
-    if type == "solution":
-        render_template("templates/execscript.py.template", context, target_path=scriptpath)
+    if scriptpath is None:
+        scriptpath = os.path.join(root_path, data_repo_path, scriptname)
     else:
+        scriptpath = os.path.join(scriptpath, scriptname)
+    print(scriptpath)
+    if entity_type == models.ProblemSolution:
+        render_template("templates/execscript.py.template", context, target_path=scriptpath)
+    elif entity_type == models.SystemModel:
         render_template("templates/execscript_system_model.py.template", context, target_path=scriptpath)
+    else:
+        raise NotImplementedError
 
+    return scriptpath
+    
+def run_execscript(scriptpath):
     logger.info(f"  ... running exec-script {scriptpath} ... ")
 
     res = run_command(["python", scriptpath], suppress_output=True, capture_output=True)
@@ -696,7 +712,6 @@ def _run_execscript_from_template(entity, c, type):
         print((res.stdout), file=sys.stdout)
 
     return res
-
 
 def clone_external_data_repo(url, mr_key):
     """Clone git repository from url into external_repos/[MERGE_REQUEST_KEY], return path"""
@@ -820,6 +835,8 @@ AOM = ACKREP_OntologyManager()
 
 @app.task
 def check(key):
+    """general function to check system model or solution, calculated inside docker image. 
+    The image is chosen by the compatible environment of the given entity"""
     entity = get_entity(key)
     is_solution = isinstance(entity, models.ProblemSolution)
     is_system_model = isinstance(entity, models.SystemModel)
@@ -838,13 +855,12 @@ def check(key):
     # check if image is built
     container_name = "ackrep_deployment_" + env_name 
     res = run_command(["docker", "images", "-q", container_name], suppress_output=True, capture_output=True)
-    logger.info(f"{res.stdout} | {res.stderr}")
-    assert res.returncode == 0, "docker not reachable?"
-    assert res.stdout is not None, "Environment Image not found."
+    if res.returncode != 0:
+        logger.error(f"{res.stdout} | {res.stderr}")
+        msg = "Permission denied to use host's docker socket. See doc/devdoc/contributing_deployment/torubleshooting"
+        assert "permission denied" in res.stdout, msg
+        assert res.stdout is not None, "Environment Image not found."
 
-    # ! this works
-    res = run_command(["docker", "run", "--rm", container_name, "python", "--version"], suppress_output=True, capture_output=True)
-    logger.info(f"Python version of runner container: {res.stdout}")
     if is_solution:
         res = run_command(["docker", "run", "--rm", container_name, "ackrep", "-cs", key], suppress_output=True, capture_output=True)
     elif is_system_model:

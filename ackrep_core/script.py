@@ -68,6 +68,8 @@ def main():
         "--bootstrap-test-db", help="delete database for unittests and recreate it (without data)", action="store_true"
     )
     argparser.add_argument("--start-workers", help="start the celery workers", action="store_true")
+    argparser.add_argument("--prepare-script", help="render the execscript and place it in the docker transfer folder (specified by path to metadata file or key)", metavar="metadatafile")
+    argparser.add_argument("--run-interactive-environment", help="start an interactive session with a docker container of an image of your choice. Image name must be specified", metavar="image_name")
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -175,11 +177,15 @@ def main():
         print("Version", release.__version__)
     elif args.start_workers:
         start_workers()
+    elif args.prepare_script:
+        metadatapath = args.prepare_script
+        prepare_script(metadatapath)
+    elif args.run_interactive_environment:
+        image_name = args.run_interactive_environment
+        run_interactive_environment(image_name)
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
-
-    # TODO: add this to epilog or docs: useful comment: rm -f db.sqlite3; python manage.py migrate --run-syncdb
 
 
 # worker functions
@@ -500,3 +506,36 @@ def start_workers():
         res = subprocess.run(["celery", "-A", "ackrep_web", "worker", "--loglevel=INFO", "-c" "4"])
     except KeyboardInterrupt:
         exit(0)
+
+def prepare_script(arg0):
+    try:
+        entity = core.get_entities_with_key(arg0)[0]
+        key = arg0
+    except IndexError:
+        metadatapath = arg0
+        if not metadatapath.endswith("metadata.yml"):
+            metadatapath = os.path.join(metadatapath, "metadata.yml")
+        system_model_meta_data = core.get_metadata_from_file(metadatapath)
+        key = system_model_meta_data["key"]
+        entity = core.get_entity(key)
+    
+    entity , c = core.create_entity(key)
+    scriptpath = "/ackrep_transfer"
+    core.create_execscript_from_template(entity, c, scriptpath=scriptpath)
+
+    print(bgreen("Success."))
+
+def run_interactive_environment(image_name):
+    """create transfer direktory, change permissions, start container"""
+    print("\nRunning Interactive Docker Container. To Exit, press Ctrl+D.\n")
+    old_cwd = os.getcwd()
+    os.chdir(core.root_path)
+    transfer_folder_name = "ackrep_transfer"
+    os.makedirs(transfer_folder_name, exist_ok=True)
+    # TODO: dynamic gid
+    os.chown("ackrep_transfer", os.getuid(), 999)
+    # if host is windows, path still needs to have unix seps for inside container
+    vol_host_path = os.path.join(core.root_path, transfer_folder_name).replace("\\", "/")
+    vol_container_path = "/" + transfer_folder_name
+    vol_mapping = f"{vol_host_path}:{vol_container_path}"
+    res = subprocess.run(["docker", "run", "-ti", "-v", vol_mapping, "-w", "/", image_name])
