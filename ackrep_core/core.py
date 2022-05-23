@@ -846,7 +846,7 @@ def check(key):
     default_env_key = "YJBOX"
     
     env_key = entity.compatible_environment
-    if env_key == "":
+    if env_key == "" or env_key is None:
         logger.info("No environment specification found. Using default env.")
         env_key = default_env_key
     env_name = get_entity(env_key).name
@@ -857,15 +857,26 @@ def check(key):
     res = run_command(["docker", "images", "-q", container_name], suppress_output=True, capture_output=True)
     if res.returncode != 0:
         logger.error(f"{res.stdout} | {res.stderr}")
-        msg = "Permission denied to use host's docker socket. See doc/devdoc/contributing_deployment/torubleshooting"
+        msg = "Permission denied to use host's docker socket. See doc/devdoc/contributing_deployment/troubleshooting"
         assert "permission denied" in res.stdout, msg
         assert res.stdout is not None, "Environment Image not found."
 
+    # building the docker command
+    # rebuild environment variables suitable inside docker container
+    database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ['ACKREP_DATABASE_PATH'])[-1])
+    data_path = os.path.join("/code", os.path.split(os.environ['ACKREP_DATA_PATH'])[-1])
+
+    cmd = ["docker", "run", "--rm", \
+        "-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={data_path}", \
+         container_name]
+
     if is_solution:
-        res = run_command(["docker", "run", "--rm", container_name, "ackrep", "-cs", key], suppress_output=True, capture_output=True)
+        cmd.extend(["ackrep", "-cs", key])
     elif is_system_model:
-        res = run_command(["docker", "run", "--rm", container_name, "ackrep", "-csm", key], suppress_output=True, capture_output=True)
+        cmd.extend(["ackrep", "-csm", key])
     else:
         raise NotImplementedError
+
+    res = run_command(cmd, suppress_output=True, capture_output=True)
     
     return res

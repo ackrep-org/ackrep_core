@@ -2,6 +2,7 @@ import argparse
 import subprocess
 import pprint
 import questionary
+import platform
 from django.core import management
 from django.conf import settings
 
@@ -527,15 +528,18 @@ def prepare_script(arg0):
 
 def run_interactive_environment(image_name):
     """create transfer direktory, change permissions, start container"""
+    if platform.system() != "Linux":
+        msg = f"No support for {platform.system()}"
+        raise NotImplementedError(msg)
     print("\nRunning Interactive Docker Container. To Exit, press Ctrl+D.\n")
     old_cwd = os.getcwd()
     os.chdir(core.root_path)
     transfer_folder_name = "ackrep_transfer"
     os.makedirs(transfer_folder_name, exist_ok=True)
     # TODO: dynamic gid
-    os.chown("ackrep_transfer", os.getuid(), 999)
+    os.chown("ackrep_transfer", -1, 999)
     # if host is windows, path still needs to have unix seps for inside container
-    vol_host_path = os.path.join(core.root_path, transfer_folder_name).replace("\\", "/")
+    vol_host_path = os.path.join(core.root_path, transfer_folder_name)
     vol_container_path = "/" + transfer_folder_name
     vol_mapping = f"{vol_host_path}:{vol_container_path}"
     res = subprocess.run(["docker", "run", "-ti", "-v", vol_mapping, "-w", "/", image_name])
