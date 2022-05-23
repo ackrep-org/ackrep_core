@@ -24,19 +24,13 @@ def main():
     argparser.add_argument("--version", help="version of the ackrep_core framework", action="store_true")
     argparser.add_argument("--key", help="print a random key and exit", action="store_true")
     argparser.add_argument(
-        "-cs",
-        "--check-solution",
+        "-c",
+        "--check",
         metavar="metadatafile",
-        help="check solution (specified by path to metadata file or key)",
+        help="check solution or system model (specified by path to metadata file or key)",
     )
     argparser.add_argument(
         "--check-all-solutions", help="check all solutions (may take some time)", action="store_true"
-    )
-    argparser.add_argument(
-        "-csm",
-        "--check-system-model",
-        metavar="metadatafile",
-        help="check system_model (specified by path to metadata file or key)",
     )
     argparser.add_argument(
         "--check-all-system-models", help="check all system models (may take some time)", action="store_true"
@@ -133,15 +127,11 @@ def main():
         field_values = dialoge_field_values(entity)
         core.convert_dict_to_yaml(field_values, target_path="./metadata.yml")
         return
-    elif args.check_solution:
-        metadatapath = args.check_solution
-        check_solution(metadatapath)
+    elif args.check:
+        metadatapath = args.check
+        check(metadatapath)
     elif args.check_all_solutions:
         check_all_solutions()
-    elif args.check_system_model:
-        metadatapath = args.check_system_model
-        exitflag = not args.show_debug
-        check_system_model(metadatapath, exitflag=exitflag)
     elif args.check_all_system_models:
         check_all_system_models()
     elif args.get_metadata_abs_path_from_key:
@@ -223,7 +213,7 @@ def check_all_solutions():
 
     returncodes = []
     for ps in models.ProblemSolution.objects.all():
-        res = check_solution(ps.key, exitflag=False)
+        res = check(ps.key, exitflag=False)
         returncodes.append(res.returncode)
         print("---")
 
@@ -234,15 +224,14 @@ def check_all_system_models():
 
     returncodes = []
     for sm in models.SystemModel.objects.all():
-        res = check_system_model(sm.key, exitflag=False)
+        res = check(sm.key, exitflag=False)
         returncodes.append(res.returncode)
         print("---")
 
     exit(sum(returncodes))
 
 
-# def check_solution(metadatapath=None, key=None, exitflag=True):
-def check_solution(arg0: str, exitflag: bool = True):
+def check(arg0: str, exitflag: bool = True):
     """
 
     :param arg0:        either an entity key or the path to the respective metadata.yml
@@ -258,52 +247,15 @@ def check_solution(arg0: str, exitflag: bool = True):
         metadatapath = arg0
         if not metadatapath.endswith("metadata.yml"):
             metadatapath = os.path.join(metadatapath, "metadata.yml")
-        solution_meta_data = core.get_metadata_from_file(metadatapath)
-        key = solution_meta_data["key"]
+        meta_data = core.get_metadata_from_file(metadatapath)
+        key = meta_data["key"]
         entity = core.get_entity(key)
 
-    assert isinstance(entity, models.ProblemSolution)
+    assert isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel)
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
-    res = core.check_solution(key=key)
+    res = core.check_generic(key=key)
 
-    if res.returncode == 0:
-        print(bgreen("Success."))
-    elif res.returncode == 2:
-        print(yellow("Inaccurate."))
-    else:
-        print(bred("Fail."))
-
-    if exitflag:
-        exit(res.returncode)
-    else:
-        return res
-
-
-def check_system_model(arg0: str, exitflag: bool = True):
-    """
-
-    :param arg0:        either an entity key or the path to the respective metadata.yml
-    :param exitflag:    determine whether the program should exit at the end of this function
-
-    :return:            container of subprocess.run (if exitflag == False)
-    """
-
-    try:
-        entity = core.get_entities_with_key(arg0)[0]
-        key = arg0
-    except IndexError:
-        metadatapath = arg0
-        if not metadatapath.endswith("metadata.yml"):
-            metadatapath = os.path.join(metadatapath, "metadata.yml")
-        system_model_meta_data = core.get_metadata_from_file(metadatapath)
-        key = system_model_meta_data["key"]
-        entity = core.get_entity(key)
-
-    assert isinstance(entity, models.SystemModel)
-    # IPS()
-    print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
-    res = core.check_system_model(key=key)
     if res.returncode == 0:
         print(bgreen("Success."))
     elif res.returncode == 2:

@@ -672,7 +672,7 @@ def create_system_model_list_pdf():
 
 def _import_png_to_tex(system_model_entity):
     assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel"
-    res = core.check_system_model(system_model_entity.key)
+    res = core.check_generic(system_model_entity.key)
     png_path = os.path.join(
         core.data_path, os.pardir, system_model_entity.base_path, "_system_model_data", "plot.png"
     ).replace("\\", "/")

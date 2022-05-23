@@ -249,14 +249,14 @@ class TestCases3(SimpleTestCase):
 
         # first: run directly
 
-        res = core.check_solution("UKJZI")
+        res = core.check_generic("UKJZI")
         self.assertEqual(res.returncode, 0)
 
         # second: run via commandline
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = run_command(["ackrep", "-cs", "problem_solutions/acrobot_swingup_with_pytrajectory/metadata.yml"])
+        res = run_command(["ackrep", "-c", "problem_solutions/acrobot_swingup_with_pytrajectory/metadata.yml"])
 
         self.assertEqual(res.returncode, 0)
 
@@ -264,7 +264,7 @@ class TestCases3(SimpleTestCase):
 
         # first: run directly
 
-        res = core.check_system_model("UXMFA")
+        res = core.check_generic("UXMFA")
         if res.returncode != 0:
             print(res.stdout)
         self.assertEqual(res.returncode, 0)
@@ -273,7 +273,7 @@ class TestCases3(SimpleTestCase):
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = run_command(["ackrep", "-csm", "UXMFA"])
+        res = run_command(["ackrep", "-c", "UXMFA"])
         self.assertEqual(res.returncode, 0)
 
         # ensure repo is clean again
@@ -312,7 +312,7 @@ class TestCases3(SimpleTestCase):
         self.assertTrue(len(abspath) > len(relpath))
 
     def test_get_solution_data_files(self):
-        res = core.check_solution("UKJZI")
+        res = core.check_generic("UKJZI")
         self.assertEqual(res.returncode, 0, msg=utf8decode(res.stderr))
         sol_entity = core.model_utils.get_entity("UKJZI")
 
@@ -327,7 +327,7 @@ class TestCases3(SimpleTestCase):
         self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
 
     def test_get_system_model_data_files(self, key="UXMFA"):
-        res = core.check_system_model(key)
+        res = core.check_generic(key)
         self.assertEqual(res.returncode, 0, msg=utf8decode(res.stderr))
         system_model_entity = core.model_utils.get_entity(key)
 
@@ -468,7 +468,7 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-csm", "UXMFA"], suppress_output=True)
+        res = run_command(["ackrep", "-c", "UXMFA"], suppress_output=True)
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
@@ -497,7 +497,7 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-cs", "UKJZI"], suppress_output=True)
+        res = run_command(["ackrep", "-c", "UKJZI"], suppress_output=True)
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)

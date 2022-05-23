@@ -567,37 +567,31 @@ def get_entities_with_key(key, raise_error_on_empty=False):
     return entities_with_key
 
 
-@app.task
-def check_solution(key):
-    """
+def check_generic(key: str):
+    """create entity and context, create execscript, run execscript
 
-    :param key:                 entity key of the ProblemSolution
-    :return:
+    Args:
+        key (str): entity key
+
+    Returns:
+        CompletedProcess: result of execscript
     """
-    sol_entity, c = create_entity(key)
-    scriptpath = create_execscript_from_template(sol_entity, c)
+    entity, c = create_entity(key)
+    scriptpath = create_execscript_from_template(entity, c)
     res = run_execscript(scriptpath)
 
     return res
 
 
-@app.task
-def check_system_model(key):
+def create_entity(key: str):
+    """create entity and build context based on key
+
+    Args:
+        key (str): entity key
+
+    Returns:
+        models.GenericEntity, Container: entity, context dict
     """
-    run the script that executes the simulation
-    similar to check_solution
-    :param key:                 entity key of the SystemModel
-    :return:    result of evaluation of simulation
-    """
-    system_model_entity, c = create_entity(key)
-    scriptpath = create_execscript_from_template(system_model_entity, c)
-    res = run_execscript(scriptpath)
-
-    return res
-
-
-def create_entity(key):
-    """create entity for check solution and check system model"""
 
     entity = get_entity(key)
     resolve_keys(entity)
@@ -663,10 +657,23 @@ def create_entity(key):
     return entity, c
 
 
-def create_execscript_from_template(entity, c, scriptpath=None):
+def create_execscript_from_template(entity: models.GenericEntity, c: Container, scriptpath=None):
     """create execscript from template. if scriptpath is None, the default script path
     in the respective data repo is used.
-    return scriptpath"""
+    return scriptpath
+
+    Args:
+        entity (models.GenericEntity): entity
+        c (Container): context dict
+        scriptpath (str or None, optional): specify where to store the script. Only usefull for
+        ackrep --prepare-script. Defaults to None.
+
+    Raises:
+        NotImplementedError: if entity is neither system model nor solution
+
+    Returns:
+        path_like: path to execscript
+    """
     entity_type = type(entity)
     assert entity_type in (models.SystemModel, models.ProblemSolution)
 
@@ -684,7 +691,7 @@ def create_execscript_from_template(entity, c, scriptpath=None):
         scriptpath = os.path.join(root_path, data_repo_path, scriptname)
     else:
         scriptpath = os.path.join(scriptpath, scriptname)
-    print(scriptpath)
+
     if entity_type == models.ProblemSolution:
         render_template("templates/execscript.py.template", context, target_path=scriptpath)
     elif entity_type == models.SystemModel:
@@ -696,6 +703,14 @@ def create_execscript_from_template(entity, c, scriptpath=None):
 
 
 def run_execscript(scriptpath):
+    """run the execscript at a given location in subprocess. logs errors, returns result
+
+    Args:
+        scriptpath (path_like): path to execscript
+
+    Returns:
+        CompletedProcess: result of execscript
+    """
     logger.info(f"  ... running exec-script {scriptpath} ... ")
 
     res = run_command(["python", scriptpath], suppress_output=True, capture_output=True)
@@ -865,27 +880,19 @@ def check(key):
         assert res.stdout is not None, "Environment Image not found."
 
     # building the docker command
-    cmd = [
-        "docker",
-        "run",
-        "--rm"]
+    cmd = ["docker", "run", "--rm"]
     # rebuild environment variables suitable inside docker container (only for ut case)
     if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
         database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
         data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
-        cmd.extend([
-        "-e",
-        f"ACKREP_DATABASE_PATH={database_path}",
-        "-e",
-        f"ACKREP_DATA_PATH={data_path}"        
-        ])
+        cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={data_path}"])
 
     cmd.append(container_name)
-    
+
     if is_solution:
-        cmd.extend(["ackrep", "-cs", key])
+        cmd.extend(["ackrep", "-c", key])
     elif is_system_model:
-        cmd.extend(["ackrep", "-csm", key])
+        cmd.extend(["ackrep", "-c", key])
     else:
         raise NotImplementedError
 
