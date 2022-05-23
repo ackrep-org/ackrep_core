@@ -52,8 +52,6 @@ os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core",
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
 
-testcase_2_tests_done = 0
-
 class TestCases1(DjangoTestCase):
     def test_00(self):
         # for debugging
@@ -141,7 +139,7 @@ class TestCases2(SimpleTestCase):
         while "utc_waiting" in response.content.decode("utf8"):
             time.sleep(1)
             response = self.client.get(url)
-        
+
         self.assertContains(response, "utc_img_url")
 
         regex = re.compile("utc_img_url:<(.*?)>")
@@ -205,6 +203,7 @@ class TestCases2(SimpleTestCase):
         res = subprocess.run(["celery", "-A", "ackrep_web", "control", "shutdown"], text=True, capture_output=True)
         os.chdir(old_cwd)
         return super().tearDown()
+
 
 class TestBugs(DjangoTestCase):
     """

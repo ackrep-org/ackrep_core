@@ -61,6 +61,3 @@ def reset_repo(repo_path):
 
     repo = Repo(repo_path)
     repo.head.reset(index=True, working_tree=True)
-
-
-

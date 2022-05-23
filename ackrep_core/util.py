@@ -120,6 +120,7 @@ def smooth_timedelta(start_datetime, end_datetime=None):
         timetot += " {}s".format(int(secs))
     return timetot
 
+
 def utf8decode(obj):
     if hasattr(obj, "decode"):
         return obj.decode("utf8")

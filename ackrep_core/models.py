@@ -101,29 +101,77 @@ class GenericEntity(BaseModel):
     """
 
     id = models.AutoField(primary_key=True)
-    key = models.CharField(max_length=5, null=False, blank=False,)
+    key = models.CharField(
+        max_length=5,
+        null=False,
+        blank=False,
+    )
 
     # TODO: Better data type for referencing merge request
     merge_request = models.CharField(max_length=5, null=True, blank=False)
 
     # TODO: this field should be renamed to `predecessor`
-    predecessor_key = EntityKeyField(max_length=5, null=True, blank=False,)
-    type = models.CharField(max_length=20, null=False, blank=False,)
-    name = models.CharField(max_length=40, null=False, blank=False,)
-    short_description = models.CharField(max_length=500, null=True, blank=True,)
+    predecessor_key = EntityKeyField(
+        max_length=5,
+        null=True,
+        blank=False,
+    )
+    type = models.CharField(
+        max_length=20,
+        null=False,
+        blank=False,
+    )
+    name = models.CharField(
+        max_length=40,
+        null=False,
+        blank=False,
+    )
+    short_description = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
     version = models.CharField(max_length=10, null=False, blank=False, default="0.1.0")
-    tag_list = models.CharField(max_length=500, null=True, blank=True,)
+    tag_list = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
 
-    creator = models.CharField(max_length=500, null=True, blank=True,)
-    editor_list = models.CharField(max_length=500, null=True, blank=True,)
-    creation_date = models.CharField(max_length=500, null=True, blank=True,)
+    creator = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    editor_list = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    creation_date = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
 
-    external_references = models.CharField(max_length=500, null=True, blank=True,)
-    notes = models.CharField(max_length=5000, null=True, blank=True,)
+    external_references = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    notes = models.CharField(
+        max_length=5000,
+        null=True,
+        blank=True,
+    )
 
     # this is automatically filled when importing .yml files into the db
     # should not be specified inside the .yml file
-    base_path = models.CharField(max_length=5000, null=True, blank=True,)
+    base_path = models.CharField(
+        max_length=5000,
+        null=True,
+        blank=True,
+    )
 
     oc = util.ObjectContainer()
 
@@ -172,8 +220,16 @@ class GenericEntity(BaseModel):
 
 class SystemModel(GenericEntity):
     _type = "system_model"
-    estimated_runtime = models.CharField(max_length=500, null=True, blank=True,)
-    compatible_environment = EntityKeyField(max_length=500, null=True, blank=True,)
+    estimated_runtime = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    compatible_environment = EntityKeyField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
     system_model_file = models.CharField(max_length=500, null=True, blank=True, default="system_model.py")
     simulation_file = models.CharField(max_length=500, null=True, blank=True, default="simulation.py")
 
@@ -192,8 +248,16 @@ class SystemModel(GenericEntity):
 
 class ProblemSpecification(GenericEntity):
     _type = "problem_specification"
-    problemclass_list = EntityKeyListField(max_length=500, null=True, blank=True,)
-    related_system_models_list = EntityKeyListField(max_length=500, null=True, blank=True,)
+    problemclass_list = EntityKeyListField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    related_system_models_list = EntityKeyListField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
     problem_file = models.CharField(max_length=500, null=True, blank=True, default="problem.py")
 
     # TODO: this function is affected by the necessary model-refactoring (issue #1)
@@ -212,12 +276,32 @@ class ProblemSpecification(GenericEntity):
 
 class ProblemSolution(GenericEntity):
     _type = "problem_solution"
-    solved_problem_list = EntityKeyListField(max_length=500, null=True, blank=True,)
-    method_package_list = EntityKeyListField(max_length=500, null=True, blank=True,)
-    compatible_environment = EntityKeyField(max_length=500, null=True, blank=True,)
-    estimated_runtime = models.CharField(max_length=500, null=True, blank=True,)
+    solved_problem_list = EntityKeyListField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    method_package_list = EntityKeyListField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    compatible_environment = EntityKeyField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    estimated_runtime = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
     solution_file = models.CharField(max_length=500, null=True, blank=True, default="solution.py")
-    postprocessing_file = models.CharField(max_length=500, null=True, blank=True,)
+    postprocessing_file = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
 
 
 class ProblemClass(GenericEntity):
@@ -225,12 +309,20 @@ class ProblemClass(GenericEntity):
 
 
 class Comment(GenericEntity):
-    referenced_entity_list = EntityKeyField(max_length=500, null=True, blank=True,)
+    referenced_entity_list = EntityKeyField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
     _type = "comment"
 
 
 class Documentation(GenericEntity):
-    referenced_entity_list = EntityKeyField(max_length=500, null=True, blank=True,)
+    referenced_entity_list = EntityKeyField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
     _type = "documentation"
 
 
@@ -240,12 +332,24 @@ class EnvironmentSpecification(GenericEntity):
 
 class MethodPackage(GenericEntity):
     _type = "method_package"
-    compatible_environment_list = EntityKeyListField(max_length=500, null=True, blank=True,)
+    compatible_environment_list = EntityKeyListField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
 
 
 class ActiveJobs(BaseModel):
     _type = "active_jobs"
     id = models.AutoField(primary_key=True)
-    key = models.CharField(max_length=5, null=False, blank=False,)
-    celery_id = models.CharField(max_length=100, null=False, blank=False,)
+    key = models.CharField(
+        max_length=5,
+        null=False,
+        blank=False,
+    )
+    celery_id = models.CharField(
+        max_length=100,
+        null=False,
+        blank=False,
+    )
     start_time = models.FloatField()

@@ -56,7 +56,7 @@ class TestCases1(DjangoTestCase):
 
     These test cases do not access the database at all, so they should use SimpleTestCase
     as base class. However, due to [1] instance of DjangoTestCase (i.e. django.test.TestCase)
-    are run first. 
+    are run first.
 
     [1] https://docs.djangoproject.com/en/4.0/topics/testing/overview/#order-of-tests
     """
@@ -114,7 +114,7 @@ class TestCases1(DjangoTestCase):
 class TestCases2(DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.
-    
+
     Database changes should not be persistent outside this each case.
     -> Use DjangoTestCase as base class which ensures this behavior ("Transactions")
     """
@@ -513,7 +513,7 @@ class TestCases3(SimpleTestCase):
 class TestCases4(DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.
-    
+
     Database changes of **these tests** should **not** be persistent outside each case, e.g. from cli.
     -> DjangoTestCase ist used as base class which ensures this behavior ("Transactions" [1]).
 

@@ -95,7 +95,12 @@ if not (database_path):
 else:
     # use the provided path also as path for the test db
 
-    test_db_settings = {"TEST": {"ENGINE": "django.db.backends.sqlite3", "NAME": database_path,}}
+    test_db_settings = {
+        "TEST": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": database_path,
+        }
+    }
 
 
 DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": database_path, **test_db_settings}}
@@ -105,10 +110,18 @@ DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": databas
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
 ]
 
 
@@ -152,7 +165,7 @@ REFRESH_TIMEOUT = 2000
 # celery urls for running in docker
 CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_RESULT_BACKEND = "redis://redis:6379/0"
-RESULT_EXPIRATION_TIME = 3600 # [ms]
+RESULT_EXPIRATION_TIME = 3600  # [ms]
 
 
 # The following mechanism allows to incorporate custom settings (which are maintained

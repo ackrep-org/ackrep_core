@@ -580,6 +580,7 @@ def check_solution(key):
 
     return res
 
+
 @app.task
 def check_system_model(key):
     """
@@ -616,7 +617,7 @@ def create_entity(key):
         if python_file != "system_model.py":
             msg = "Arbitrary filename will be supported in the future"
             raise NotImplementedError(msg)
-    else: 
+    else:
         raise NotImplementedError
 
     c = Container()  # this will be our easily accessible context dict for the template
@@ -661,9 +662,10 @@ def create_entity(key):
 
     return entity, c
 
+
 def create_execscript_from_template(entity, c, scriptpath=None):
-    """create execscript from template. if scriptpath is None, the default script path 
-    in the respective data repo is used. 
+    """create execscript from template. if scriptpath is None, the default script path
+    in the respective data repo is used.
     return scriptpath"""
     entity_type = type(entity)
     assert entity_type in (models.SystemModel, models.ProblemSolution)
@@ -691,7 +693,8 @@ def create_execscript_from_template(entity, c, scriptpath=None):
         raise NotImplementedError
 
     return scriptpath
-    
+
+
 def run_execscript(scriptpath):
     logger.info(f"  ... running exec-script {scriptpath} ... ")
 
@@ -712,6 +715,7 @@ def run_execscript(scriptpath):
         print((res.stdout), file=sys.stdout)
 
     return res
+
 
 def clone_external_data_repo(url, mr_key):
     """Clone git repository from url into external_repos/[MERGE_REQUEST_KEY], return path"""
@@ -821,7 +825,7 @@ def print_entity_info(key: str) -> None:
 
     # this uses print and not logging because the user expects this output independently
     # from loglevel
-    print("Entity Info",)
+    print("Entity Info")
     row_template = "  {:<20}: {}"
     print(row_template.format("name", entity.name))
     print(row_template.format("key", entity.key))
@@ -835,16 +839,15 @@ AOM = ACKREP_OntologyManager()
 
 @app.task
 def check(key):
-    """general function to check system model or solution, calculated inside docker image. 
+    """general function to check system model or solution, calculated inside docker image.
     The image is chosen by the compatible environment of the given entity"""
     entity = get_entity(key)
     is_solution = isinstance(entity, models.ProblemSolution)
     is_system_model = isinstance(entity, models.SystemModel)
-    assert is_solution or is_system_model, \
-            f"key {key} is neither solution nor system model. Unsure what to do."
+    assert is_solution or is_system_model, f"key {key} is neither solution nor system model. Unsure what to do."
 
     default_env_key = "YJBOX"
-    
+
     env_key = entity.compatible_environment
     if env_key == "" or env_key is None:
         logger.info("No environment specification found. Using default env.")
@@ -853,7 +856,7 @@ def check(key):
     logger.info(f"running with environment spec: {env_name}")
 
     # check if image is built
-    container_name = "ackrep_deployment_" + env_name 
+    container_name = "ackrep_deployment_" + env_name
     res = run_command(["docker", "images", "-q", container_name], suppress_output=True, capture_output=True)
     if res.returncode != 0:
         logger.error(f"{res.stdout} | {res.stderr}")
@@ -863,12 +866,19 @@ def check(key):
 
     # building the docker command
     # rebuild environment variables suitable inside docker container
-    database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ['ACKREP_DATABASE_PATH'])[-1])
-    data_path = os.path.join("/code", os.path.split(os.environ['ACKREP_DATA_PATH'])[-1])
+    database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ["ACKREP_DATABASE_PATH"])[-1])
+    data_path = os.path.join("/code", os.path.split(os.environ["ACKREP_DATA_PATH"])[-1])
 
-    cmd = ["docker", "run", "--rm", \
-        "-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={data_path}", \
-         container_name]
+    cmd = [
+        "docker",
+        "run",
+        "--rm",
+        "-e",
+        f"ACKREP_DATABASE_PATH={database_path}",
+        "-e",
+        f"ACKREP_DATA_PATH={data_path}",
+        container_name,
+    ]
 
     if is_solution:
         cmd.extend(["ackrep", "-cs", key])
@@ -878,5 +888,5 @@ def check(key):
         raise NotImplementedError
 
     res = run_command(cmd, suppress_output=True, capture_output=True)
-    
+
     return res

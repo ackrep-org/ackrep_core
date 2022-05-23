@@ -160,17 +160,16 @@ class CheckView(EntityDetailView):
 
             # elif type(c.entity) == models.SystemModel:
             #     res = core.check_system_model.delay(key)
-            
+
             # else:
             #     raise TypeError(f"{c.entity} has to be of type ProblemSolution or SystemModel.")
             res = core.check.delay(key)
             _add_job_to_db(key, res.id)
-            
-        
+
         active_job = _get_active_job_by_key(key)
         res = AsyncResult(active_job["celery_id"], app=app)
 
-        ## job already active -> check if done        
+        ## job already active -> check if done
         if res.ready():
             c.result = res.get()
             c.image_list = core.get_data_files(c.entity.base_path, endswith_str=".png", create_media_links=True)
@@ -191,7 +190,7 @@ class CheckView(EntityDetailView):
                 c.verbal_result = "Script Error."
                 c.show_debug = settings.DEBUG
                 c.show_output = False
-            
+
             c.diff_time_str = round(time.time() - active_job["start_time"], 1)
             _remove_job_from_db(key)
             c.waiting = False
@@ -338,8 +337,9 @@ def _get_source_code(entity):
 
     return c
 
+
 def _get_active_job_by_key(key):
-    """queries the database for active jobs with the given key. if none are found, None is returned. If exactly one is 
+    """queries the database for active jobs with the given key. if none are found, None is returned. If exactly one is
     found, this job is returned. Otherwise an error is rasied.
     :return: tuple (key, celery_id)"""
     active_job_list = ActiveJobs.objects.filter(key=key).values()
@@ -348,9 +348,11 @@ def _get_active_job_by_key(key):
     elif len(active_job_list) == 1:
         active_job = active_job_list[0]
     else:
-        assert 1 == 0, "There should not be multiple active jobs with the same key. Maybe job adding or removing is bugged."
+        msg = "There should not be multiple active jobs with the same key. Maybe job adding or removing is bugged."
+        assert 1 == 0, msg
 
     return active_job
+
 
 def _add_job_to_db(key, celery_id):
     """add an entry to db with key and celery_id"""
@@ -358,10 +360,12 @@ def _add_job_to_db(key, celery_id):
     new_entry.save()
     return 0
 
+
 def _remove_job_from_db(key):
     """delete db entry with given key"""
     ActiveJobs.objects.filter(key=key).delete()
     return 0
+
 
 def _purge_old_jobs():
     active_job_list = ActiveJobs.objects.all().values()

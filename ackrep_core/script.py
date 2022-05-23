@@ -69,8 +69,16 @@ def main():
         "--bootstrap-test-db", help="delete database for unittests and recreate it (without data)", action="store_true"
     )
     argparser.add_argument("--start-workers", help="start the celery workers", action="store_true")
-    argparser.add_argument("--prepare-script", help="render the execscript and place it in the docker transfer folder (specified by path to metadata file or key)", metavar="metadatafile")
-    argparser.add_argument("--run-interactive-environment", help="start an interactive session with a docker container of an image of your choice. Image name must be specified", metavar="image_name")
+    argparser.add_argument(
+        "--prepare-script",
+        help="render the execscript and place it in the docker transfer folder (specified by path to metadata file or key)",
+        metavar="metadatafile",
+    )
+    argparser.add_argument(
+        "--run-interactive-environment",
+        help="start an interactive session with a docker container of an image of your choice. Image name must be specified",
+        metavar="image_name",
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -502,11 +510,13 @@ def bootstrap_db(db: str) -> None:
     # return to old working dir
     os.chdir(old_workdir)
 
+
 def start_workers():
     try:
         res = subprocess.run(["celery", "-A", "ackrep_web", "worker", "--loglevel=INFO", "-c" "4"])
     except KeyboardInterrupt:
         exit(0)
+
 
 def prepare_script(arg0):
     try:
@@ -519,12 +529,13 @@ def prepare_script(arg0):
         system_model_meta_data = core.get_metadata_from_file(metadatapath)
         key = system_model_meta_data["key"]
         entity = core.get_entity(key)
-    
-    entity , c = core.create_entity(key)
+
+    entity, c = core.create_entity(key)
     scriptpath = "/ackrep_transfer"
     core.create_execscript_from_template(entity, c, scriptpath=scriptpath)
 
     print(bgreen("Success."))
+
 
 def run_interactive_environment(image_name):
     """create transfer direktory, change permissions, start container"""
