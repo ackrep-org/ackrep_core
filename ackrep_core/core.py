@@ -568,7 +568,8 @@ def get_entities_with_key(key, raise_error_on_empty=False):
 
 
 def check_generic(key: str):
-    """create entity and context, create execscript, run execscript
+    """create entity and context, create execscript, run execscript.
+    This is the successor of check_solution and check_system_model
 
     Args:
         key (str): entity key
@@ -854,8 +855,18 @@ AOM = ACKREP_OntologyManager()
 
 @app.task
 def check(key):
-    """general function to check system model or solution, calculated inside docker image.
-    The image is chosen by the compatible environment of the given entity"""
+    """General function to check system model or solution, calculated inside docker image.
+    The image is chosen from the compatible environment of the given entity
+
+    Args:
+        key (str): entity key
+
+    Raises:
+        NotImplementedError: if key is neither solution nor system_model
+
+    Returns:
+        CompletedProcess: result of check
+    """
     entity = get_entity(key)
     is_solution = isinstance(entity, models.ProblemSolution)
     is_system_model = isinstance(entity, models.SystemModel)
@@ -863,6 +874,7 @@ def check(key):
 
     default_env_key = "YJBOX"
 
+    # get environment name
     env_key = entity.compatible_environment
     if env_key == "" or env_key is None:
         logger.info("No environment specification found. Using default env.")
@@ -887,14 +899,7 @@ def check(key):
         data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
         cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={data_path}"])
 
-    cmd.append(container_name)
-
-    if is_solution:
-        cmd.extend(["ackrep", "-c", key])
-    elif is_system_model:
-        cmd.extend(["ackrep", "-c", key])
-    else:
-        raise NotImplementedError
+    cmd.extend([container_name, "ackrep", "-c", key])
 
     res = run_command(cmd, suppress_output=True, capture_output=True)
 

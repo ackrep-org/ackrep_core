@@ -619,15 +619,9 @@ def create_system_model_list_pdf():
             if "Add Model Name" in v:
                 lines[i] = "\\part{" + sm.name + "}\n" + "ACKREP-Key: " + sm.key
             if "\\input{parameters.tex}" in v:
-                lines[i] = (
-                    "\\input{"
-                    + str(
-                        os.path.join(
-                            core.data_path, os.pardir, sm.base_path, "_system_model_data", "parameters.tex"
-                        ).replace("\\", "/")
-                    )
-                    + "}\n"
-                )
+                path = os.path.join(core.data_path, os.pardir, sm.base_path, "_system_model_data", "parameters.tex")
+                str_path = str(path.replace("\\", "/"))  # in case host is windows, latex always wants / in path
+                lines[i] = "\\input{" + str_path + "}\n"
             if "\\begin{thebibliography}" in v:
                 lines[i] = _import_png_to_tex(sm) + lines[i]
 

@@ -11,7 +11,8 @@ if os.environ.get("USE_CELERY_RESULT_BACKEND") == "True":
     result_backend = settings.CELERY_RESULT_BACKEND
 else:
     result_backend = "rpc://"
-# print(os.environ.get("USE_CELERY_BROKER_URL"))
+
+# result serializer has to be pickle to pass CompletedProcess Objects
 task_serializer = "pickle"
 result_serializer = "pickle"
 accept_content = ["pickle"]

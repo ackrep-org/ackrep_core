@@ -115,6 +115,7 @@ class TestCases2(SimpleTestCase):
         self.assertContains(response, "utc_entity_full")
         self.assertContains(response, "utc_check_solution")
 
+        # wait for asynchronous result
         while "utc_waiting" in response.content.decode("utf8"):
             time.sleep(1)
             response = self.client.get(url)
@@ -136,6 +137,7 @@ class TestCases2(SimpleTestCase):
         self.assertContains(response, "utc_entity_full")
         self.assertContains(response, "utc_check_system_model")
 
+        # wait for asynchronous result
         while "utc_waiting" in response.content.decode("utf8"):
             time.sleep(1)
             response = self.client.get(url)
