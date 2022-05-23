@@ -41,6 +41,10 @@
         document.getElementById("javascript_msg").style.display = "none";
         var valId=localStorage.getItem('status'); 
         document.getElementById(valId).checked = true;
+        scrollTo(0, localStorage.getItem("scroll_y"))
+    }
+    window.onbeforeunload = function() {
+        localStorage.setItem("scroll_y", scrollY)
     }
 </script>
 {% if display == "full"%}
@@ -113,9 +117,9 @@
                 <!--utc_waiting -->
                 <b>{{c.verbal_result}}</b>
                 <script type="text/javascript">
-                    window.setTimeout(function () {
-                        location.href = "{% url 'check-solution' entity.key %}";}, "{{c.refresh_timeout}}"); 
-
+                    window.setTimeout(
+                        function () {location.href = "{% url 'check-solution' entity.key %}";},
+                        "{{c.refresh_timeout}}"); 
                 </script>
             {% else %}
                 <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
@@ -186,7 +190,8 @@
                 <b>{{c.verbal_result}}</b>
                 <script type="text/javascript">
                     window.setTimeout(function () {
-                        location.href = "{% url 'check-system-model' entity.key %}";}, "{{c.refresh_timeout}}"); 
+                        location.href = "{% url 'check-system-model' entity.key %}";}, 
+                        "{{c.refresh_timeout}}"); 
 
                 </script>
             {% else %}
