@@ -865,21 +865,23 @@ def check(key):
         assert res.stdout is not None, "Environment Image not found."
 
     # building the docker command
-    # rebuild environment variables suitable inside docker container
-    database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ["ACKREP_DATABASE_PATH"])[-1])
-    data_path = os.path.join("/code", os.path.split(os.environ["ACKREP_DATA_PATH"])[-1])
-
     cmd = [
         "docker",
         "run",
-        "--rm",
+        "--rm"]
+    # rebuild environment variables suitable inside docker container (only for ut case)
+    if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
+        database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
+        data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
+        cmd.extend([
         "-e",
         f"ACKREP_DATABASE_PATH={database_path}",
         "-e",
-        f"ACKREP_DATA_PATH={data_path}",
-        container_name,
-    ]
+        f"ACKREP_DATA_PATH={data_path}"        
+        ])
 
+    cmd.append(container_name)
+    
     if is_solution:
         cmd.extend(["ackrep", "-cs", key])
     elif is_system_model:
