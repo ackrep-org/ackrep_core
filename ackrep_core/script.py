@@ -53,7 +53,7 @@ def main():
     )
     argparser.add_argument(
         "--create-system-model-list-pdf",
-        help="create pdf of all known system models, stored in <root_dir>/local_outputs",
+        help="create pdf of all known system models, stored in <project_dir>/local_outputs/",
         action="store_true",
     )
     argparser.add_argument(
@@ -403,6 +403,7 @@ def create_pdf(arg0: str, exitflag: bool = True):
 def create_system_model_list_pdf(exitflag: bool = True):
     res = system_model_management.create_system_model_list_pdf()
     if res.returncode == 0:
+        print(f"PDF is stored in {core.root_path}/local_outputs/ .")
         print(bgreen("Success."))
     else:
         print(bred("Fail."))
