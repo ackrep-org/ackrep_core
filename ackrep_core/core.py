@@ -51,7 +51,7 @@ from . import util
 
 # initialize logging with default loglevel (might be overwritten by command line option)
 # see https://docs.python.org/3/howto/logging-cookbook.html
-defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
+defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.WARNING)
 logger = logging.getLogger("ackrep_logger")
 FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
 DATEFORMAT = "%H:%M:%S"
@@ -714,7 +714,7 @@ def run_execscript(scriptpath):
     """
     logger.info(f"  ... running exec-script {scriptpath} ... ")
 
-    res = run_command(["python", scriptpath], suppress_output=True, capture_output=True)
+    res = run_command(["python", scriptpath], supress_error_message=True, capture_output=True)
     res.exited = res.returncode
     if res.returncode == 2:
         if res.stdout:
@@ -887,7 +887,7 @@ def check(key):
     # TODO: docker-compose.yml, cant be specified in yml
     container_name = "ackrep_deployment_" + env_name
     cmd = ["docker", "images", "-q", container_name]
-    res = run_command(cmd, suppress_output=True, capture_output=True)
+    res = run_command(cmd, supress_error_message=True, capture_output=True)
     # no local image -> use image from github
     if len(res.stdout) >= 12:  # 12 characters image id + \n
         logger.info("running local image")
@@ -895,7 +895,7 @@ def check(key):
         logger.info("running remote image")
         container_name = "ghcr.io/ackrep-org/" + env_name
         cmd = ["docker", "run", "--rm", container_name, "echo", "hello"]
-        res = run_command(cmd, suppress_output=True, capture_output=True)
+        res = run_command(cmd, supress_error_message=True, capture_output=True)
         if res.returncode != 0:
             logger.error(f"{res.stdout} | {res.stderr}")
             # test for permission problem
@@ -924,6 +924,6 @@ def check(key):
 
     cmd.extend([container_name, "ackrep", "-c", key])
 
-    res = run_command(cmd, suppress_output=True, capture_output=True)
+    res = run_command(cmd, supress_error_message=True, capture_output=True)
 
     return res

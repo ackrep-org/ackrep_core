@@ -468,7 +468,7 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-c", "UXMFA"], suppress_output=True)
+        res = run_command(["ackrep", "-c", "UXMFA"], supress_error_message=True)
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
@@ -497,7 +497,7 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-c", "UKJZI"], suppress_output=True)
+        res = run_command(["ackrep", "-c", "UKJZI"], supress_error_message=True)
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
