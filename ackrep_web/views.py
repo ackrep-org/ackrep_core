@@ -1,6 +1,7 @@
 import time
 from textwrap import dedent as twdd
 import pprint
+from django.db import OperationalError
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.template.response import TemplateResponse
@@ -21,7 +22,7 @@ from ackrep_core.models import ActiveJobs
 from ackrep_web.celery import app
 import subprocess
 from celery.result import AsyncResult
-import sqlite3
+import kombu
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
@@ -155,7 +156,15 @@ class CheckView(EntityDetailView):
         active_job = _get_active_job_by_key(key)
         ## job not yet active -> add to queue
         if active_job == None:
-            res = core.check.delay(key)
+            try:
+                res = core.check.delay(key)
+            except kombu.exceptions.OperationalError as oe:
+                msg = (
+                    f"No connection to broker could be established. "
+                    + f"Did you start rabbit or redis?\nOriginal error message: {type(oe)} {oe}"
+                )
+                assert 1 == 0, msg
+
             _add_job_to_db(key, res.id)
 
         active_job = _get_active_job_by_key(key)
