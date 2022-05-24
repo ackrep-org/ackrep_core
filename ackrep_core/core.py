@@ -51,7 +51,7 @@ from . import util
 
 # initialize logging with default loglevel (might be overwritten by command line option)
 # see https://docs.python.org/3/howto/logging-cookbook.html
-defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.WARNING)
+defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
 logger = logging.getLogger("ackrep_logger")
 FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
 DATEFORMAT = "%H:%M:%S"
@@ -882,14 +882,37 @@ def check(key):
     env_name = get_entity(env_key).name
     logger.info(f"running with environment spec: {env_name}")
 
-    # check if image is built
+    # try to use local docker image (for development)
+    # TODO: the prefix is the project name. defaults to parent directory of
+    # TODO: docker-compose.yml, cant be specified in yml
     container_name = "ackrep_deployment_" + env_name
-    res = run_command(["docker", "images", "-q", container_name], suppress_output=True, capture_output=True)
-    if res.returncode != 0:
-        logger.error(f"{res.stdout} | {res.stderr}")
-        msg = "Permission denied to use host's docker socket. See doc/devdoc/contributing_deployment/troubleshooting"
-        assert "permission denied" in res.stdout, msg
-        assert res.stdout is not None, "Environment Image not found."
+    cmd = ["docker", "images", "-q", container_name]
+    res = run_command(cmd, suppress_output=True, capture_output=True)
+    # no local image -> use image from github
+    if len(res.stdout) >= 12:  # 12 characters image id + \n
+        logger.info("running local image")
+    else:
+        logger.info("running remote image")
+        container_name = "ghcr.io/ackrep-org/" + env_name
+        cmd = ["docker", "run", "--rm", container_name, "echo", "hello"]
+        res = run_command(cmd, suppress_output=True, capture_output=True)
+        if res.returncode != 0:
+            logger.error(f"{res.stdout} | {res.stderr}")
+            # test for permission problem
+            msg = (
+                "Permission denied to use host's docker socket. See doc/devdoc/contributing_deployment/troubleshooting"
+            )
+            assert "permission denied" not in res.stderr, msg
+            # test for incorrect image name
+            msg = (
+                f"Unable to load {container_name}. Check the image name + prefix."
+                + "Check if image can be downloaded from github."
+            )
+            assert "Unable to find" not in res.stderr, msg
+            # still something wrong with docker, but not sure what
+            assert 1 == 0, "This is an uncaught exception."
+        else:
+            assert "hello" in res.stdout, "Make sure image accepts bash commands."
 
     # building the docker command
     cmd = ["docker", "run", "--rm"]
