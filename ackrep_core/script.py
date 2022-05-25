@@ -70,8 +70,8 @@ def main():
     )
     argparser.add_argument(
         "--run-interactive-environment",
-        help="start an interactive session with a docker container of an image of your choice. Image name must be specified",
-        metavar="image_name",
+        help="Start an interactive session with a docker container of an environment image of your choice. Environment key must be specified.",
+        metavar="key",
     )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
@@ -338,7 +338,7 @@ def create_pdf(arg0: str, exitflag: bool = True):
         key = system_model_meta_data["key"]
         entity = core.get_entity(key)
 
-    assert isinstance(entity, models.SystemModel)
+    assert isinstance(entity, models.SystemModel), f"{key} is not a system model key!"
     # IPS()
     res = system_model_management.create_pdf(key=key)
     if res.returncode == 0:
@@ -490,11 +490,15 @@ def prepare_script(arg0):
     print(bgreen("Success."))
 
 
-def run_interactive_environment(image_name):
-    """create transfer direktory, change permissions, start container"""
+def run_interactive_environment(key):
+    """get imagename, create transfer direktory, change permissions, start container"""
     if platform.system() != "Linux":
         msg = f"No support for {platform.system()}"
         raise NotImplementedError(msg)
+    entity = core.get_entities_with_key(key)[0]
+    msg = f"{key} is not an EnvironmentSpecification key."
+    assert isinstance(entity, models.EnvironmentSpecification), msg
+    image_name = "ghcr.io/ackrep-org/" + entity.name
     print("\nRunning Interactive Docker Container. To Exit, press Ctrl+D.\n")
     old_cwd = os.getcwd()
     os.chdir(core.root_path)
