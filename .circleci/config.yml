@@ -7,8 +7,8 @@ jobs: # A basic unit of work in a run
       - image: cimg/python:3.8
         environment: # environment variables for primary container
           SKIP_TEST_CREATE_PDF: "True"
-          # USE_CELERY_BROKER_URL: "True"
-          # USE_CELERY_RESULT_BACKEND: "True"
+          # CI: "True"
+      - image: rabbitmq:3.8.16-management-alpine
     steps: # steps that comprise the `build` job
       - checkout # check out source code to working directory
       - restore_cache:
@@ -26,56 +26,28 @@ jobs: # A basic unit of work in a run
           key: deps1--{{ checksum "requirements.txt" }}--{{ checksum "requirements_celery.txt" }}
           paths:
             - "venv"
-      # - run:
-      #     name: Load Test Data
-      #     command: | 
-      #       cd ../
-      #       git clone https://github.com/ackrep-org/ackrep_data.git
-      #       mv ackrep_data ackrep_data_for_unittests
-      #       cd ackrep_data_for_unittests
-      #       git checkout for_unittests
-      # - run:
-      #     name: Test Core
-      #     command: | 
-      #       . venv/bin/activate
-      #       python manage.py makemigrations
-      #       ackrep --bootstrap-test-db
-      #       python manage.py test --keepdb ackrep_core.test.test_core
+      - run:
+          name: Load Test Data
+          command: | 
+            cd ../
+            git clone https://github.com/ackrep-org/ackrep_data.git
+            mv ackrep_data ackrep_data_for_unittests
+            cd ackrep_data_for_unittests
+            git checkout for_unittests
       - setup_remote_docker:
           version: 20.10.14
           docker_layer_caching: true
-      # - run:
-      #     name: start rabbit
-      #     command: |
-      #       . venv/bin/activate
-      #       echo $DOCKER_HOST
-      #       ping $DOCKER_HOST
-      #       ping localhost
-      #       docker run -d -p 5672:5672 rabbitmq
-      #       ackrep --start-workers
       - run:
-          name: start redis
+          name: Test Web
           command: |
             . venv/bin/activate
-            docker run -p $DOCKER_HOST:$DOCKER_HOST --name redis redis:6.2-alpine
-            ackrep --start-workers
-      - run:
-          name: test
-          command: |
             python manage.py makemigrations
             ackrep --bootstrap-test-db
-            python manage.py test --keepdb ackrep_web.test.test_web:TestCases1
-            python manage.py test --keepdb ackrep_web.test.test_web:TestCases2.test_check_solution
-      # - run:
-      #     name: Test Web
-      #     command: | 
-      #       . venv/bin/activate
-      #       python manage.py makemigrations
-      #       ackrep --bootstrap-test-db
-      #       python manage.py test --keepdb ackrep_web.test.test_web
-            
+            python manage.py test --keepdb ackrep_web.test.test_web
+
 workflows:
   version: 2 
   build_and_test:
     jobs:
       - setup
+

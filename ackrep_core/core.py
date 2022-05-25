@@ -898,6 +898,7 @@ def check(key):
         res = run_command(cmd, supress_error_message=True, capture_output=True)
         if res.returncode != 0:
             logger.error(f"{res.stdout} | {res.stderr}")
+            print(f"{res.stdout} | {res.stderr}")
             # test for permission problem
             msg = (
                 "Permission denied to use host's docker socket. See doc/devdoc/contributing_deployment/troubleshooting"
@@ -910,6 +911,8 @@ def check(key):
             )
             assert "Unable to find" not in res.stderr, msg
             # still something wrong with docker, but not sure what
+            res = run_command(["docker", "container", "ls"])
+            print(res.stderr, res.stdout)
             assert 1 == 0, "This is an uncaught exception."
         else:
             assert "hello" in res.stdout, "Make sure image accepts bash commands."
