@@ -242,12 +242,12 @@ class SearchSparqlView(View):
         # PREFIX P: <{OM.iri}>
         example_query = twdd(
             f"""
-        # example query: select all possible tags
+        # example query: select all possible tags describing ackrep entities
 
         PREFIX P: <https://ackrep.org/draft/ocse-prototype01#>
-        SELECT ?entity
+        SELECT ?tag
         WHERE {{
-          ?entity rdf:type ?type.
+          ?tag rdf:type ?type.
           ?type rdfs:subClassOf* P:OCSE_Entity.
         }}
         """
