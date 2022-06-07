@@ -7,7 +7,7 @@ jobs: # A basic unit of work in a run
       - image: cimg/python:3.8
         environment: # environment variables for primary container
           SKIP_TEST_CREATE_PDF: "True"
-          # CI: "True"
+          CI: "True"
       - image: rabbitmq:3.8.16-management-alpine
     steps: # steps that comprise the `build` job
       - checkout # check out source code to working directory
@@ -34,16 +34,38 @@ jobs: # A basic unit of work in a run
             mv ackrep_data ackrep_data_for_unittests
             cd ackrep_data_for_unittests
             git checkout for_unittests
+            cd ../
+            sudo chown -R 3434:999 ackrep_data_for_unittests
+            sudo chmod -R g+rw ackrep_data_for_unittests
+            ls -n
+            id
+      # - run:
+      #     name: Test Core
+      #     command: | 
+      #       ls
+      #       . venv/bin/activate
+      #       python manage.py makemigrations
+      #       ackrep --bootstrap-test-db
+      #       python manage.py test --keepdb ackrep_core.test.test_core
       - setup_remote_docker:
           version: 20.10.14
           docker_layer_caching: true
+      - run: 
+          name: Copy UT Data to Remote Docker
+          command: |
+            echo 1
+            docker create -v /code/ackrep_data_for_unittests --name dummy alpine:3.4 /bin/true
+            echo 2
+            docker cp /home/circleci/ackrep_data_for_unittests dummy:/code
+            echo 3
+            docker run --volumes-from dummy --entrypoint "/bin/ls" ghcr.io/ackrep-org/default_environment -n ../
       - run:
           name: Test Web
           command: |
             . venv/bin/activate
-            python manage.py makemigrations
-            ackrep --bootstrap-test-db
-            python manage.py test --keepdb ackrep_web.test.test_web
+            # python manage.py makemigrations
+            # ackrep --bootstrap-test-db
+            python manage.py test --keepdb ackrep_web.test.test_web:TestCases2
 
 workflows:
   version: 2 

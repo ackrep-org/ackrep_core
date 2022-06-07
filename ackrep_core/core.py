@@ -51,7 +51,7 @@ from . import util
 
 # initialize logging with default loglevel (might be overwritten by command line option)
 # see https://docs.python.org/3/howto/logging-cookbook.html
-defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.WARNING)
+defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
 logger = logging.getLogger("ackrep_logger")
 FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
 DATEFORMAT = "%H:%M:%S"
@@ -902,29 +902,29 @@ def check(key):
     else:
         logger.info("running remote image")
         container_name = "ghcr.io/ackrep-org/" + env_name
-        cmd = ["docker", "run", "--rm", container_name, "echo", "hello"]
-        res = run_command(cmd, supress_error_message=True, capture_output=True)
-        if res.returncode != 0:
-            logger.error(f"{res.stdout} | {res.stderr}")
-            print(f"{res.stdout} | {res.stderr}")
-            # test for permission problem
-            msg = (
-                "Permission denied to use host's docker socket. See doc/devdoc/contributing_deployment/troubleshooting"
-            )
-            assert "permission denied" not in res.stderr, msg
-            # test for incorrect image name
-            msg = (
-                f"Unable to load {container_name}. Check the image name + prefix."
-                + "Check if image can be downloaded from github."
-            )
-            assert "Unable to find" not in res.stderr, msg
-            # still something wrong with docker, but not sure what
-            res = run_command(["docker", "container", "ls"])
-            print(res.stderr, res.stdout)
-            assert 1 == 0, "This is an uncaught exception."
-        else:
-            assert "hello" in res.stdout, "Make sure container accepts bash commands."
-            cmd = ["docker", "run", "--rm"]
+        # cmd = ["docker", "run", "--rm", container_name, "echo", "hello"]
+        # res = run_command(cmd, supress_error_message=True, capture_output=True)
+        # if res.returncode != 0:
+        #     logger.error(f"{res.stdout} | {res.stderr}")
+        #     print(f"{res.stdout} | {res.stderr}")
+        #     # test for permission problem
+        #     msg = (
+        #         "Permission denied to use host's docker socket. See doc/devdoc/contributing_deployment/troubleshooting"
+        #     )
+        #     assert "permission denied" not in res.stderr, msg
+        #     # test for incorrect image name
+        #     msg = (
+        #         f"Unable to load {container_name}. Check the image name + prefix."
+        #         + "Check if image can be downloaded from github."
+        #     )
+        #     assert "Unable to find" not in res.stderr, msg
+        #     # still something wrong with docker, but not sure what
+        #     res = run_command(["docker", "container", "ls"])
+        #     logger.critical(f"docker container ls {res.stderr}, {res.stdout}")
+        #     assert 1 == 0, "This is an uncaught exception."
+        # else:
+        #     assert "hello" in res.stdout, "Make sure container accepts bash commands."
+        cmd = ["docker", "run", "--rm"]
 
     # building the docker command
     
@@ -935,21 +935,26 @@ def check(key):
         cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"])
         logger.info(f"ACKREP_DATABASE_PATH {database_path}")
         logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
-
-    # data repo address on host via environment vaiable,
-    # especially necessary when starting env container out of celery container
-    host_address = os.environ.get("DATA_REPO_HOST_ADDRESS")
-    # env variable will be empty when running local server without docker
-    if host_address is None:
-        logger.info(f"env var DATA_REPO_HOST_ADDRESS is not set. Setting it to default {data_path}")
-        host_address = data_path
-    logger.info(f"data host address: {host_address}")
-    assert host_address is not None, "env var DATA_REPO_HOST_ADDRESS is not set."
-    target = os.path.split(host_address)[1]
-    assert "ackrep_data" in target, f"{target} is not a valid volume destination"
-    cmd.extend(["-v", f"{host_address}:/code/{target}:Z", container_name, "ackrep", "-c", key])
+    # nominal case
+    if os.environ.get("CI") != "true":
+        # data repo address on host via environment vaiable,
+        # especially necessary when starting env container out of celery container
+        host_address = os.environ.get("DATA_REPO_HOST_ADDRESS")
+        # env variable will be empty when running local server without docker
+        if host_address is None:
+            logger.info(f"env var DATA_REPO_HOST_ADDRESS is not set. Setting it to default {data_path}")
+            host_address = data_path
+        logger.info(f"data host address: {host_address}")
+        assert host_address is not None, "env var DATA_REPO_HOST_ADDRESS is not set."
+        target = os.path.split(host_address)[1]
+        assert "ackrep_data" in target, f"{target} is not a valid volume destination"
+        cmd.extend(["-v", f"{host_address}:/code/{target}:Z", container_name, "ackrep", "-c", key])
+    # circleci unittest case
+    else:
+        cmd.extend(["--volumes-from", "dummy", container_name, "ackrep", "-c", key])
 
     logger.info(f"docker command: {cmd}")
     res = run_command(cmd, supress_error_message=True, capture_output=True)
-
+    if res.returncode != 0:
+        logger.error(f"{res.stdout} | {res.stderr}")
     return res
