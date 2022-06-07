@@ -437,7 +437,7 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
         # example: C:\dev\ackrep\ackrep_data\problem_solutions\solution1 --> ackrep_data\problem_solutions\solution1
         base_path_rel = os.path.relpath(base_path_abs, root_path)
         e.base_path = base_path_rel
-        logger.debug(e.key, e.base_path)
+        logger.debug((e.key, e.base_path))
 
         duplicates = get_entities_with_key(e.key)
         if (
@@ -502,7 +502,7 @@ def get_data_files(base_path, endswith_str=None, create_media_links=False):
             # would not renew the link and thus show the old file
             if os.path.exists(abs_path_link):
                 os.unlink(abs_path_link)
-            os.link(abs_path, abs_path_link)
+            os.symlink(abs_path, abs_path_link)
             result.append(f"{settings.MEDIA_URL}{link}")
 
         return result
@@ -686,12 +686,14 @@ def create_execscript_from_template(entity: models.GenericEntity, c: Container, 
 
     assert not entity.base_path.startswith(os.path.sep)
 
-    # determine whether the entity comes from ackrep_data or ackrep_data_for_unittests ore ackrep_data_import
+    # determine whether the entity comes from ackrep_data or ackrep_data_for_unittests or ackrep_data_import
     data_repo_path = pathlib.Path(entity.base_path).parts[0]
     if scriptpath is None:
         scriptpath = os.path.join(root_path, data_repo_path, scriptname)
     else:
         scriptpath = os.path.join(scriptpath, scriptname)
+
+    logger.info(f"execscript-path: {scriptpath}")
 
     if entity_type == models.ProblemSolution:
         render_template("templates/execscript.py.template", context, target_path=scriptpath)
@@ -888,9 +890,10 @@ def check(key):
     container_name = "ackrep_deployment_" + env_name
     cmd = ["docker", "images", "-q", container_name]
     res = run_command(cmd, supress_error_message=True, capture_output=True)
-    # no local image -> use image from github
     if len(res.stdout) >= 12:  # 12 characters image id + \n
         logger.info("running local image")
+        container_name = env_name  # since docker-compose doesnt use prefix
+    # no local image -> use image from github
     else:
         logger.info("running remote image")
         container_name = "ghcr.io/ackrep-org/" + env_name
@@ -915,18 +918,35 @@ def check(key):
             print(res.stderr, res.stdout)
             assert 1 == 0, "This is an uncaught exception."
         else:
-            assert "hello" in res.stdout, "Make sure image accepts bash commands."
+            assert "hello" in res.stdout, "Make sure container accepts bash commands."
 
     # building the docker command
-    cmd = ["docker", "run", "--rm"]
+
+    cmd = ["docker-compose", "run", "--rm"]
     # rebuild environment variables suitable inside docker container (only for ut case)
     if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
         database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
-        data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
-        cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={data_path}"])
+        ackrep_data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
+        cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"])
+        logger.info(f"ACKREP_DATABASE_PATH {database_path}")
+        logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
 
-    cmd.extend([container_name, "ackrep", "-c", key])
+    # data repo address on host via environment vaiable,
+    # especially necessary when starting env container out of celery container
+    host_address = os.environ.get("DATA_REPO_HOST_ADDRESS")
+    # env variable will be empty when running local server without docker
+    if host_address is None:
+        logger.info(f"env var DATA_REPO_HOST_ADDRESS is not set. Setting it to default {data_path}")
+        host_address = data_path
+    logger.info(f"data host address: {host_address}")
+    assert host_address is not None, "env var DATA_REPO_HOST_ADDRESS is not set."
+    target = os.path.split(host_address)[1]
+    assert "ackrep_data" in target, f"{target} is not a valid volume destination"
+    cmd.extend(["-v", f"{host_address}:/code/{target}:Z", container_name, "ackrep", "-c", key])
 
+    save_cwd = os.getcwd()
+    os.chdir("../ackrep_deployment")
+    logger.info(f"docker command: {cmd}")
     res = run_command(cmd, supress_error_message=True, capture_output=True)
-
+    os.chdir(save_cwd)
     return res
