@@ -890,9 +890,14 @@ def check(key):
     container_name = "ackrep_deployment_" + env_name
     cmd = ["docker", "images", "-q", container_name]
     res = run_command(cmd, supress_error_message=True, capture_output=True)
+    logger.info(f"local image id: {res.stdout}")
     if len(res.stdout) >= 12:  # 12 characters image id + \n
         logger.info("running local image")
         container_name = env_name  # since docker-compose doesnt use prefix
+
+        assert os.path.isdir("../ackrep_deployment"), "docker-compose file not found"
+        cmd = ["docker-compose", "--file", "../ackrep_deployment/docker-compose.yml", "run", "--rm"]
+
     # no local image -> use image from github
     else:
         logger.info("running remote image")
@@ -919,10 +924,10 @@ def check(key):
             assert 1 == 0, "This is an uncaught exception."
         else:
             assert "hello" in res.stdout, "Make sure container accepts bash commands."
+            cmd = ["docker", "run", "--rm"]
 
     # building the docker command
-
-    cmd = ["docker-compose", "run", "--rm"]
+    
     # rebuild environment variables suitable inside docker container (only for ut case)
     if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
         database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
@@ -944,9 +949,7 @@ def check(key):
     assert "ackrep_data" in target, f"{target} is not a valid volume destination"
     cmd.extend(["-v", f"{host_address}:/code/{target}:Z", container_name, "ackrep", "-c", key])
 
-    save_cwd = os.getcwd()
-    os.chdir("../ackrep_deployment")
     logger.info(f"docker command: {cmd}")
     res = run_command(cmd, supress_error_message=True, capture_output=True)
-    os.chdir(save_cwd)
+
     return res
