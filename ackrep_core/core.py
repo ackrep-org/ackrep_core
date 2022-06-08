@@ -887,8 +887,8 @@ def check(key):
     # try to use local docker image (for development)
     # TODO: the prefix is the project name. defaults to parent directory of
     # TODO: docker-compose.yml, cant be specified in yml
-    container_name = "ackrep_deployment_" + env_name
-    cmd = ["docker", "images", "-q", container_name]
+    image_name = "ackrep_deployment_" + env_name
+    cmd = ["docker", "images", "-q", image_name]
     res = run_command(cmd, supress_error_message=True, capture_output=True)
     logger.info(f"local image id: {res.stdout}")
     if len(res.stdout) >= 12:  # 12 characters image id + \n
@@ -902,39 +902,22 @@ def check(key):
     else:
         logger.info("running remote image")
         container_name = "ghcr.io/ackrep-org/" + env_name
-        # cmd = ["docker", "run", "--rm", container_name, "echo", "hello"]
-        # res = run_command(cmd, supress_error_message=True, capture_output=True)
-        # if res.returncode != 0:
-        #     logger.error(f"{res.stdout} | {res.stderr}")
-        #     print(f"{res.stdout} | {res.stderr}")
-        #     # test for permission problem
-        #     msg = (
-        #         "Permission denied to use host's docker socket. See doc/devdoc/contributing_deployment/troubleshooting"
-        #     )
-        #     assert "permission denied" not in res.stderr, msg
-        #     # test for incorrect image name
-        #     msg = (
-        #         f"Unable to load {container_name}. Check the image name + prefix."
-        #         + "Check if image can be downloaded from github."
-        #     )
-        #     assert "Unable to find" not in res.stderr, msg
-        #     # still something wrong with docker, but not sure what
-        #     res = run_command(["docker", "container", "ls"])
-        #     logger.critical(f"docker container ls {res.stderr}, {res.stdout}")
-        #     assert 1 == 0, "This is an uncaught exception."
-        # else:
-        #     assert "hello" in res.stdout, "Make sure container accepts bash commands."
         cmd = ["docker", "run", "--rm"]
 
     # building the docker command
     
-    # rebuild environment variables suitable inside docker container (only for ut case)
+    # rebuild environment variables suitable inside docker container
     if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
         database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
         ackrep_data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
         cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"])
-        logger.info(f"ACKREP_DATABASE_PATH {database_path}")
-        logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
+    else: 
+        database_path = os.path.join("/code/ackrep_core", "db.sqlite3")
+        ackrep_data_path = os.path.join("/code", data_path)
+        cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"])
+    logger.info(f"ACKREP_DATABASE_PATH {database_path}")
+    logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
+
     # nominal case
     if os.environ.get("CI") != "true":
         # data repo address on host via environment vaiable,
@@ -948,9 +931,11 @@ def check(key):
         assert host_address is not None, "env var DATA_REPO_HOST_ADDRESS is not set."
         target = os.path.split(host_address)[1]
         assert "ackrep_data" in target, f"{target} is not a valid volume destination"
-        cmd.extend(["-v", f"{host_address}:/code/{target}:Z", container_name, "ackrep", "-c", key])
+        cmd.extend(["-v", f"{host_address}:/code/{target}", container_name, "ackrep", "-c", key])
     # circleci unittest case
     else:
+        # volumes cant be mounted in cirlceci, this is the workaround, 
+        # see https://circleci.com/docs/2.0/building-docker-images/#mounting-folders
         cmd.extend(["--volumes-from", "dummy", container_name, "ackrep", "-c", key])
 
     logger.info(f"docker command: {cmd}")

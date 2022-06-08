@@ -39,14 +39,14 @@ jobs: # A basic unit of work in a run
             sudo chmod -R g+rw ackrep_data_for_unittests
             ls -n
             id
-      # - run:
-      #     name: Test Core
-      #     command: | 
-      #       ls
-      #       . venv/bin/activate
-      #       python manage.py makemigrations
-      #       ackrep --bootstrap-test-db
-      #       python manage.py test --keepdb ackrep_core.test.test_core
+      - run:
+          name: Test Core
+          command: | 
+            ls
+            . venv/bin/activate
+            python manage.py makemigrations
+            ackrep --bootstrap-test-db
+            python manage.py test --keepdb ackrep_core.test.test_core
       - setup_remote_docker:
           version: 20.10.14
           docker_layer_caching: true
