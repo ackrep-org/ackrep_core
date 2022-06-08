@@ -120,7 +120,7 @@ class TestCases2(SimpleTestCase):
         while "utc_waiting" in response.content.decode("utf8"):
             time.sleep(1)
             response = self.client.get(url)
-        core.logger.info(response.content.decode("utf8"))
+
         self.assertContains(response, "Success")
 
         if os.environ.get("CI") != "true":
@@ -146,10 +146,9 @@ class TestCases2(SimpleTestCase):
             time.sleep(1)
             response = self.client.get(url)
 
-        core.logger.info(response.content.decode("utf8"))
         self.assertContains(response, "Success")
 
-        if os.environ.get("CI") != "true": #!
+        if os.environ.get("CI") != "true":  #!
             self.assertContains(response, "utc_img_url")
 
             regex = re.compile("utc_img_url:<(.*?)>")
@@ -167,7 +166,7 @@ class TestCases2(SimpleTestCase):
 
         # prevent expected error logs from showing during test
         loglevel = core.logger.level
-        # core.logger.setLevel(50)
+        core.logger.setLevel(50)
 
         # first: check if debug message shows when it should
         settings.DEBUG = True
@@ -175,7 +174,7 @@ class TestCases2(SimpleTestCase):
         while "utc_waiting" in response.content.decode("utf8"):
             time.sleep(1)
             response = self.client.get(url)
-        core.logger.info(response.content.decode("utf8"))
+
         expected_error_infos = ["utc_debug", "SyntaxError", "parameters.py", "line"]
         for info in expected_error_infos:
             self.assertContains(response, info)
@@ -187,7 +186,7 @@ class TestCases2(SimpleTestCase):
         while "utc_waiting" in response.content.decode("utf8"):
             time.sleep(1)
             response = self.client.get(url)
-        core.logger.info(response.content.decode("utf8"))
+
         expected_error_infos = ["utc_debug", "SyntaxError"]
         for info in expected_error_infos:
             self.assertNotContains(response, info)

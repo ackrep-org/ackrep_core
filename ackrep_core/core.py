@@ -51,7 +51,7 @@ from . import util
 
 # initialize logging with default loglevel (might be overwritten by command line option)
 # see https://docs.python.org/3/howto/logging-cookbook.html
-defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
+defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.WARNING)
 logger = logging.getLogger("ackrep_logger")
 FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
 DATEFORMAT = "%H:%M:%S"
@@ -905,23 +905,25 @@ def check(key):
         cmd = ["docker", "run", "--rm"]
 
     # building the docker command
-    
+
     # rebuild environment variables suitable inside docker container
+    # env var is set by unittest
     if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
         database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
         ackrep_data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
         cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"])
-    else: 
+    # nominal case
+    else:
         database_path = os.path.join("/code/ackrep_core", "db.sqlite3")
         ackrep_data_path = os.path.join("/code", data_path)
         cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"])
     logger.info(f"ACKREP_DATABASE_PATH {database_path}")
     logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
 
+    # data repo address on host via environment vaiable,
+    # especially necessary when starting env container out of celery container
     # nominal case
     if os.environ.get("CI") != "true":
-        # data repo address on host via environment vaiable,
-        # especially necessary when starting env container out of celery container
         host_address = os.environ.get("DATA_REPO_HOST_ADDRESS")
         # env variable will be empty when running local server without docker
         if host_address is None:
@@ -934,7 +936,7 @@ def check(key):
         cmd.extend(["-v", f"{host_address}:/code/{target}", container_name, "ackrep", "-c", key])
     # circleci unittest case
     else:
-        # volumes cant be mounted in cirlceci, this is the workaround, 
+        # volumes cant be mounted in cirlceci, this is the workaround,
         # see https://circleci.com/docs/2.0/building-docker-images/#mounting-folders
         cmd.extend(["--volumes-from", "dummy", container_name, "ackrep", "-c", key])
 
