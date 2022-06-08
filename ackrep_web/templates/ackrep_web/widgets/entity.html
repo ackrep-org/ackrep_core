@@ -36,6 +36,7 @@
     //   localStorage.removeItem('status');
     }
 </script>
+{% if display == "full"%}
 <script type="text/javascript">
     window.onload = function(){
         document.getElementById("javascript_msg").style.display = "none";
@@ -47,7 +48,6 @@
         localStorage.setItem("scroll_y", scrollY)
     }
 </script>
-{% if display == "full"%}
     <span class="javascript_prompt" id="javascript_msg">
         <b>You currently have javascript disabled. Some features will be unavailable. Please consider enabling javascript.</b>
     </span>

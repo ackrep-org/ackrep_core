@@ -211,7 +211,7 @@ span#content {
     display:none;
 }
 input#show:checked ~ span#content {
-  display:block;
+    display:block;
 }
 
 input#hide:checked ~ span#content {
@@ -225,4 +225,24 @@ input#hide:checked ~ span#content {
 .javascript_prompt{
     font-size: large;
     color:hsl(0, 98%, 35%);
+}
+
+.collapsible {
+    background-color: #777;
+    color: white;
+    cursor: pointer;
+    padding: 18px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 15px;
+}
+
+.active, .collapsible:hover {
+    background-color: #555;
+}
+
+.content {
+    display: none;
 }
