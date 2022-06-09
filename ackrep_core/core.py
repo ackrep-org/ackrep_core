@@ -439,19 +439,12 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
         e.base_path = base_path_rel
         logger.debug((e.key, e.base_path))
 
-        duplicates = get_entities_with_key(e.key)
-        if (
-            merge_request is None
-            or not duplicates
-            or all([d.status() == models.MergeRequest.STATUS_OPEN for d in duplicates])
-        ):
-            # try to import entity
-            if duplicates:
-                raise DuplicateKeyError(e.key)
+        # check for duplicate keys
+        get_entity(e.key, raise_error_on_empty=False)
 
-            # store to db
-            e.save()
-            entity_list.append(e)
+        # store to db
+        e.save()
+        entity_list.append(e)
 
     logger.info("Added %d new entities to DB" % (len(entity_list)))
     return entity_list
@@ -543,30 +536,6 @@ def make_method_build(method_package, accept_existing=True):
     return full_build_path
 
 
-# TODO: merge with `get_entity_dict_from_db`
-def get_entities_with_key(key, raise_error_on_empty=False):
-    """
-    get all entities in the database that have a specific key
-    """
-    entity_types = model_utils.get_entity_types()
-    entities_with_key = []
-
-    for et in entity_types:
-        entities_with_key += list(et.objects.filter(key=key))
-
-    if raise_error_on_empty and not entities_with_key:
-        n = len(model_utils.all_entities())
-
-        msg = (
-            f"No entity with key {key} could be found among the {n} entities in database. "
-            f"Make sure the database was correctly initialized.\n`dbname`='{db_name}'\n\n"
-            "If this occurs in a unit test, see devdocs for details."
-        )
-        raise KeyError(msg)
-
-    return entities_with_key
-
-
 def check_generic(key: str):
     """create entity and context, create execscript, run execscript.
     This is the successor of check_solution and check_system_model
@@ -577,15 +546,15 @@ def check_generic(key: str):
     Returns:
         CompletedProcess: result of execscript
     """
-    entity, c = create_entity(key)
+    entity, c = get_entity_context(key)
     scriptpath = create_execscript_from_template(entity, c)
     res = run_execscript(scriptpath)
 
     return res
 
 
-def create_entity(key: str):
-    """create entity and build context based on key
+def get_entity_context(key: str):
+    """get entity and build context based on key
 
     Args:
         key (str): entity key
@@ -839,7 +808,7 @@ def print_entity_info(key: str) -> None:
 
     :param key:    key of the respective entity
     """
-    (entity,) = get_entities_with_key(key, raise_error_on_empty=True)
+    entity = get_entity(key)
 
     # this uses print and not logging because the user expects this output independently
     # from loglevel

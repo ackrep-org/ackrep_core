@@ -180,8 +180,8 @@ def main():
         metadatapath = args.prepare_script
         prepare_script(metadatapath)
     elif args.run_interactive_environment:
-        image_name = args.run_interactive_environment
-        run_interactive_environment(image_name)
+        env_key = args.run_interactive_environment
+        run_interactive_environment(env_key)
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -240,16 +240,7 @@ def check(arg0: str, exitflag: bool = True):
     :return:            container of subprocess.run (if exitflag == False)
     """
 
-    try:
-        entity = core.get_entities_with_key(arg0)[0]
-        key = arg0
-    except IndexError:
-        metadatapath = arg0
-        if not metadatapath.endswith("metadata.yml"):
-            metadatapath = os.path.join(metadatapath, "metadata.yml")
-        meta_data = core.get_metadata_from_file(metadatapath)
-        key = meta_data["key"]
-        entity = core.get_entity(key)
+    entity, key = get_entity_and_key(arg0)
 
     assert isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel)
 
@@ -280,7 +271,7 @@ def get_metadata_path_from_key(arg0: str, absflag: bool = True, exitflag: bool =
     :return:            container of subprocess.run (if exitflag == False)
     """
 
-    entity = core.get_entities_with_key(arg0, raise_error_on_empty=True)[0]
+    entity = core.get_entity(arg0)
 
     path = os.path.join(entity.base_path, "metadata.yml")
     if absflag:
@@ -302,16 +293,7 @@ def update_parameter_tex(arg0: str, exitflag: bool = True):
     :return:            container of subprocess.run (if exitflag == False)
     """
 
-    try:
-        entity = core.get_entities_with_key(arg0)[0]
-        key = arg0
-    except IndexError:
-        metadatapath = arg0
-        if not metadatapath.endswith("metadata.yml"):
-            metadatapath = os.path.join(metadatapath, "metadata.yml")
-        system_model_meta_data = core.get_metadata_from_file(metadatapath)
-        key = system_model_meta_data["key"]
-        entity = core.get_entity(key)
+    entity, key = get_entity_and_key(arg0)
 
     assert isinstance(entity, models.SystemModel)
     # IPS()
@@ -327,16 +309,7 @@ def create_pdf(arg0: str, exitflag: bool = True):
     :return:            container of subprocess.run (if exitflag == False)
     """
 
-    try:
-        entity = core.get_entities_with_key(arg0)[0]
-        key = arg0
-    except IndexError:
-        metadatapath = arg0
-        if not metadatapath.endswith("metadata.yml"):
-            metadatapath = os.path.join(metadatapath, "metadata.yml")
-        system_model_meta_data = core.get_metadata_from_file(metadatapath)
-        key = system_model_meta_data["key"]
-        entity = core.get_entity(key)
+    entity, key = get_entity_and_key(arg0)
 
     assert isinstance(entity, models.SystemModel), f"{key} is not a system model key!"
     # IPS()
@@ -472,18 +445,14 @@ def start_workers():
 
 
 def prepare_script(arg0):
-    try:
-        entity = core.get_entities_with_key(arg0)[0]
-        key = arg0
-    except IndexError:
-        metadatapath = arg0
-        if not metadatapath.endswith("metadata.yml"):
-            metadatapath = os.path.join(metadatapath, "metadata.yml")
-        system_model_meta_data = core.get_metadata_from_file(metadatapath)
-        key = system_model_meta_data["key"]
-        entity = core.get_entity(key)
+    """prepare exexscript and place it in transfer folder
 
-    entity, c = core.create_entity(key)
+    Args:
+        arg0 (str): entity key or metadata path
+    """
+    _, key = get_entity_and_key(arg0)
+
+    entity, c = core.get_entity_context(key)
     scriptpath = "/ackrep_transfer"
     core.create_execscript_from_template(entity, c, scriptpath=scriptpath)
 
@@ -495,7 +464,8 @@ def run_interactive_environment(key):
     if platform.system() != "Linux":
         msg = f"No support for {platform.system()}"
         raise NotImplementedError(msg)
-    entity = core.get_entities_with_key(key)[0]
+
+    entity = core.get_entity(key)
     msg = f"{key} is not an EnvironmentSpecification key."
     assert isinstance(entity, models.EnvironmentSpecification), msg
     image_name = "ghcr.io/ackrep-org/" + entity.name
@@ -511,3 +481,25 @@ def run_interactive_environment(key):
     vol_container_path = "/" + transfer_folder_name
     vol_mapping = f"{vol_host_path}:{vol_container_path}"
     res = subprocess.run(["docker", "run", "-ti", "-v", vol_mapping, "-w", "/", image_name])
+
+
+def get_entity_and_key(arg0):
+    """return entity and key for a given key or metadata path
+
+    Args:
+        arg0 (str): entity key or metadata path
+
+    Returns:
+        GenericEntity, str: entity, key
+    """
+    if len(arg0) == 5:
+        entity = core.get_entity(arg0)
+        key = arg0
+    else:
+        metadatapath = arg0
+        if not metadatapath.endswith("metadata.yml"):
+            metadatapath = os.path.join(metadatapath, "metadata.yml")
+        meta_data = core.get_metadata_from_file(metadatapath)
+        key = meta_data["key"]
+        entity = core.get_entity(key)
+    return entity, key
