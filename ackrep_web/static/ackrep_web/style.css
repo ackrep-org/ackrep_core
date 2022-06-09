@@ -43,7 +43,7 @@ footer {
 }
 
 /*style the result of check-solution (success or fail)*/
-.cs_result {
+.result {
 
     font-size: 10pt;
     padding-left:3px;
@@ -54,14 +54,14 @@ footer {
     border: solid 1px;
     border-color:rgb(77, 62, 62);
 }
-.cs_inaccurate {
+.inaccurate {
     color:hsl(34, 90%, 45%);
 }
-.cs_success {
+.success {
     color:hsl(120, 60%, 30%);
 }
 
-.cs_fail {
+.fail {
     color:hsl(0, 90%, 45%);
 }
 
@@ -211,7 +211,7 @@ span#content {
     display:none;
 }
 input#show:checked ~ span#content {
-  display:block;
+    display:block;
 }
 
 input#hide:checked ~ span#content {
@@ -220,4 +220,29 @@ input#hide:checked ~ span#content {
 
 .fake_button{
     color:hsl(236, 100%, 50%);
+}
+
+.javascript_prompt{
+    font-size: large;
+    color:hsl(0, 98%, 35%);
+}
+
+.collapsible {
+    background-color: #777;
+    color: white;
+    cursor: pointer;
+    padding: 18px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 15px;
+}
+
+.active, .collapsible:hover {
+    background-color: #555;
+}
+
+.content {
+    display: block;
 }

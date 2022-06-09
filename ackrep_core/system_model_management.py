@@ -109,7 +109,6 @@ class GenericModel:
         # Input function
         self.uu_func = None
 
-        
         try:
             self.params.get_default_parameters()
         except AttributeError:
@@ -131,7 +130,9 @@ class GenericModel:
         if self.u_dim == 0:
             self.set_input_func(self.uu_autonomous_func())
         else:
-            assert hasattr(self, "uu_default_func"), f"Your system has an input dimension of {self.u_dim} but no methode 'uu_default_func'."
+            assert hasattr(
+                self, "uu_default_func"
+            ), f"Your system has an input dimension of {self.u_dim} but no methode 'uu_default_func'."
             self.set_input_func(self.uu_default_func())
             if u_func is not None:
                 self.set_input_func(u_func)
@@ -175,9 +176,10 @@ class GenericModel:
 
     def uu_autonomous_func(self):
         """define a input function for autonomous systems"""
-        def uu_rhs(t, xx_nv):            
+
+        def uu_rhs(t, xx_nv):
             return []
-        
+
         return uu_rhs
 
     # ----------- SET STATE VECTOR DIMENSION ---------- #
