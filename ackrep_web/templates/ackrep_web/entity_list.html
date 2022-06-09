@@ -13,11 +13,13 @@
                 {% include "ackrep_web/widgets/entity.html" with entity=e c=c display="short" only %}
             {% endfor %}
         </div>
+
         <br>
     {% endif %}
 {% endfor %}
 
 <br> <a href="/">Go back to main page.</a>
+
 
 <script>
     var coll = document.getElementsByClassName("collapsible");
@@ -34,6 +36,13 @@
         }
       });
     }
-    </script>
+</script>
+<script>
+  var coll = document.getElementsByClassName("collapsible");
+  var i;
+  for (i = 0; i < coll.length; i++) {
+    coll[i].nextElementSibling.style.display = "none";
+  }
+</script>
 
 {% endblock  %}

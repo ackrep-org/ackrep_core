@@ -244,5 +244,5 @@ input#hide:checked ~ span#content {
 }
 
 .content {
-    display: none;
+    display: block;
 }

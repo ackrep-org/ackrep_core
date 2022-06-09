@@ -1,28 +1,3 @@
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.61.0/lib/codemirror.min.css">
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.61.0/lib/codemirror.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.61.0/mode/python/python.min.js"></script>
-<script type="text/javascript">
-    window.onload = function(){
-        for (var i = 1; i < 4; i++){
-            var codeElement = document.getElementById("python_code_"+ String(i));
-            var code = codeElement.innerText;
-        
-            codeElement.innerHTML = "";
-        
-            var codeMirror = CodeMirror(
-            codeElement,
-            {
-                value: code,
-                mode: "python",
-                theme: "default",
-                lineNumbers: false,
-                readOnly: true
-            }
-            );
-        }
-    };
-</script>
 <script>          
     function setDefaultValue(id)
     {
@@ -39,7 +14,6 @@
 {% if display == "full"%}
 <script type="text/javascript">
     window.onload = function(){
-        document.getElementById("javascript_msg").style.display = "none";
         var valId=localStorage.getItem('status'); 
         document.getElementById(valId).checked = true;
         scrollTo(0, localStorage.getItem("scroll_y"))
@@ -48,9 +22,7 @@
         localStorage.setItem("scroll_y", scrollY)
     }
 </script>
-    <span class="javascript_prompt" id="javascript_msg">
-        <b>You currently have javascript disabled. Some features will be unavailable. Please consider enabling javascript.</b>
-    </span>
+
 {% endif %}
 
 <div class="entity">
