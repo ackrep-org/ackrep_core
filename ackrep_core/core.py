@@ -841,7 +841,7 @@ def check(key):
     entity = get_entity(key)
     is_solution = isinstance(entity, models.ProblemSolution)
     is_system_model = isinstance(entity, models.SystemModel)
-    assert is_solution or is_system_model, f"key {key} is neither solution nor system model. Unsure what to do."
+    assert is_solution or is_system_model, f"key {key} is of neither solution nor system model. Unsure what to do."
 
     default_env_key = "YJBOX"
 
@@ -914,3 +914,9 @@ def check(key):
     if res.returncode != 0:
         logger.error(f"{res.stdout} | {res.stderr}")
     return res
+
+""" 
+for debugging containers:
+docker-compose run --rm -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data default_environment bash
+
+"""

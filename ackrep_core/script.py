@@ -27,7 +27,15 @@ def main():
         "-c",
         "--check",
         metavar="metadatafile",
-        help="check solution or system model (specified by path to metadata file or key)",
+        help="check solution or system model (specified by path to metadata file or key)" +
+            "using the locally installed packages",
+    )
+    argparser.add_argument(
+        "-cwd",
+        "--check-with-docker",
+        metavar="metadatafile",
+        help="check solution or system model (specified by path to metadata file or key)"+
+            "using correct environment specification (docker)",
     )
     argparser.add_argument(
         "--check-all-solutions", help="check all solutions (may take some time)", action="store_true"
@@ -130,6 +138,9 @@ def main():
     elif args.check:
         metadatapath = args.check
         check(metadatapath)
+    elif args.check_with_docker:
+        metadatapath = args.check_with_docker
+        check_with_docker(metadatapath)
     elif args.check_all_solutions:
         check_all_solutions()
     elif args.check_all_system_models:
@@ -213,9 +224,16 @@ def check_all_solutions():
 
     returncodes = []
     for ps in models.ProblemSolution.objects.all():
-        res = check(ps.key, exitflag=False)
+        # res = check(ps.key, exitflag=False)
+
+        res = check_with_docker(ps.key)
         returncodes.append(res.returncode)
         print("---")
+
+    if returncodes == 0:
+        print(bgreen("All checks successfull."))
+    else:
+        print(bred("Some check failed."))
 
     exit(sum(returncodes))
 
@@ -224,9 +242,18 @@ def check_all_system_models():
 
     returncodes = []
     for sm in models.SystemModel.objects.all():
-        res = check(sm.key, exitflag=False)
+        # res = check(sm.key, exitflag=False)
+        if sm.key == "YHS5B":
+            print("skipping mmc!")
+            continue
+        res = check_with_docker(sm.key)
         returncodes.append(res.returncode)
         print("---")
+
+    if returncodes == 0:
+        print(bgreen("All checks successfull."))
+    else:
+        print(bred("Some check failed."))
 
     exit(sum(returncodes))
 
@@ -246,6 +273,35 @@ def check(arg0: str, exitflag: bool = True):
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
     res = core.check_generic(key=key)
+
+    if res.returncode == 0:
+        print(bgreen("Success."))
+    elif res.returncode == 2:
+        print(yellow("Inaccurate."))
+    else:
+        print(bred("Fail."))
+
+    if exitflag:
+        exit(res.returncode)
+    else:
+        return res
+
+
+def check_with_docker(arg0: str, exitflag: bool = True):
+    """run the correct environment specification
+
+    :param arg0:        either an entity key or the path to the respective metadata.yml
+    :param exitflag:    determine whether the program should exit at the end of this function
+
+    :return:            container of subprocess.run (if exitflag == False)
+    """
+
+    entity, key = get_entity_and_key(arg0)
+
+    assert isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel)
+
+    print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
+    res = core.check(key=key)
 
     if res.returncode == 0:
         print(bgreen("Success."))
