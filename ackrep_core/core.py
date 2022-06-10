@@ -1,4 +1,3 @@
-from cgitb import strong
 import secrets
 import yaml
 import os, sys
@@ -51,7 +50,7 @@ from . import util
 
 # initialize logging with default loglevel (might be overwritten by command line option)
 # see https://docs.python.org/3/howto/logging-cookbook.html
-defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.WARNING)
+defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
 logger = logging.getLogger("ackrep_logger")
 FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
 DATEFORMAT = "%H:%M:%S"
@@ -878,11 +877,15 @@ def check(key):
     # rebuild environment variables suitable inside docker container
     # env var is set by unittest
     if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
+        msg = f'env variables set: ACKREP_DATABASE_PATH={os.environ.get("ACKREP_DATABASE_PATH")}' + \
+            'ACKREP_DATA_PATH=os.environ.get("ACKREP_DATA_PATH")'
+        logger.info(msg)
         database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
         ackrep_data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
         cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"])
     # nominal case
     else:
+        logger.info(f"env var ACKREP_DATABASE_PATH, ACKREP_DATA_PATH no set, using defaults: db.sqlite3 and {data_path}")
         database_path = os.path.join("/code/ackrep_core", "db.sqlite3")
         ackrep_data_path = os.path.join("/code", data_path)
         cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"])
