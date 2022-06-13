@@ -1,28 +1,29 @@
+<script>          
+    function setDefaultValue(id)
+    {
+      localStorage.setItem('status', id);
+    }
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.61.0/lib/codemirror.min.css">
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.61.0/lib/codemirror.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.61.0/mode/python/python.min.js"></script>
+    function getDefaultValue()
+    { 
+      var valId=localStorage.getItem('status'); 
+      document.getElementById("valId").checked = true;
+    //   localStorage.removeItem('status');
+    }
+</script>
+{% if display == "full"%}
 <script type="text/javascript">
     window.onload = function(){
-        for (var i = 1; i < 4; i++){
-            var codeElement = document.getElementById("python_code_"+ String(i));
-            var code = codeElement.innerText;
-        
-            codeElement.innerHTML = "";
-        
-            var codeMirror = CodeMirror(
-            codeElement,
-            {
-                value: code,
-                mode: "python",
-                theme: "default",
-                lineNumbers: false,
-                readOnly: true
-            }
-            );
-        }
-    };
+        var valId=localStorage.getItem('status'); 
+        document.getElementById(valId).checked = true;
+        scrollTo(0, localStorage.getItem("scroll_y"))
+    }
+    window.onbeforeunload = function() {
+        localStorage.setItem("scroll_y", scrollY)
+    }
 </script>
+
+{% endif %}
 
 <div class="entity">
     <b>Name:</b> {{entity.name}}
@@ -38,12 +39,12 @@
     [<label for="show">
         <span class="fake_button">Show</span>
     </label>
-    <input type=radio id="show" name="group">
+    <input type=radio id="show" name="group" value="show" onchange="setDefaultValue('show');">
     /
     <label for="hide">
         <span class="fake_button"> Hide</span> 
     </label>    
-    <input type=radio id="hide" name="group">
+    <input type=radio id="hide" name="group" value="hide" onchange="setDefaultValue('hide');">
     ]
     <span id="content">
         {% if c.source_code_link %}

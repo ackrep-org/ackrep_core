@@ -6,14 +6,43 @@
 
 
 {% for entity_type, entity_list in entity_dict.items %}
-<h4>{{entity_type}} ({{entity_list|length}})</h4>
-    {% for e in entity_list %}
-        {% include "ackrep_web/widgets/entity.html" with entity=e c=c display="short" only %}
-    {% endfor %}
+    {% if entity_list|length > 0 %}
+        <button type="button" class="collapsible"><h4>{{entity_type}} ({{entity_list|length}})</h4></button>
+        <div class="content">
+            {% for e in entity_list %}
+                {% include "ackrep_web/widgets/entity.html" with entity=e c=c display="short" only %}
+            {% endfor %}
+        </div>
+
+        <br>
+    {% endif %}
 {% endfor %}
 
 <br> <a href="/">Go back to main page.</a>
 
 
+<script>
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+    
+    for (i = 0; i < coll.length; i++) {
+      coll[i].addEventListener("click", function() {
+        this.classList.toggle("active");
+        var content = this.nextElementSibling;
+        if (content.style.display === "block") {
+          content.style.display = "none";
+        } else {
+          content.style.display = "block";
+        }
+      });
+    }
+</script>
+<script>
+  var coll = document.getElementsByClassName("collapsible");
+  var i;
+  for (i = 0; i < coll.length; i++) {
+    coll[i].nextElementSibling.style.display = "none";
+  }
+</script>
 
 {% endblock  %}
