@@ -226,7 +226,7 @@ def check_all_solutions():
     for ps in models.ProblemSolution.objects.all():
         # res = check(ps.key, exitflag=False)
 
-        res = check_with_docker(ps.key)
+        res = check_with_docker(ps.key, exitflag=False)
         returncodes.append(res.returncode)
         print("---")
 
@@ -246,7 +246,7 @@ def check_all_system_models():
         if sm.key == "YHS5B":
             print("skipping mmc!")
             continue
-        res = check_with_docker(sm.key)
+        res = check_with_docker(sm.key, exitflag=False)
         returncodes.append(res.returncode)
         print("---")
 
