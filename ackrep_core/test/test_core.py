@@ -509,6 +509,15 @@ class TestCases3(SimpleTestCase):
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)
 
+    def test_run_interactive_environment(self):
+        cmd = ["ackrep", "--run-interactive-environment", "YJBOX", "ackrep -c UXMFA; cd ../; ls; cd ackrep_data; ls"]
+        res = run_command(cmd, capture_output=True)
+        core.logger.debug(res)
+        self.assertEqual(res.returncode, 0)
+        expected_directories = ["ackrep_transfer", "Success"]
+        for info in expected_directories:
+            self.assertIn(info, res.stdout)
+
 
 class TestCases4(DjangoTestCase):
     """

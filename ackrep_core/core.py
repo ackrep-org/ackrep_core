@@ -874,26 +874,53 @@ def check(key):
 
     # building the docker command
 
-    # rebuild environment variables suitable inside docker container
-    # env var is set by unittest
+    cmd.extend(get_docker_env_vars())
+
+    cmd.extend(get_data_repo_host_address())
+
+    cmd.extend([container_name, "ackrep", "-c", key])
+
+    logger.info(f"docker command: {cmd}")
+    res = run_command(cmd, supress_error_message=True, capture_output=True)
+    if res.returncode != 0:
+        logger.error(f"{res.stdout} | {res.stderr}")
+    return res
+
+
+def get_docker_env_vars():
+    """rebuild environment variables suitable inside docker container
+    env var is set by unittest
+    return array with flags and paths to extend docker cmd
+    """
     if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
-        msg = f'env variables set: ACKREP_DATABASE_PATH={os.environ.get("ACKREP_DATABASE_PATH")}' + \
-            'ACKREP_DATA_PATH=os.environ.get("ACKREP_DATA_PATH")'
+        msg = (
+            f'env variables set: ACKREP_DATABASE_PATH={os.environ.get("ACKREP_DATABASE_PATH")}'
+            + 'ACKREP_DATA_PATH=os.environ.get("ACKREP_DATA_PATH")'
+        )
         logger.info(msg)
         database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
         ackrep_data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
-        cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"])
+        cmd_extension = ["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"]
     # nominal case
     else:
-        logger.info(f"env var ACKREP_DATABASE_PATH, ACKREP_DATA_PATH no set, using defaults: db.sqlite3 and {data_path}")
+        logger.info(
+            f"env var ACKREP_DATABASE_PATH, ACKREP_DATA_PATH no set, using defaults: db.sqlite3 and {data_path}"
+        )
         database_path = os.path.join("/code/ackrep_core", "db.sqlite3")
         ackrep_data_path = os.path.join("/code", data_path)
-        cmd.extend(["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"])
+        cmd_extension = ["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"]
     logger.info(f"ACKREP_DATABASE_PATH {database_path}")
     logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
 
-    # data repo address on host via environment vaiable,
-    # especially necessary when starting env container out of celery container
+    return cmd_extension
+
+
+def get_data_repo_host_address():
+    """data repo address on host via environment vaiable,
+    especially necessary when starting env container out of celery container
+    return array with flags and paths to extend docker cmd
+    """
+
     # nominal case
     if os.environ.get("CI") != "true":
         host_address = os.environ.get("DATA_REPO_HOST_ADDRESS")
@@ -905,21 +932,18 @@ def check(key):
         assert host_address is not None, "env var DATA_REPO_HOST_ADDRESS is not set."
         target = os.path.split(host_address)[1]
         assert "ackrep_data" in target, f"{target} is not a valid volume destination"
-        cmd.extend(["-v", f"{host_address}:/code/{target}", container_name, "ackrep", "-c", key])
+        cmd_extension = ["-v", f"{host_address}:/code/{target}"]
     # circleci unittest case
     else:
         # volumes cant be mounted in cirlceci, this is the workaround,
         # see https://circleci.com/docs/2.0/building-docker-images/#mounting-folders
-        cmd.extend(["--volumes-from", "dummy", container_name, "ackrep", "-c", key])
+        cmd_extension = ["--volumes-from", "dummy"]
 
-    logger.info(f"docker command: {cmd}")
-    res = run_command(cmd, supress_error_message=True, capture_output=True)
-    if res.returncode != 0:
-        logger.error(f"{res.stdout} | {res.stderr}")
-    return res
+    return cmd_extension
+
 
 """ 
 for debugging containers:
-docker-compose run --rm -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data default_environment bash
-
+docker-compose --file ../ackrep_deployment/docker-compose.yml run --rm -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data default_environment bash
+docker run --rm -ti -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data ghcr.io/ackrep-org/default_environment bash
 """

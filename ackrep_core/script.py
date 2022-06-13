@@ -27,15 +27,15 @@ def main():
         "-c",
         "--check",
         metavar="metadatafile",
-        help="check solution or system model (specified by path to metadata file or key)" +
-            "using the locally installed packages",
+        help="check solution or system model (specified by path to metadata file or key)"
+        + "using the locally installed packages",
     )
     argparser.add_argument(
         "-cwd",
         "--check-with-docker",
         metavar="metadatafile",
-        help="check solution or system model (specified by path to metadata file or key)"+
-            "using correct environment specification (docker)",
+        help="check solution or system model (specified by path to metadata file or key)"
+        + "using correct environment specification (docker)",
     )
     argparser.add_argument(
         "--check-all-solutions", help="check all solutions (may take some time)", action="store_true"
@@ -78,7 +78,9 @@ def main():
     )
     argparser.add_argument(
         "--run-interactive-environment",
-        help="Start an interactive session with a docker container of an environment image of your choice. Environment key must be specified.",
+        nargs="+",
+        help="Start an interactive session with a docker container of an environment image of your choice."
+        + "Environment key must be specified. Additional arguments ('a; b; c') for inside the env are optional.",
         metavar="key",
     )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
@@ -191,8 +193,8 @@ def main():
         metadatapath = args.prepare_script
         prepare_script(metadatapath)
     elif args.run_interactive_environment:
-        env_key = args.run_interactive_environment
-        run_interactive_environment(env_key)
+        args = args.run_interactive_environment
+        run_interactive_environment(args)
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -245,6 +247,7 @@ def check_all_system_models():
         # res = check(sm.key, exitflag=False)
         if sm.key == "YHS5B":
             print("skipping mmc!")
+            print("---")
             continue
         res = check_with_docker(sm.key, exitflag=False)
         returncodes.append(res.returncode)
@@ -515,13 +518,13 @@ def prepare_script(arg0):
     print(bgreen("Success."))
 
 
-def run_interactive_environment(key):
+def run_interactive_environment(args):
     """get imagename, create transfer direktory, change permissions, start container"""
     if platform.system() != "Linux":
         msg = f"No support for {platform.system()}"
         raise NotImplementedError(msg)
 
-    entity = core.get_entity(key)
+    entity, key = get_entity_and_key(args[0])
     msg = f"{key} is not an EnvironmentSpecification key."
     assert isinstance(entity, models.EnvironmentSpecification), msg
     image_name = "ghcr.io/ackrep-org/" + entity.name
@@ -531,12 +534,33 @@ def run_interactive_environment(key):
     transfer_folder_name = "ackrep_transfer"
     os.makedirs(transfer_folder_name, exist_ok=True)
     # TODO: dynamic gid
-    os.chown("ackrep_transfer", -1, 999)
+    try:
+        os.chown("ackrep_transfer", -1, 999)
+    except PermissionError:
+        core.logger.warning("Unable to change permissions for transfer folder.")
     # if host is windows, path still needs to have unix seps for inside container
     vol_host_path = os.path.join(core.root_path, transfer_folder_name)
-    vol_container_path = "/" + transfer_folder_name
+    vol_container_path = "/code/" + transfer_folder_name
     vol_mapping = f"{vol_host_path}:{vol_container_path}"
-    res = subprocess.run(["docker", "run", "-ti", "-v", vol_mapping, "-w", "/", image_name])
+
+    cmd = ["docker", "run", "-ti", "--rm"]
+
+    cmd.extend(core.get_docker_env_vars())
+
+    cmd.extend(core.get_data_repo_host_address())
+
+    cmd.extend(["-v", vol_mapping, image_name])
+
+    if len(args) == 1:
+        cmd.extend(["/bin/bash", "-c", "cd ../; mc"])
+    else:
+        c = " ".join(args[1:])
+        cmd.extend(["/bin/bash", "-c", c])
+
+    print(cmd)
+    res = subprocess.run(cmd)
+
+    return res.returncode
 
 
 def get_entity_and_key(arg0):

@@ -131,8 +131,9 @@ def utf8decode(obj):
 def strip_decode(obj) -> str:
 
     # get rid of some (ipython-related boilerplate bytes (ended by \x07))
-    delim = b"\x07"
-    obj = obj.split(delim)[-1]
+    if hasattr(obj, "split"):
+        delim = b"\x07"
+        obj = obj.split(delim)[-1]
     return utf8decode(obj)
 
 

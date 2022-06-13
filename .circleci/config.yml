@@ -35,14 +35,6 @@ jobs: # A basic unit of work in a run
             cd ackrep_data_for_unittests
             git checkout for_unittests
       - run:
-          name: Test Core
-          command: | 
-            ls
-            . venv/bin/activate
-            python manage.py makemigrations
-            ackrep --bootstrap-test-db
-            python manage.py test --keepdb ackrep_core.test.test_core
-      - run:
           name: Change Permissions
           command: |
             cd ../
@@ -62,6 +54,14 @@ jobs: # A basic unit of work in a run
             docker cp /home/circleci/ackrep_data_for_unittests dummy:/code
             echo 3
             docker run --volumes-from dummy --entrypoint "/bin/ls" ghcr.io/ackrep-org/default_environment -n ../
+      - run:
+          name: Test Core
+          command: | 
+            ls
+            . venv/bin/activate
+            python manage.py makemigrations
+            ackrep --bootstrap-test-db
+            python manage.py test --keepdb ackrep_core.test.test_core
       - run:
           name: Test Web
           command: |
