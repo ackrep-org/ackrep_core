@@ -109,7 +109,6 @@ class GenericModel:
         # Input function
         self.uu_func = None
 
-        
         try:
             self.params.get_default_parameters()
         except AttributeError:
@@ -131,7 +130,9 @@ class GenericModel:
         if self.u_dim == 0:
             self.set_input_func(self.uu_autonomous_func())
         else:
-            assert hasattr(self, "uu_default_func"), f"Your system has an input dimension of {self.u_dim} but no methode 'uu_default_func'."
+            assert hasattr(
+                self, "uu_default_func"
+            ), f"Your system has an input dimension of {self.u_dim} but no methode 'uu_default_func'."
             self.set_input_func(self.uu_default_func())
             if u_func is not None:
                 self.set_input_func(u_func)
@@ -175,9 +176,10 @@ class GenericModel:
 
     def uu_autonomous_func(self):
         """define a input function for autonomous systems"""
-        def uu_rhs(t, xx_nv):            
+
+        def uu_rhs(t, xx_nv):
             return []
-        
+
         return uu_rhs
 
     # ----------- SET STATE VECTOR DIMENSION ---------- #
@@ -249,6 +251,25 @@ class GenericModel:
         init
         """
 
+    # ------ SYMBOLIC RHS FUNCTION WITH NUMERICAL PARAMETERS ---------- #
+    # --------------- MODEL INDEPENDENT
+
+    def get_rhs_symbolic_num_params(self, params=None):
+        """
+        Create symbolic function of the model with the parameter values.
+
+        :params:(boolean) parameter to substitute
+        :return:(matrix) matrix with right hand side symbolic functions with parameters
+        """
+        # transform symbolic function to numerical function
+        rhs_symb = sp.Matrix(self.get_rhs_symbolic())
+        # Substitute Parameters with numerical Values
+        self._create_subs_list()
+        rhs_symb_num_params = sp.Matrix(rhs_symb.subs(self.pp_subs_list))
+
+        return rhs_symb_num_params
+
+
     # ----------- NUMERIC RHS FUNCTION ---------- #
     # -------------- MODEL INDEPENDENT - no adjustion needed
 
@@ -264,11 +285,8 @@ class GenericModel:
         :return:(function) rhs function for numerical solver like
                             scipy.solve_ivp
         """
-        # transform symbolic function to numerical function
-        dxx_dt_func = sp.Matrix(self.get_rhs_symbolic())
-        # Substitute Parameters with numerical Values
-        self._create_subs_list()
-        dxx_dt_func = dxx_dt_func.subs(self.pp_subs_list)
+        
+        dxx_dt_func = self.get_rhs_symbolic_num_params()
         # Create executable rhs function
         dxx_dt_func = sp.lambdify(self._xxuu_symb, list(dxx_dt_func), modules="numpy")
         # create rhs function
@@ -288,6 +306,8 @@ class GenericModel:
             return dxx_dt_nv
 
         return rhs
+
+
 
     # ----------- CREATE SYMBOLIC INPUT VECTOR ---------- #
 
