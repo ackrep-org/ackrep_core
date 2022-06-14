@@ -870,7 +870,7 @@ def check(key):
     else:
         logger.info("running remote image")
         container_name = "ghcr.io/ackrep-org/" + env_name
-        cmd = ["docker", "run", "--rm"]
+        cmd = ["docker", "run", "--rm", "--name", env_name]
 
     # building the docker command
 
