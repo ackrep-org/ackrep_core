@@ -77,11 +77,6 @@ class TestCases1(DjangoTestCase):
         # this should be an standard response for successful HTTP requests
         self.assertEqual(response.status_code, 200)
 
-        # no entities in database yet
-        self.assertNotContains(response, "utc_entity_short")
-
-        self.assertNotContains(response, "utc_entity_full")
-
 
 class TestCases2(SimpleTestCase):
     """
@@ -123,6 +118,7 @@ class TestCases2(SimpleTestCase):
 
         self.assertContains(response, "Success")
 
+        # skip test if done in CI, see https://ackrep-doc.readthedocs.io/en/latest/devdoc/design_considerations.html#ci
         if os.environ.get("CI") != "true":
             self.assertContains(response, "utc_img_url")
 
@@ -148,6 +144,7 @@ class TestCases2(SimpleTestCase):
 
         self.assertContains(response, "Success")
 
+        # skip test if done in CI, see https://ackrep-doc.readthedocs.io/en/latest/devdoc/design_considerations.html#ci
         if os.environ.get("CI") != "true":  #!
             self.assertContains(response, "utc_img_url")
 
