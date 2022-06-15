@@ -54,6 +54,9 @@ jobs: # A basic unit of work in a run
             docker cp /home/circleci/ackrep_data_for_unittests dummy:/code
             echo 3
             docker run --volumes-from dummy --entrypoint "/bin/ls" ghcr.io/ackrep-org/default_environment -n ../
+      - run:
+          name: Show Versions
+          command: | 
             echo default env version:
             docker run --volumes-from dummy --entrypoint "tail" ghcr.io/ackrep-org/default_environment -1 ../Dockerfile_default_environment
       - run:
@@ -66,11 +69,18 @@ jobs: # A basic unit of work in a run
             python manage.py test --keepdb ackrep_core.test.test_core
       - run:
           name: Test Web
+          # for debugging:
+          # background: True
           command: |
             . venv/bin/activate
-            # python manage.py makemigrations
-            # ackrep --bootstrap-test-db
-            python manage.py test --keepdb ackrep_web.test.test_web:TestCases2
+            python manage.py test --keepdb ackrep_web.test.test_web
+      # for debugging:
+      # in test_web.py/TestCases2.setUp change celery worker to debug mode 
+      # - run:
+      #     name: check nohup
+      #     command: |
+      #       touch ./nohup.out
+      #       x=1; while [ $x -le 10 ]; do cat nohup.out; x=$(( $x + 1 )); sleep 5; done
 
 workflows:
   version: 2 

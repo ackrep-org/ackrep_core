@@ -8,6 +8,7 @@ ipydex
 symbtools
 control
 pyblocksim
+pyinduct
 
 # the following need additional system packages (see dockerfile): gfortran libblas-dev liblapack-dev
 slycot

@@ -827,6 +827,22 @@ AOM = ACKREP_OntologyManager()
 def check(key):
     """General function to check system model or solution, calculated inside docker image.
     The image is chosen from the compatible environment of the given entity
+    structogram:
+    - get_entity
+    - get env key
+    - try to find running env container id
+    - if container exists
+        - if container has INcorrect db loaded
+            - shutdown
+    - if container NOT already running:
+        - if image available locally:
+            - docker-compose run --detached env_name bash
+        - else: # pull image from remote
+            - docker run --detached ghcr.io/../env_name bash
+        - wait for container to load its database
+        - get container id
+    - docker exec id ackrep -c key
+
 
     Args:
         key (str): entity key
@@ -852,35 +868,88 @@ def check(key):
     env_name = get_entity(env_key).name
     logger.info(f"running with environment spec: {env_name}")
 
-    # try to use local docker image (for development)
-    # TODO: the prefix is the project name. defaults to parent directory of
-    # TODO: docker-compose.yml, cant be specified in yml
-    image_name = "ackrep_deployment_" + env_name
-    cmd = ["docker", "images", "-q", image_name]
-    res = run_command(cmd, supress_error_message=True, capture_output=True)
-    logger.info(f"local image id: {res.stdout}")
-    if len(res.stdout) >= 12:  # 12 characters image id + \n
-        logger.info("running local image")
-        container_name = env_name  # since docker-compose doesnt use prefix
 
-        assert os.path.isdir("../ackrep_deployment"), "docker-compose file not found"
-        cmd = ["docker-compose", "--file", "../ackrep_deployment/docker-compose.yml", "run", "--rm"]
+    # check if environment container is already running
+    cmd = ["docker", "ps", "--format", "{{.ID}}::{{.Names}}"]
+    res = subprocess.run(cmd, text=True, capture_output=True)
+    for container in res.stdout.split("\n"):
+        if env_name in container:
+            container_id = container.split("::")[0]
+            # check if environment container has the correct db loaded
+            # TODO: for now this checks the difference of regular and ut case
+            cmd = ["docker", "exec", container_id, "printenv", "ACKREP_DATA_PATH"]
+            res = subprocess.run(cmd, text=True, capture_output=True)
+            data_path_container = res.stdout.replace("\n", "").split("/")[-1]
+            assert data_path_container in ["ackrep_data", "ackrep_data_for_unittests"]
+            if data_path_container != data_path.split("/")[-1]:
+                logger.info("Running container has wrong db loaded. Shutting down.")
+                cmd = ["docker", "stop", container_id]
+                res = subprocess.run(cmd, text=True, capture_output=True)
+                assert res.returncode == 0
+                container_id = None
+            break
+        else:
+            container_id = None
 
-    # no local image -> use image from github
-    else:
-        logger.info("running remote image")
-        container_name = "ghcr.io/ackrep-org/" + env_name
-        cmd = ["docker", "run", "--rm", "--name", env_name]
+    # Container not yet running, start container, load db, wait
+    # container is running detached, so the script can continue
+    if container_id is None:
+        logger.info(f"no container for {env_name} found, starting new one.")
+        # try to use local docker image (for development)
+        image_name = "ackrep_deployment_" + env_name
+        cmd = ["docker", "images", "-q", image_name]
+        res = run_command(cmd, supress_error_message=True, capture_output=True)
+        local_image_id = res.stdout.replace("\n", "")
+        logger.info(f"local image id: {local_image_id}")
+        if len(local_image_id) == 12:  # 12 characters image id + \n
+            logger.info("running local image")
+            image_name = env_name  # since docker-compose doesnt use prefix
 
-    # building the docker command
+            assert os.path.isdir("../ackrep_deployment"), "docker-compose file not found"
+            cmd = ["docker-compose", "--file", "../ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
 
-    cmd.extend(get_docker_env_vars())
+        # no local image -> use image from github
+        else:
+            logger.info("running remote image")
+            image_name = "ghcr.io/ackrep-org/" + env_name
+            cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
+            # * Note: even though we are running the container in the background (detached -d), we still have to 
+            # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).
+            # * Otherwise, the container would stop after running the entrypoint script (load db). This is noteworthy,
+            # * since -d and -ti seem to be contradictory.
 
-    cmd.extend(get_data_repo_host_address())
+        # building the docker command
 
-    cmd.extend([container_name, "ackrep", "-c", key])
+        cmd.extend(get_docker_env_vars())
 
-    logger.info(f"docker command: {cmd}")
+        cmd.extend(get_data_repo_host_address())
+
+        cmd.extend([image_name, "bash"])
+
+        logger.info(f"docker command: {cmd}")
+        res = run_command(cmd, supress_error_message=True, capture_output=True)
+        if res.returncode != 0:
+            logger.error(f"{res.stdout} | {res.stderr}")
+            assert 1 == 0, "container was not started correctly"
+        else:
+            # technically this is the container name, but it works just the same
+            container_id = res.stdout.replace("\n", "")
+
+        # wait for db to be loaded, since the container is running detached
+        while True:
+            cmd = ["docker", "exec", container_id, "ackrep", "--show-entity-info", key]
+            res = run_command(cmd, supress_error_message=True, capture_output=True)
+            if res.returncode == 0:
+                break
+            else:
+                logger.info("waiting for db to be loaded...")
+                time.sleep(1)
+        logger.info(f"New env container started.")
+
+    logger.info(f"Check running in Container: {container_id}")
+
+    # run check in already running container
+    cmd = ["docker", "exec", container_id, "ackrep", "-c", key]
     res = run_command(cmd, supress_error_message=True, capture_output=True)
     if res.returncode != 0:
         logger.error(f"{res.stdout} | {res.stderr}")

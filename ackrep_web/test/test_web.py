@@ -163,7 +163,7 @@ class TestCases2(SimpleTestCase):
 
         # prevent expected error logs from showing during test
         loglevel = core.logger.level
-        core.logger.setLevel(50)
+        # core.logger.setLevel(50)
 
         # first: check if debug message shows when it should
         settings.DEBUG = True
