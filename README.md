@@ -1,5 +1,5 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![CircleCI](https://circleci.com/gh/ackrep-org/ackrep_core/tree/main.svg?style=shield)](https://circleci.com/gh/ackrep-org/ackrep_core/tree/feature_CI)
+[![CircleCI](https://circleci.com/gh/ackrep-org/ackrep_core/tree/main.svg?style=shield)](https://circleci.com/gh/ackrep-org/ackrep_core/tree/main)
 # ackrep_core
 core functionality for the acrep project
 

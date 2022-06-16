@@ -34,14 +34,14 @@ jobs: # A basic unit of work in a run
             mv ackrep_data ackrep_data_for_unittests
             cd ackrep_data_for_unittests
             git checkout for_unittests
-      - run:
-          name: Change Permissions
-          command: |
-            cd ../
-            sudo chown -R 3434:999 ackrep_data_for_unittests
-            sudo chmod -R g+rw ackrep_data_for_unittests
-            ls -n
-            id
+      # - run:
+      #     name: Change Permissions
+      #     command: |
+      #       cd ../
+      #       sudo chown -R 3434:999 ackrep_data_for_unittests
+      #       sudo chmod -R g+rw ackrep_data_for_unittests
+      #       ls -n
+      #       id
       - setup_remote_docker:
           version: 20.10.14
           docker_layer_caching: true

@@ -874,6 +874,7 @@ def check(key):
     for container in res.stdout.split("\n"):
         if env_name in container:
             container_id = container.split("::")[0]
+            logger.info(f"Running Container found: {container}")
             # check if environment container has the correct db loaded
             # TODO: for now this checks the difference of regular and ut case
             cmd = ["docker", "exec", container_id, "printenv", "ACKREP_DATA_PATH"]
@@ -960,6 +961,7 @@ def get_docker_env_vars():
     env var is set by unittest
     return array with flags and paths to extend docker cmd
     """
+    # ut case
     if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
         msg = (
             f'env variables set: ACKREP_DATABASE_PATH={os.environ.get("ACKREP_DATABASE_PATH")}'
@@ -979,6 +981,17 @@ def get_docker_env_vars():
         cmd_extension = ["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"]
     logger.info(f"ACKREP_DATABASE_PATH {database_path}")
     logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
+
+    # user id of host
+    host_uid = os.environ.get("HOST_UID")
+    if host_uid is not None:
+        logger.info(f"HOST_UID env var set {host_uid}")
+        cmd_extension.extend(["-e", f"HOST_UID={host_uid}"])
+    else:
+        logger.info(f"HOST_UID env var not set.")
+        host_uid = os.getuid()
+        cmd_extension.extend(["-e", f"HOST_UID={host_uid}"])
+    logger.info(f"Using host id {host_uid}.")
 
     return cmd_extension
 
