@@ -251,6 +251,24 @@ class GenericModel:
         init
         """
 
+    # ------ SYMBOLIC RHS FUNCTION WITH NUMERICAL PARAMETERS ---------- #
+    # --------------- MODEL INDEPENDENT
+
+    def get_rhs_symbolic_num_params(self, params=None):
+        """
+        Create symbolic function of the model with the parameter values.
+
+        :params:(boolean) parameter to substitute
+        :return:(matrix) matrix with right hand side symbolic functions with parameters
+        """
+        # transform symbolic function to numerical function
+        rhs_symb = sp.Matrix(self.get_rhs_symbolic())
+        # Substitute Parameters with numerical Values
+        self._create_subs_list()
+        rhs_symb_num_params = sp.Matrix(rhs_symb.subs(self.pp_subs_list))
+
+        return rhs_symb_num_params
+
     # ----------- NUMERIC RHS FUNCTION ---------- #
     # -------------- MODEL INDEPENDENT - no adjustion needed
 
@@ -266,11 +284,8 @@ class GenericModel:
         :return:(function) rhs function for numerical solver like
                             scipy.solve_ivp
         """
-        # transform symbolic function to numerical function
-        dxx_dt_func = sp.Matrix(self.get_rhs_symbolic())
-        # Substitute Parameters with numerical Values
-        self._create_subs_list()
-        dxx_dt_func = dxx_dt_func.subs(self.pp_subs_list)
+
+        dxx_dt_func = self.get_rhs_symbolic_num_params()
         # Create executable rhs function
         dxx_dt_func = sp.lambdify(self._xxuu_symb, list(dxx_dt_func), modules="numpy")
         # create rhs function
@@ -619,9 +634,15 @@ def create_system_model_list_pdf():
             if "Add Model Name" in v:
                 lines[i] = "\\part{" + sm.name + "}\n" + "ACKREP-Key: " + sm.key
             if "\\input{parameters.tex}" in v:
-                path = os.path.join(core.data_path, os.pardir, sm.base_path, "_system_model_data", "parameters.tex")
-                str_path = str(path.replace("\\", "/"))  # in case host is windows, latex always wants / in path
-                lines[i] = "\\input{" + str_path + "}\n"
+                lines[i] = (
+                    "\\input{"
+                    + str(
+                        os.path.join(
+                            core.data_path, os.pardir, sm.base_path, "_system_model_data", "parameters.tex"
+                        ).replace("\\", "/")
+                    )
+                    + "}\n"
+                )
             if "\\begin{thebibliography}" in v:
                 lines[i] = _import_png_to_tex(sm) + lines[i]
 

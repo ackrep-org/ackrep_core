@@ -868,7 +868,6 @@ def check(key):
     env_name = get_entity(env_key).name
     logger.info(f"running with environment spec: {env_name}")
 
-
     # check if environment container is already running
     cmd = ["docker", "ps", "--format", "{{.ID}}::{{.Names}}"]
     res = subprocess.run(cmd, text=True, capture_output=True)
@@ -913,7 +912,7 @@ def check(key):
             logger.info("running remote image")
             image_name = "ghcr.io/ackrep-org/" + env_name
             cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
-            # * Note: even though we are running the container in the background (detached -d), we still have to 
+            # * Note: even though we are running the container in the background (detached -d), we still have to
             # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).
             # * Otherwise, the container would stop after running the entrypoint script (load db). This is noteworthy,
             # * since -d and -ti seem to be contradictory.
