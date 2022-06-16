@@ -4,7 +4,9 @@
 core functionality for the acrep project
 
 
-Currently most of the documentation is located in the repo <https://github.com/cknoll/ackrep_data>.
+Dokumentation can be found here: <https://ackrep-doc.readthedocs.io/en/latest/index.html>
+
+**Disclaimer:** The windows compatibility of the main branch of this project cannot be guarantied. For windows users we offer this branch, which is missing some key deployment features as well as diverse runtime environments. Nevertheless, it should be sufficient to test most of the solutions and system models.
 
 See also: <https://ackrep.org>
 
