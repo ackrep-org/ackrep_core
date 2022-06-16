@@ -1,15 +1,17 @@
-ipydex
+# main packages to run ackrep from the command line
+# ipydex
 pyyaml
 colorama
 questionary
-django
+django<4.0
 django-bleach
 django-nose
 jinja2
 gitpython
 yamlpyowl>=0.2.1
-# the following should be migrated to the environment specification:
-control
-# the following need additional system packages (see dockerfile): gfortran libblas-dev liblapack-dev
-slycot
-casadi
+symbtools
+pytrajectory
+tabulate
+
+# for command line usage of ackrep, celery is imported but not actively used
+celery

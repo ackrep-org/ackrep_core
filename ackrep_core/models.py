@@ -218,9 +218,42 @@ class GenericEntity(BaseModel):
         return mr.status
 
 
+class SystemModel(GenericEntity):
+    _type = "system_model"
+    estimated_runtime = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    compatible_environment = EntityKeyField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    system_model_file = models.CharField(max_length=500, null=True, blank=True, default="system_model.py")
+    simulation_file = models.CharField(max_length=500, null=True, blank=True, default="simulation.py")
+
+    def related_problems_list(self):
+        all_problems = ProblemSpecification.objects.all()
+
+        related_problems = []
+        for problem in all_problems:
+            model_utils.resolve_keys(problem)
+            related_problem_keys = [model.key for model in problem.oc.related_system_models_list]
+            if self.key in related_problem_keys:
+                related_problems.append(problem)
+
+        return related_problems
+
+
 class ProblemSpecification(GenericEntity):
     _type = "problem_specification"
     problemclass_list = EntityKeyListField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    related_system_models_list = EntityKeyListField(
         max_length=500,
         null=True,
         blank=True,
@@ -304,3 +337,19 @@ class MethodPackage(GenericEntity):
         null=True,
         blank=True,
     )
+
+
+class ActiveJobs(BaseModel):
+    _type = "active_jobs"
+    id = models.AutoField(primary_key=True)
+    key = models.CharField(
+        max_length=5,
+        null=False,
+        blank=False,
+    )
+    celery_id = models.CharField(
+        max_length=100,
+        null=False,
+        blank=False,
+    )
+    start_time = models.FloatField()

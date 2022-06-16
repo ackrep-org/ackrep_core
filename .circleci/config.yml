@@ -1,0 +1,90 @@
+jobs: # A basic unit of work in a run
+  setup: 
+    # directory where steps are run
+    working_directory: ~/ackrep_core
+    docker: # run the steps with Docker
+      # CircleCI Python images available at: https://hub.docker.com/r/circleci/python/
+      - image: cimg/python:3.8
+        environment: # environment variables for primary container
+          SKIP_TEST_CREATE_PDF: "True"
+          CI: "True"
+      - image: rabbitmq:3.8.16-management-alpine
+    steps: # steps that comprise the `build` job
+      - checkout # check out source code to working directory
+      - restore_cache:
+      # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+          key: deps1--{{ checksum "requirements.txt" }}--{{ checksum "requirements_celery.txt" }}
+      - run:
+          name: Install Dependancies
+          command: | 
+            python -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+            pip install -r requirements_celery.txt
+            pip install -e .
+      - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
+          key: deps1--{{ checksum "requirements.txt" }}--{{ checksum "requirements_celery.txt" }}
+          paths:
+            - "venv"
+      - run:
+          name: Load Test Data
+          command: | 
+            cd ../
+            git clone https://github.com/ackrep-org/ackrep_data.git
+            mv ackrep_data ackrep_data_for_unittests
+            cd ackrep_data_for_unittests
+            git checkout for_unittests
+      - run:
+          name: Change Permissions
+          command: |
+            cd ../
+            sudo chown -R 3434:999 ackrep_data_for_unittests
+            sudo chmod -R g+rw ackrep_data_for_unittests
+            ls -n
+            id
+      - setup_remote_docker:
+          version: 20.10.14
+          docker_layer_caching: true
+      - run: 
+          name: Copy UT Data to Remote Docker
+          command: |
+            echo 1
+            docker create -v /code/ackrep_data_for_unittests --name dummy alpine:3.4 /bin/true
+            echo 2
+            docker cp /home/circleci/ackrep_data_for_unittests dummy:/code
+            echo 3
+            docker run --volumes-from dummy --entrypoint "/bin/ls" ghcr.io/ackrep-org/default_environment -n ../
+      - run:
+          name: Show Versions
+          command: | 
+            echo default env version:
+            docker run --volumes-from dummy --entrypoint "tail" ghcr.io/ackrep-org/default_environment -1 ../Dockerfile_default_environment
+      - run:
+          name: Test Core
+          command: | 
+            ls
+            . venv/bin/activate
+            python manage.py makemigrations
+            ackrep --bootstrap-test-db
+            python manage.py test --keepdb ackrep_core.test.test_core
+      - run:
+          name: Test Web
+          # for debugging:
+          # background: True
+          command: |
+            . venv/bin/activate
+            python manage.py test --keepdb ackrep_web.test.test_web
+      # for debugging:
+      # in test_web.py/TestCases2.setUp change celery worker to debug mode 
+      # - run:
+      #     name: check nohup
+      #     command: |
+      #       touch ./nohup.out
+      #       x=1; while [ $x -le 10 ]; do cat nohup.out; x=$(( $x + 1 )); sleep 5; done
+
+workflows:
+  version: 2 
+  build_and_test:
+    jobs:
+      - setup
+

@@ -16,16 +16,10 @@ try:
 
     from ipydex import IPS
 
-    # method packages
-    {% for package in context.method_package_list %}
-    sys.path.insert(0, r"{{package}}")
-    {% endfor %}
 
-    # the ProblemSpecification Entity
-    sys.path.insert(0, r"{{context.problem_spec_path}}")
+    # the SystemModel Entity
+    sys.path.insert(0, r"{{context.system_model_path}}")
 
-    # the ProblemSolution Entity
-    sys.path.insert(0, r"{{context.solution_path}}")
 
     # uncomment for debugging
     # from ipydex import IPS, activate_ips_on_exception, TracerFactory
@@ -36,23 +30,21 @@ try:
 
     # IPS()
 
-    # these statements assume standard filenames (`problem.py` and `solution.py`)
+    # these statements assume standard filenames (`system_model.py`, `simulate.py`)
 
-    import problem as ps
-    import solution
+    import system_model
+    import simulation
 
-    # perform the solution
-    solution_data = solution.solve(ps.ProblemSpecification)
+    # perform the simulation
+    simulation_data = simulation.simulate()
 
-    # evaluate the solution (-> ResultContainer)
-    rc = ps.evaluate_solution(solution_data)
-
-    if not rc.success:
-        print(rc.success)
+    # evaluate the simulation (-> ResultContainer)
+    rc = simulation.evaluate_simulation(simulation_data)
 
 except:
     traceback.print_exc()
     exit(1)
+    
 
 if rc.success:
     # returncode 0 means: no errors (general convention)
@@ -60,4 +52,5 @@ if rc.success:
 else:
     # returncode 2 means: numerically wrong result (our convention)
     print("\nNumerical calculation finished with unexpected result!\n")
+    print("Discrepancy between calculated and expected state values at end of simualtion:", rc.final_state_errors)
     exit(2)

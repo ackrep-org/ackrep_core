@@ -1,6 +1,7 @@
 from colorama import Style, Fore
 from django.utils import timezone
 import yaml
+import subprocess
 
 import os
 from ipydex import Container
@@ -10,14 +11,20 @@ from ipydex import Container
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
 # path of this package (i.e. the directory ackrep_core)
+# (this is where manage.py is located)
 core_pkg_path = os.path.dirname(mod_path)
 
-# path of the general project root (expected to contain ackrep_data, ackrep_core, ackrep_deployment, ...)
-root_path = os.path.abspath(os.path.join(mod_path, "..", ".."))
+# root_path: path of the general project root
+# (expected to contain ackrep_data, ackrep_core, ackrep_deployment, ...)
+root_path = os.environ.get("ACKREP_ROOT_PATH")
+if not (root_path):
+    root_path = os.path.abspath(os.path.join(mod_path, "..", ".."))
 
-# paths for (ackrep_data and its test-related clone)
-data_path = os.path.join(root_path, "ackrep_data")
-data_test_repo_path = os.path.join(root_path, "ackrep_data_for_unittests")
+# this env-variable will be set e.g. by unit tests to make cli invocations from tests work
+data_path = os.environ.get("ACKREP_DATA_PATH")
+if not (data_path):
+    # paths for (ackrep_data and its test-related clone)
+    data_path = os.path.join(root_path, "ackrep_data")
 
 
 class ResultContainer(Container):
@@ -112,3 +119,41 @@ def smooth_timedelta(start_datetime, end_datetime=None):
     if secs > 0:
         timetot += " {}s".format(int(secs))
     return timetot
+
+
+def utf8decode(obj):
+    if hasattr(obj, "decode"):
+        return obj.decode("utf8")
+    else:
+        return obj
+
+
+def strip_decode(obj) -> str:
+
+    # get rid of some (ipython-related boilerplate bytes (ended by \x07))
+    if hasattr(obj, "split"):
+        delim = b"\x07"
+        obj = obj.split(delim)[-1]
+    return utf8decode(obj)
+
+
+def run_command(arglist, supress_error_message=False, capture_output=True, **kwargs):
+    """
+    Unified handling of calling commands.
+    Automatically prints an error message if necessary.
+    """
+    res = subprocess.run(arglist, capture_output=capture_output, **kwargs)
+    res.exited = res.returncode
+    res.stdout = strip_decode(res.stdout)
+    res.stderr = strip_decode(res.stderr)
+    if res.returncode != 0 and not supress_error_message:
+        msg = f"""
+        The command `{' '.join(arglist)}` exited with returncode {res.returncode}.
+
+        stdout: {res.stdout}
+
+        stderr: {res.stderr}
+        """
+        print(msg)
+
+    return res
