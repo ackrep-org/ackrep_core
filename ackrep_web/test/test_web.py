@@ -1,8 +1,15 @@
-from django.test import TestCase as DjangoTestCase, LiveServerTestCase
+from django.test import SimpleTestCase, TestCase as DjangoTestCase, LiveServerTestCase
 from django.urls import reverse
+from django.test.utils import override_settings
 from unittest import skipUnless
+from ackrep_core.test._test_utils import load_repo_to_db_for_ut, reset_repo
+from ackrep_core.util import run_command, utf8decode, strip_decode
 import re
 import json
+import os
+from ackrep_core_django_settings import settings
+import time
+import subprocess
 
 try:
     # noinspection PyPackageRequirements
@@ -25,10 +32,24 @@ url_of_external_test_repo = "https://codeberg.org/cknoll/ackrep_data_demo_fork.g
 This module contains the tests for the web application module (not ackrep_core)
 
 
-python3 manage.py test --nocapture --rednose --ips ackrep_web.test.test_web:TestCases1
+python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_web.test.test_web:TestCases1
+python manage.py test --keepdb --nocapture ackrep_web.test.test_web:TestCases1
 
 For more infos see doc/devdoc/README.md.
 """
+
+# inform the core module which path it should consinder as data repo
+ackrep_data_test_repo_path = core.data_path = os.path.join(core.root_path, "ackrep_data_for_unittests")
+# this must also be set as env var because the tests will call some functions of ackrep
+# via command line
+os.environ["ACKREP_DATA_PATH"] = ackrep_data_test_repo_path
+
+# due to the command line callings we also need to specify the test-database
+os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core", "db_for_unittests.sqlite3")
+
+# prevent cli commands to get stuck in unexpected IPython shell on error
+# (comment out for debugging)
+os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
 
 class TestCases1(DjangoTestCase):
@@ -56,19 +77,24 @@ class TestCases1(DjangoTestCase):
         # this should be an standard response for successful HTTP requests
         self.assertEqual(response.status_code, 200)
 
-        # no entities in database yet
-        self.assertNotContains(response, "utc_entity_short")
 
-        self.assertNotContains(response, "utc_entity_full")
-
-
-class TestCases2(DjangoTestCase):
+class TestCases2(SimpleTestCase):
     """
     These tests expect the database to be loaded
     """
 
+    databases = "__all__"
+
     def setUp(self):
-        core.load_repo_to_db(core.data_test_repo_path)
+        reset_repo(ackrep_data_test_repo_path)
+        self.load_db()
+        cmd = "ackrep --start-workers"
+        self.worker = subprocess.Popen(f"nohup {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # for debugging, use:
+        # self.worker = subprocess.Popen(f"nohup {cmd}", shell=True)
+
+    def load_db(self):
+        load_repo_to_db_for_ut(ackrep_data_test_repo_path)
 
     def test_entity_detail(self):
         url = reverse("entity-detail", kwargs={"key": "UKJZI"})
@@ -84,14 +110,86 @@ class TestCases2(DjangoTestCase):
 
         self.assertContains(response, "utc_entity_full")
         self.assertContains(response, "utc_check_solution")
-        self.assertContains(response, "utc_img_url")
 
-        regex = re.compile("utc_img_url:<(.*?)>")
-        img_url = regex.findall(response.content.decode("utf8"))
+        # wait for asynchronous result
+        while "utc_waiting" in response.content.decode("utf8"):
+            time.sleep(1)
+            response = self.client.get(url)
 
-        response = self.client.get(img_url)
+        self.assertContains(response, "Success")
 
-        # TODO test that this url returns a file
+        # skip test if done in CI, see https://ackrep-doc.readthedocs.io/en/latest/devdoc/design_considerations.html#ci
+        if os.environ.get("CI") != "true":
+            self.assertContains(response, "utc_img_url")
+
+            regex = re.compile("utc_img_url:<(.*?)>")
+            img_url = regex.findall(response.content.decode("utf8"))
+
+            response = self.client.get(img_url)
+
+            # TODO test that this url returns a file
+
+    def test_check_system_model(self):
+        url = reverse("check-system-model", kwargs={"key": "UXMFA"})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, "utc_entity_full")
+        self.assertContains(response, "utc_check_system_model")
+
+        # wait for asynchronous result
+        while "utc_waiting" in response.content.decode("utf8"):
+            time.sleep(1)
+            response = self.client.get(url)
+
+        self.assertContains(response, "Success")
+
+        # skip test if done in CI, see https://ackrep-doc.readthedocs.io/en/latest/devdoc/design_considerations.html#ci
+        if os.environ.get("CI") != "true":  #!
+            self.assertContains(response, "utc_img_url")
+
+            regex = re.compile("utc_img_url:<(.*?)>")
+            img_url = regex.findall(response.content.decode("utf8"))
+
+            response = self.client.get(img_url)
+
+            # TODO test that this url returns a file
+
+    @override_settings(DEBUG=True)
+    def test_debug_message_printing(self):
+
+        # broken lorenz system
+        url = reverse("check-system-model", kwargs={"key": "LRHZX"})
+
+        # prevent expected error logs from showing during test
+        loglevel = core.logger.level
+        # core.logger.setLevel(50)
+
+        # first: check if debug message shows when it should
+        settings.DEBUG = True
+        response = self.client.get(url)
+        while "utc_waiting" in response.content.decode("utf8"):
+            time.sleep(1)
+            response = self.client.get(url)
+
+        expected_error_infos = ["utc_debug", "SyntaxError", "parameters.py", "line"]
+        for info in expected_error_infos:
+            self.assertContains(response, info)
+        self.assertNotContains(response, "utc_output")
+
+        # second: check if debug message shows when it shouldn't
+        settings.DEBUG = False
+        response = self.client.get(url)
+        while "utc_waiting" in response.content.decode("utf8"):
+            time.sleep(1)
+            response = self.client.get(url)
+
+        expected_error_infos = ["utc_debug", "SyntaxError"]
+        for info in expected_error_infos:
+            self.assertNotContains(response, info)
+        self.assertNotContains(response, "utc_output")
+
+        core.logger.setLevel(loglevel)
 
     def test_sparql_query(self):
 
@@ -107,6 +205,14 @@ class TestCases2(DjangoTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "utc_template_name=ackrep_web/search_sparql.html")
 
+    def tearDown(self) -> None:
+        reset_repo(ackrep_data_test_repo_path)
+        old_cwd = os.getcwd()
+        os.chdir(os.path.join(core.root_path, "ackrep_core"))
+        res = subprocess.run(["celery", "-A", "ackrep_web", "control", "shutdown"], text=True, capture_output=True)
+        os.chdir(old_cwd)
+        return super().tearDown()
+
 
 class TestBugs(DjangoTestCase):
     """
@@ -114,7 +220,7 @@ class TestBugs(DjangoTestCase):
     """
 
     def setUp(self):
-        core.load_repo_to_db(core.data_test_repo_path)
+        load_repo_to_db_for_ut(ackrep_data_test_repo_path)
 
     def test_entity_detail(self):
         url = reverse("entity-detail", kwargs={"key": "YJBOX"})
@@ -130,7 +236,7 @@ class TestUI(LiveServerTestCase):
     Itegration tests via browser automation (package: splinter)
     """
 
-    # live_server_url = "http://localhost:8082/"
+    live_server_url = "http://127.0.0.1:8000"
 
     def setUp(self):
         d = dict()

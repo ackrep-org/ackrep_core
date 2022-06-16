@@ -1,6 +1,7 @@
 import time
 from textwrap import dedent as twdd
 import pprint
+from django.db import OperationalError
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.template.response import TemplateResponse
@@ -10,7 +11,18 @@ from django.utils import timezone
 from django.contrib import messages
 from ackrep_core import util
 from ackrep_core import core
+from ackrep_core import models
 from git.exc import GitCommandError
+from ackrep_core_django_settings import settings
+from git import Repo, InvalidGitRepositoryError
+import os
+import numpy as np
+from ackrep_core.models import ActiveJobs
+
+from ackrep_web.celery import app
+import subprocess
+from celery.result import AsyncResult
+import kombu
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
@@ -98,9 +110,7 @@ class ExtendDatabaseView(View):
 
 
 class EntityDetailView(View):
-    # noinspection PyMethodMayBeStatic
-    def get(self, request, key):
-
+    def get_context_container(self, key):
         try:
             entity = core.get_entity(key)
         except ValueError as ve:
@@ -111,53 +121,92 @@ class EntityDetailView(View):
         c.entity = entity
         c.view_type = "detail"
         c.view_type_title = "Details for:"
-
-        context = {"c": c}
+        if type(entity) == core.models.SystemModel:
+            c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
+        c.source_code_link = _create_source_code_link(entity)
+        c.source_code_container = _get_source_code(entity)
 
         # create an object container (entity.oc) where for each string-keys the real object is available
         core.resolve_keys(entity)
 
+        return c
+
+    # noinspection PyMethodMayBeStatic
+    def get(self, request, key):
+        c = self.get_context_container(key)
+        context = {"c": c}
+
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
-class CheckSolutionView(View):
-    # noinspection PyMethodMayBeStatic
+class CheckView(EntityDetailView):
     def get(self, request, key):
+        # inherit cotext data from EntityDetailView like source code and pdf
+        c = self.get_context_container(key)
 
-        try:
-            sol_entity = core.get_entity(key)
-        except ValueError as ve:
-            raise Http404(ve)
+        if type(c.entity) == models.ProblemSolution:
+            c.view_type = "check-solution"
+            c.view_type_title = "Check Solution for:"
 
-        # TODO: spawn a new container and shown some status updates while the user is waiting
+        elif type(c.entity) == models.SystemModel:
+            c.view_type = "check-system-model"
+            c.view_type_title = "Simulation for:"
 
-        core.resolve_keys(sol_entity)
+        # see if key is already in active job list
+        active_job = _get_active_job_by_key(key)
+        ## job not yet active -> add to queue
+        if active_job == None:
+            try:
+                res = core.check.delay(key)
+            except kombu.exceptions.OperationalError as oe:
+                msg = (
+                    f"No connection to broker could be established. "
+                    + f"Did you start rabbit or redis?\nOriginal error message: {type(oe)} {oe}"
+                )
+                assert 1 == 0, msg
 
-        c = core.Container()
-        ts1 = timezone.now()
-        cs_result = core.check_solution(key)
-        c.diff_time_str = util.smooth_timedelta(ts1)
+            _add_job_to_db(key, res.id)
 
-        c.entity = sol_entity
-        c.view_type = "check-solution"
-        c.view_type_title = "Check Solution for:"
-        c.cs_result = cs_result
+        active_job = _get_active_job_by_key(key)
+        res = AsyncResult(active_job["celery_id"], app=app)
 
-        c.image_list = core.get_solution_data_files(sol_entity.base_path, endswith_str=".png", create_media_links=True)
+        ## job already active -> check if done
+        if res.ready():
+            c.result = res.get()
+            c.image_list = core.get_data_files(c.entity.base_path, endswith_str=".png", create_media_links=True)
 
-        if cs_result.returncode == 0:
-            c.cs_result_css_class = "cs_success"
-            c.cs_verbal_result = "Success"
-            # c.debug = cs_result
+            c.show_debug = False
+
+            if c.result.returncode == 0:
+                c.result_css_class = "success"
+                c.verbal_result = "Success."
+                c.show_output = True
+            # no major error but numerical result was unexpected
+            elif c.result.returncode == 2:
+                c.result_css_class = "inaccurate"
+                c.verbal_result = "Inaccurate. (Different result than expected.)"
+                c.show_output = True
+            else:
+                c.result_css_class = "fail"
+                c.verbal_result = "Script Error."
+                c.show_debug = settings.DEBUG
+                c.show_output = False
+
+            c.diff_time_str = round(time.time() - active_job["start_time"], 1)
+            _remove_job_from_db(key)
+            c.waiting = False
+
+        # not yet done
         else:
-            c.cs_result_css_class = "cs_fail"
-            c.cs_verbal_result = "Fail"
-            c.debug = cs_result
+            eta = c.entity.estimated_runtime
+            job_run_time = round(time.time() - active_job["start_time"], 0)
+            c.verbal_result = f"Waiting for job to be done. Estimated runtime: {job_run_time}s/{eta}."
+            c.waiting = True
+            c.refresh_timeout = settings.REFRESH_TIMEOUT
 
         context = {"c": c}
-
         # create an object container (entity.oc) where for each string-key the real object is available
-
+        _purge_old_jobs()
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
@@ -254,3 +303,73 @@ class NotYetImplementedView(View):
         context = {}
 
         return TemplateResponse(request, "ackrep_web/not_yet_implemented.html", context)
+
+
+def _create_source_code_link(entity):
+    try:
+        repo = Repo(core.data_path)
+    except InvalidGitRepositoryError():
+        assert False, f"The directory {core.data_path} is not a git repository!"
+
+    base_url = settings.ACKREP_DATA_BASE_URL
+    branch_name = settings.ACKREP_DATA_BRANCH
+    rel_code_path = entity.base_path.replace("\\", "/").split("ackrep_data")[-1]
+    link = base_url.split(".git")[0] + "/" + branch_name + rel_code_path
+
+    return link
+
+
+def _get_source_code(entity):
+    c = core.Container()
+    abs_base_path = os.path.join(core.root_path, entity.base_path)
+    c.object_list = []
+
+    for i, file in enumerate(os.listdir(abs_base_path)):
+        if ".py" in file:
+            c.object_list.append(core.Container())
+            py_path = os.path.join(abs_base_path, file)
+            py_file = open(py_path)
+
+            c.object_list[-1].source_code = py_file.read()
+            c.object_list[-1].file_name = file
+            c.object_list[-1].id = "python_code_" + str(i)
+
+            py_file.close()
+
+    return c
+
+
+def _get_active_job_by_key(key):
+    """queries the database for active jobs with the given key. if none are found, None is returned. If exactly one is
+    found, this job is returned. Otherwise an error is rasied.
+    :return: tuple (key, celery_id)"""
+    active_job_list = ActiveJobs.objects.filter(key=key).values()
+    if len(active_job_list) == 0:
+        active_job = None
+    elif len(active_job_list) == 1:
+        active_job = active_job_list[0]
+    else:
+        msg = "There should not be multiple active jobs with the same key. Maybe job adding or removing is bugged."
+        assert 1 == 0, msg
+
+    return active_job
+
+
+def _add_job_to_db(key, celery_id):
+    """add an entry to db with key and celery_id"""
+    new_entry = ActiveJobs(key=key, celery_id=celery_id, start_time=time.time())
+    new_entry.save()
+    return 0
+
+
+def _remove_job_from_db(key):
+    """delete db entry with given key"""
+    ActiveJobs.objects.filter(key=key).delete()
+    return 0
+
+
+def _purge_old_jobs():
+    active_job_list = ActiveJobs.objects.all().values()
+    for job in active_job_list:
+        if time.time() - job["start_time"] > settings.RESULT_EXPIRATION_TIME:
+            _remove_job_from_db(job["key"])

@@ -1,13 +1,12 @@
 import inspect
 import yaml
 from . import models
-from .util import ObjectContainer, InconsistentMetaDataError
+from .util import ObjectContainer, InconsistentMetaDataError, DuplicateKeyError
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS  # only for debugging
 
 
-# TODO: rename this to get_entity_types
 def get_entity_types():
     """
     Return a list of all defined entities
@@ -50,25 +49,38 @@ def get_entity_dict_from_db(only_merged=True):
     return entity_dict
 
 
-def get_entity(key, hint=None):
-    # TODO: remove argument `hint`
+def get_entity(key, raise_error_on_empty=True):
+    """get entity with key from database
+    can be abused to check for multiple keys in db
 
-    assert hint is None, "the path-hint in the caller must be removed now"
+    Args:
+        key (str): entity key
+        raise_error_on_empty (bool, optional): set to False if db is in the process of initializing. Defaults to True.
 
+    Raises:
+        KeyError: if key not found in db (and raise_error_on_empty==True)
+        DuplicateKeyError: if multiple entites with key have been found
+
+    Returns:
+        GenericEntity: entity
+    """
     results = []
     for entity_type in get_entity_types():
         res = entity_type.objects.filter(key=key)
         results.extend(res)
 
-    if len(results) == 0:
+    if raise_error_on_empty and len(results) == 0:
         msg = f"No entity with key '{key}' could be found. Make sure that the database is in sync with repo."
         # TODO: this should be a 404 Error in the future
         raise KeyError(msg)
     elif len(results) > 1:
         msg = f"There have been multiple entities with key '{key}'. "
-        raise ValueError(msg)
+        raise DuplicateKeyError(msg)
 
-    entity = results[0]
+    if len(results) > 0:
+        entity = results[0]
+    else:
+        entity = None
 
     return entity
 

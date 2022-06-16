@@ -1,19 +1,23 @@
 import secrets
 import yaml
-import os
+import os, sys
 import pathlib
 import time
 import subprocess
 import shutil
+import logging
 from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
+import sqlite3
+from ackrep_web.celery import app
 
 # settings might be accessed from other modules which import this one (core)
 # noinspection PyUnresolvedReferences
 from django.conf import settings
 from django.core import management
+from django.db import connection as django_db_connection, connections as django_db_connections
 
 from yamlpyowl import core as ypo
 
@@ -34,14 +38,28 @@ from .util import (
     core_pkg_path,
     root_path,
     data_path,
-    data_test_repo_path,
     ObjectContainer,
     ResultContainer,
     InconsistentMetaDataError,
     DuplicateKeyError,
+    run_command,
 )
 
 from . import util
+
+
+# initialize logging with default loglevel (might be overwritten by command line option)
+# see https://docs.python.org/3/howto/logging-cookbook.html
+defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
+logger = logging.getLogger("ackrep_logger")
+FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
+DATEFORMAT = "%H:%M:%S"
+formatter = logging.Formatter(fmt=FORMAT, datefmt=DATEFORMAT)
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(defaul_loglevel)
+
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
 
@@ -72,6 +90,31 @@ required_generic_meta_data = {
     "external_references": None,
     "notes": None,
 }
+
+
+db_name = django_db_connection.settings_dict["NAME"]
+
+
+def send_debug_report(send=None):
+    """
+    Send debug information such as relevant environmental variables to designated output (logger or stdout).
+
+    :param send:    Function to be used for sending the message. Default: logger.debug. Alternatively: print.
+    """
+
+    if send is None:
+        send = logger.debug
+
+    row_template = "  {:<30}: {}"
+
+    send("** ENVIRONMENT VARS: **")
+    for k, v in os.environ.items():
+        if k.startswith("ACKREP_"):
+            send(row_template.format(k, v))
+
+    send("** DB CONNECTION:  **")
+    send(django_db_connections["default"].get_connection_params())
+    send("\n")
 
 
 def gen_random_entity_key():
@@ -176,8 +219,7 @@ def get_files_by_pattern(directory, match_func):
 
 
 def clear_db():
-
-    print("Clearing DB...")
+    logger.info("Clearing DB...")
     management.call_command("flush", "--no-input")
 
 
@@ -237,7 +279,7 @@ class ACKREP_OntologyManager(object):
                         instance.has_ontology_based_tag.append(proxy_individual)
                     # IPS(e.key == "M4PDA")
             else:
-                print("unknown entity type:", e)
+                logger.warning(f"unknown entity type: {e}")
 
         if len(list(self.OM.n.ACKREP_ProblemSolution.instances())) == 0:
             msg = "Instances of ACKREP_ProblemSolution are missing. This is unexpected."
@@ -341,7 +383,7 @@ class ACKREP_OntologyManager(object):
 
 
 def load_repo_to_db(startdir, check_consistency=True):
-    print("Completely rebuilding DB from file system")
+    logger.info("Completely rebuilding DB from file system")
 
     clear_db()
 
@@ -349,7 +391,7 @@ def load_repo_to_db(startdir, check_consistency=True):
 
     if check_consistency:
         # TODO: this should be disabled during unittest to save time
-        print("Create internal links between entities (only for consistency checking) ...")
+        logger.debug("Create internal links between entities (only for consistency checking) ...")
         entity_dict = model_utils.get_entity_dict_from_db()
 
         for etype, elist in entity_dict.items():
@@ -376,12 +418,12 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
         status `open` in the database. Also set merge_request to supplied key on new
         entities.
     """
-    print("Searching '%s' and subdirectories for 'metadata.yml'..." % (os.path.abspath(startdir)))
+    logger.debug("Searching '%s' and subdirectories for 'metadata.yml'..." % (os.path.abspath(startdir)))
     meta_data_files = list(get_files_by_pattern(startdir, lambda fn: fn == "metadata.yml"))
     entity_list = []
-    print("Found %d entity metadata files" % (len(meta_data_files)))
+    logger.debug("Found %d entity metadata files" % (len(meta_data_files)))
 
-    print("Creating DB objects...")
+    logger.info("Creating DB objects...")
     for md_path in meta_data_files:
 
         md = get_metadata_from_file(md_path)
@@ -394,37 +436,35 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
         # example: C:\dev\ackrep\ackrep_data\problem_solutions\solution1 --> ackrep_data\problem_solutions\solution1
         base_path_rel = os.path.relpath(base_path_abs, root_path)
         e.base_path = base_path_rel
-        print(e.key, e.base_path)
+        logger.debug((e.key, e.base_path))
 
-        duplicates = get_entities_with_key(e.key)
-        if (
-            merge_request is None
-            or not duplicates
-            or all([d.status() == models.MergeRequest.STATUS_OPEN for d in duplicates])
-        ):
-            # try to import entity
-            if duplicates:
-                raise DuplicateKeyError(e.key)
+        # check for duplicate keys
+        get_entity(e.key, raise_error_on_empty=False)
 
-            # store to db
-            e.save()
-            entity_list.append(e)
+        # store to db
+        e.save()
+        entity_list.append(e)
 
-    print("Added %d new entities to DB" % (len(entity_list)))
+    logger.info("Added %d new entities to DB" % (len(entity_list)))
     return entity_list
 
 
-def get_solution_data_files(sol_base_path, endswith_str=None, create_media_links=False):
+def get_data_files(base_path, endswith_str=None, create_media_links=False):
     """
-    walk through <base_path>/_solution_data and return the path of all matching files
+    walk through <base_path>/_solution_data or <base_path>/_system_model_data depending on the base_path
+    and return the path of all matching files
 
-    :param sol_base_path:
+    :param base_path: entity.base_path
     :param endswith_str:
     :param create_media_links:  if True, create symlinks in `settings.MEDIA_ROOT` to these files
     :return:
     """
-
-    startdir = os.path.join(root_path, sol_base_path, "_solution_data")
+    if "system_models" in base_path:
+        startdir = os.path.join(root_path, base_path, "_system_model_data")
+    elif "problem_solutions" in base_path:
+        startdir = os.path.join(root_path, base_path, "_solution_data")
+    else:
+        raise FileNotFoundError("invalid path!")
 
     if not os.path.isdir(startdir):
         return []
@@ -439,24 +479,27 @@ def get_solution_data_files(sol_base_path, endswith_str=None, create_media_links
         def matchfunc(fn):
             return fn.endswith(endswith_str)
 
-    abs_solution_files = list(get_files_by_pattern(startdir, matchfunc))
+    abs_files = list(get_files_by_pattern(startdir, matchfunc))
 
     # convert absolute paths into relative paths (w.r.t. `root_path`)
 
-    solution_files = [f.replace(f"{root_path}{os.path.sep}", "") for f in abs_solution_files]
+    files = [f.replace(f"{root_path}{os.path.sep}", "") for f in abs_files]
 
     if create_media_links:
         result = []
-        for abs_path, rel_path in zip(abs_solution_files, solution_files):
+        for abs_path, rel_path in zip(abs_files, files):
             link = rel_path.replace(os.path.sep, "_")
             abs_path_link = os.path.join(settings.MEDIA_ROOT, link)
-            if not os.path.exists(abs_path_link):
-                os.symlink(abs_path, abs_path_link)
+            # always recreate link. In the previous version, removing and rebuilding the media file
+            # would not renew the link and thus show the old file
+            if os.path.exists(abs_path_link):
+                os.unlink(abs_path_link)
+            os.symlink(abs_path, abs_path_link)
             result.append(f"{settings.MEDIA_URL}{link}")
 
         return result
     else:
-        return solution_files
+        return files
 
 
 def make_method_build(method_package, accept_existing=True):
@@ -492,96 +535,170 @@ def make_method_build(method_package, accept_existing=True):
     return full_build_path
 
 
-# TODO: merge with `get_entity_dict_from_db`
-def get_entities_with_key(key):
+def check_generic(key: str):
+    """create entity and context, create execscript, run execscript.
+    This is the successor of check_solution and check_system_model
+
+    Args:
+        key (str): entity key
+
+    Returns:
+        CompletedProcess: result of execscript
     """
-    get all entities in the database that have a specific key
+    entity, c = get_entity_context(key)
+    scriptpath = create_execscript_from_template(entity, c)
+    res = run_execscript(scriptpath)
+
+    return res
+
+
+def get_entity_context(key: str):
+    """get entity and build context based on key
+
+    Args:
+        key (str): entity key
+
+    Returns:
+        models.GenericEntity, Container: entity, context dict
     """
-    entity_types = model_utils.get_entity_types()
-    entities_with_key = []
 
-    for et in entity_types:
-        entities_with_key += list(et.objects.filter(key=key))
+    entity = get_entity(key)
+    resolve_keys(entity)
 
-    return entities_with_key
+    entity_type = type(entity)
+    assert entity_type in (models.SystemModel, models.ProblemSolution)
 
+    # test entity type and get path to relevant file
+    if entity_type == models.ProblemSolution:
+        python_file = entity.solution_file
+        if python_file != "solution.py":
+            msg = "Arbitrary filename will be supported in the future"
+            raise NotImplementedError(msg)
 
-def check_solution(key):
-    """
-
-    :param key:                 entity key of the ProblemSolution
-    :return:
-    """
-
-    sol_entity = get_entity(key)
-    resolve_keys(sol_entity)
-
-    assert isinstance(sol_entity, models.ProblemSolution)
-
-    # get path for solution
-    solution_file = sol_entity.solution_file
-
-    if solution_file != "solution.py":
-        msg = "Arbitrary filename will be supported in the future"
-        raise NotImplementedError(msg)
+    elif entity_type == models.SystemModel:
+        python_file = entity.system_model_file
+        if python_file != "system_model.py":
+            msg = "Arbitrary filename will be supported in the future"
+            raise NotImplementedError(msg)
+    else:
+        raise NotImplementedError
 
     c = Container()  # this will be our easily accessible context dict for the template
 
-    # TODO: handle the filename (see also template)
-    c.solution_path = os.path.join(root_path, sol_entity.base_path)
+    if entity_type == models.ProblemSolution:
+        c.solution_path = os.path.join(root_path, entity.base_path)
+        assert len(entity.oc.solved_problem_list) >= 1
+
+        if entity.oc.solved_problem_list == 0:
+            msg = f"{entity}: Expected at least one solved problem."
+            raise InconsistentMetaDataError(msg)
+
+        elif len(entity.oc.solved_problem_list) == 1:
+            problem_spec = entity.oc.solved_problem_list[0]
+        else:
+            logger.warning("Applying a solution to multiple problems is not yet supported. Taking the last one.")
+            problem_spec = entity.oc.solved_problem_list[-1]
+
+        if problem_spec.problem_file != "problem.py":
+            msg = "Arbitrary filename will be supported in the future"
+            raise NotImplementedError(msg)
+
+        # TODO: handle the filename (see also template)
+        c.problem_spec_path = os.path.join(root_path, problem_spec.base_path)
+
+        # list of the build_paths
+        c.method_package_list = []
+        for mp in entity.oc.method_package_list:
+            full_build_path = make_method_build(mp, accept_existing=True)
+            assert os.path.isdir(full_build_path)
+            c.method_package_list.append(full_build_path)
+
+    elif entity_type == models.SystemModel:
+        c.system_model_path = os.path.join(root_path, entity.base_path)
+    else:
+        raise NotImplementedError
 
     c.ackrep_core_path = core_pkg_path
 
     # noinspection PyUnresolvedReferences
-    assert isinstance(sol_entity.oc, ObjectContainer)
+    assert isinstance(entity.oc, ObjectContainer)
 
-    assert len(sol_entity.oc.solved_problem_list) >= 1
+    return entity, c
 
-    if sol_entity.oc.solved_problem_list == 0:
-        msg = f"{sol_entity}: Expected at least one solved problem."
-        raise InconsistentMetaDataError(msg)
 
-    elif sol_entity.oc.solved_problem_list == 1:
-        problem_spec = sol_entity.oc.solved_problem_list[0]
-    else:
-        print("Applying a solution to multiple problems is not yet supported. Taking the last one.")
-        problem_spec = sol_entity.oc.solved_problem_list[-1]
+def create_execscript_from_template(entity: models.GenericEntity, c: Container, scriptpath=None):
+    """create execscript from template. if scriptpath is None, the default script path
+    in the respective data repo is used.
+    return scriptpath
 
-    if problem_spec.problem_file != "problem.py":
-        msg = "Arbitrary filename will be supported in the future"
-        raise NotImplementedError(msg)
+    Args:
+        entity (models.GenericEntity): entity
+        c (Container): context dict
+        scriptpath (str or None, optional): specify where to store the script. Only usefull for
+        ackrep --prepare-script. Defaults to None.
 
-    # TODO: handle the filename (see also template)
-    c.problem_spec_path = os.path.join(root_path, problem_spec.base_path)
+    Raises:
+        NotImplementedError: if entity is neither system model nor solution
 
-    # list of the build_paths
-    c.method_package_list = []
-    for mp in sol_entity.oc.method_package_list:
-        full_build_path = make_method_build(mp, accept_existing=True)
-        assert os.path.isdir(full_build_path)
-        c.method_package_list.append(full_build_path)
+    Returns:
+        path_like: path to execscript
+    """
+    entity_type = type(entity)
+    assert entity_type in (models.SystemModel, models.ProblemSolution)
 
     context = dict(c.item_list())
 
-    print("  ... Creating exec-script ... ")
+    logger.info("  ... Creating exec-script ... ")
 
     scriptname = "execscript.py"
 
-    assert not sol_entity.base_path.startswith(os.path.sep)
+    assert not entity.base_path.startswith(os.path.sep)
 
-    # determine whether the entity comes from ackrep_data or ackrep_data_for_unittests ore ackrep_data_import
-    data_repo_path = pathlib.Path(sol_entity.base_path).parts[0]
-    scriptpath = os.path.join(root_path, data_repo_path, scriptname)
-    render_template("templates/execscript.py.template", context, target_path=scriptpath)
+    # determine whether the entity comes from ackrep_data or ackrep_data_for_unittests or ackrep_data_import
+    data_repo_path = pathlib.Path(entity.base_path).parts[0]
+    if scriptpath is None:
+        scriptpath = os.path.join(root_path, data_repo_path, scriptname)
+    else:
+        scriptpath = os.path.join(scriptpath, scriptname)
 
-    print(f"  ... running exec-script {scriptpath} ... ")
+    logger.info(f"execscript-path: {scriptpath}")
 
-    # TODO: plug in containerization here:
-    # Note: this hangs on any interactive element inside the script (such as IPS)
-    res = subprocess.run(["python", scriptpath], capture_output=True)
+    if entity_type == models.ProblemSolution:
+        render_template("templates/execscript.py.template", context, target_path=scriptpath)
+    elif entity_type == models.SystemModel:
+        render_template("templates/execscript_system_model.py.template", context, target_path=scriptpath)
+    else:
+        raise NotImplementedError
+
+    return scriptpath
+
+
+def run_execscript(scriptpath):
+    """run the execscript at a given location in subprocess. logs errors, returns result
+
+    Args:
+        scriptpath (path_like): path to execscript
+
+    Returns:
+        CompletedProcess: result of execscript
+    """
+    logger.info(f"  ... running exec-script {scriptpath} ... ")
+
+    res = run_command(["python", scriptpath], supress_error_message=True, capture_output=True)
     res.exited = res.returncode
-    res.stdout = res.stdout.decode("utf8")
-    res.stderr = res.stderr.decode("utf8")
+    if res.returncode == 2:
+        if res.stdout:
+            logger.warning(res.stdout)
+    elif res.returncode != 0:
+        logger.error(f"Error in execscript: {scriptpath}")
+        # some error messages live on stderr, some on stderr
+        if res.stdout:
+            logger.error(res.stdout)
+        if res.stderr:
+            logger.error(res.stderr)
+    else:
+        # propagate output of execscript through multiple subprocesses
+        print((res.stdout), file=sys.stdout)
 
     return res
 
@@ -671,4 +788,230 @@ def get_merge_request_dict():
     return mr_dict
 
 
+def send_log_messages() -> None:
+    """
+    Create a log message of every category. Main purpose: to be used in unit tests.
+    """
+    # this serves as a delimiter to distinguish these messages from others
+    logger.critical("- - - demo log messages - - -")
+    logger.critical("critical")
+    logger.error("error")
+    logger.warn("warning")
+    logger.info("info")
+    logger.debug("debug")
+
+
+def print_entity_info(key: str) -> None:
+    """
+    Print a report on an entity to stdout.
+
+    :param key:    key of the respective entity
+    """
+    entity = get_entity(key)
+
+    # this uses print and not logging because the user expects this output independently
+    # from loglevel
+    print("Entity Info")
+    row_template = "  {:<20}: {}"
+    print(row_template.format("name", entity.name))
+    print(row_template.format("key", entity.key))
+    print(row_template.format("short description", entity.short_description))
+    print(row_template.format("base path", entity.base_path))
+    print()
+
+
 AOM = ACKREP_OntologyManager()
+
+
+@app.task
+def check(key):
+    """General function to check system model or solution, calculated inside docker image.
+    The image is chosen from the compatible environment of the given entity
+    structogram:
+    - get_entity
+    - get env key
+    - try to find running env container id
+    - if container exists
+        - if container has INcorrect db loaded
+            - shutdown
+    - if container NOT already running:
+        - if image available locally:
+            - docker-compose run --detached env_name bash
+        - else: # pull image from remote
+            - docker run --detached ghcr.io/../env_name bash
+        - wait for container to load its database
+        - get container id
+    - docker exec id ackrep -c key
+
+
+    Args:
+        key (str): entity key
+
+    Raises:
+        NotImplementedError: if key is neither solution nor system_model
+
+    Returns:
+        CompletedProcess: result of check
+    """
+    entity = get_entity(key)
+    is_solution = isinstance(entity, models.ProblemSolution)
+    is_system_model = isinstance(entity, models.SystemModel)
+    assert is_solution or is_system_model, f"key {key} is of neither solution nor system model. Unsure what to do."
+
+    default_env_key = "YJBOX"
+
+    # get environment name
+    env_key = entity.compatible_environment
+    if env_key == "" or env_key is None:
+        logger.info("No environment specification found. Using default env.")
+        env_key = default_env_key
+    env_name = get_entity(env_key).name
+    logger.info(f"running with environment spec: {env_name}")
+
+    # check if environment container is already running
+    cmd = ["docker", "ps", "--format", "{{.ID}}::{{.Names}}"]
+    res = subprocess.run(cmd, text=True, capture_output=True)
+    for container in res.stdout.split("\n"):
+        if env_name in container:
+            container_id = container.split("::")[0]
+            # check if environment container has the correct db loaded
+            # TODO: for now this checks the difference of regular and ut case
+            cmd = ["docker", "exec", container_id, "printenv", "ACKREP_DATA_PATH"]
+            res = subprocess.run(cmd, text=True, capture_output=True)
+            data_path_container = res.stdout.replace("\n", "").split("/")[-1]
+            assert data_path_container in ["ackrep_data", "ackrep_data_for_unittests"]
+            if data_path_container != data_path.split("/")[-1]:
+                logger.info("Running container has wrong db loaded. Shutting down.")
+                cmd = ["docker", "stop", container_id]
+                res = subprocess.run(cmd, text=True, capture_output=True)
+                assert res.returncode == 0
+                container_id = None
+            break
+        else:
+            container_id = None
+
+    # Container not yet running, start container, load db, wait
+    # container is running detached, so the script can continue
+    if container_id is None:
+        logger.info(f"no container for {env_name} found, starting new one.")
+        # try to use local docker image (for development)
+        image_name = "ackrep_deployment_" + env_name
+        cmd = ["docker", "images", "-q", image_name]
+        res = run_command(cmd, supress_error_message=True, capture_output=True)
+        local_image_id = res.stdout.replace("\n", "")
+        logger.info(f"local image id: {local_image_id}")
+        if len(local_image_id) == 12:  # 12 characters image id + \n
+            logger.info("running local image")
+            image_name = env_name  # since docker-compose doesnt use prefix
+
+            assert os.path.isdir("../ackrep_deployment"), "docker-compose file not found"
+            cmd = ["docker-compose", "--file", "../ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
+
+        # no local image -> use image from github
+        else:
+            logger.info("running remote image")
+            image_name = "ghcr.io/ackrep-org/" + env_name
+            cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
+            # * Note: even though we are running the container in the background (detached -d), we still have to
+            # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).
+            # * Otherwise, the container would stop after running the entrypoint script (load db). This is noteworthy,
+            # * since -d and -ti seem to be contradictory.
+
+        # building the docker command
+
+        cmd.extend(get_docker_env_vars())
+
+        cmd.extend(get_data_repo_host_address())
+
+        cmd.extend([image_name, "bash"])
+
+        logger.info(f"docker command: {cmd}")
+        res = run_command(cmd, supress_error_message=True, capture_output=True)
+        if res.returncode != 0:
+            logger.error(f"{res.stdout} | {res.stderr}")
+            assert 1 == 0, "container was not started correctly"
+        else:
+            # technically this is the container name, but it works just the same
+            container_id = res.stdout.replace("\n", "")
+
+        # wait for db to be loaded, since the container is running detached
+        while True:
+            cmd = ["docker", "exec", container_id, "ackrep", "--show-entity-info", key]
+            res = run_command(cmd, supress_error_message=True, capture_output=True)
+            if res.returncode == 0:
+                break
+            else:
+                logger.info("waiting for db to be loaded...")
+                time.sleep(1)
+        logger.info(f"New env container started.")
+
+    logger.info(f"Check running in Container: {container_id}")
+
+    # run check in already running container
+    cmd = ["docker", "exec", container_id, "ackrep", "-c", key]
+    res = run_command(cmd, supress_error_message=True, capture_output=True)
+    if res.returncode != 0:
+        logger.error(f"{res.stdout} | {res.stderr}")
+    return res
+
+
+def get_docker_env_vars():
+    """rebuild environment variables suitable inside docker container
+    env var is set by unittest
+    return array with flags and paths to extend docker cmd
+    """
+    if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
+        msg = (
+            f'env variables set: ACKREP_DATABASE_PATH={os.environ.get("ACKREP_DATABASE_PATH")}'
+            + 'ACKREP_DATA_PATH=os.environ.get("ACKREP_DATA_PATH")'
+        )
+        logger.info(msg)
+        database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
+        ackrep_data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
+        cmd_extension = ["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"]
+    # nominal case
+    else:
+        logger.info(
+            f"env var ACKREP_DATABASE_PATH, ACKREP_DATA_PATH no set, using defaults: db.sqlite3 and {data_path}"
+        )
+        database_path = os.path.join("/code/ackrep_core", "db.sqlite3")
+        ackrep_data_path = os.path.join("/code", data_path)
+        cmd_extension = ["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"]
+    logger.info(f"ACKREP_DATABASE_PATH {database_path}")
+    logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
+
+    return cmd_extension
+
+
+def get_data_repo_host_address():
+    """data repo address on host via environment vaiable,
+    especially necessary when starting env container out of celery container
+    return array with flags and paths to extend docker cmd
+    """
+
+    # nominal case
+    if os.environ.get("CI") != "true":
+        host_address = os.environ.get("DATA_REPO_HOST_ADDRESS")
+        # env variable will be empty when running local server without docker
+        if host_address is None:
+            logger.info(f"env var DATA_REPO_HOST_ADDRESS is not set. Setting it to default {data_path}")
+            host_address = data_path
+        logger.info(f"data host address: {host_address}")
+        assert host_address is not None, "env var DATA_REPO_HOST_ADDRESS is not set."
+        target = os.path.split(host_address)[1]
+        assert "ackrep_data" in target, f"{target} is not a valid volume destination"
+        cmd_extension = ["-v", f"{host_address}:/code/{target}"]
+    # circleci unittest case
+    else:
+        # volumes cant be mounted in cirlceci, this is the workaround,
+        # see https://circleci.com/docs/2.0/building-docker-images/#mounting-folders
+        cmd_extension = ["--volumes-from", "dummy"]
+
+    return cmd_extension
+
+
+""" 
+for debugging containers:
+docker-compose --file ../ackrep_deployment/docker-compose.yml run --rm -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data default_environment bash
+docker run --rm -ti -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data ghcr.io/ackrep-org/default_environment bash
+"""

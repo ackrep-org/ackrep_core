@@ -79,12 +79,31 @@ TEMPLATES = [
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+# allow for separate databases, e.g. to handle unittests that make cli calls to `ackrep`
+database_path = os.environ.get("ACKREP_DATABASE_PATH")
+if not (database_path):
+    # use default db name
+    database_path = os.path.join(BASE_DIR, "db.sqlite3")
+
+    test_db_settings = {
+        "TEST": {
+            "ENGINE": "django.db.backends.sqlite3",
+            # TODO: ensure that this is consistent with test_core.py
+            "NAME": os.path.join(BASE_DIR, "db_for_unittests.sqlite3"),
+        }
     }
-}
+else:
+    # use the provided path also as path for the test db
+
+    test_db_settings = {
+        "TEST": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": database_path,
+        }
+    }
+
+
+DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": database_path, **test_db_settings}}
 
 
 # Password validation
@@ -135,6 +154,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 BACKUP_PATH = os.path.join(BASE_DIR, "db_backups")
 
 TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
+
+# static url of the current ackrep_data branch running on the server (used to show link to source code)
+ACKREP_DATA_BASE_URL = "https://github.com/ackrep-org/ackrep_data.git"
+ACKREP_DATA_BRANCH = "tree/systemModelsCatalog"
+
+# refresh rate of page when waiting for check to load [ms]
+REFRESH_TIMEOUT = 2000
+
+# celery urls for running in docker
+CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_RESULT_BACKEND = "redis://redis:6379/0"
+RESULT_EXPIRATION_TIME = 3600  # [ms]
 
 
 # The following mechanism allows to incorporate custom settings (which are maintained
