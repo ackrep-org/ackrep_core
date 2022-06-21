@@ -35,6 +35,14 @@
     document.getElementById("javascript_msg").style.display = "none";
 </script>
 
+<div id="navbar">
+    <a href="/">Home</a>
+    <a href="{%url 'entity-list'%}">Entity List</a>
+    <a href="{%url 'merge-request-list'%}">Merge Request List</a>
+    <a href="{%url 'search-sparql'%}">Search</a>
+</div>
+
+
 <!-- block content-->
 {% block content %}
 {% endblock  %}
@@ -42,7 +50,6 @@
         </div>
     </div>
 </div>
-
 
 
 <footer>
