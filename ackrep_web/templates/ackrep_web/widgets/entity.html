@@ -67,13 +67,13 @@
         <b>Solved Problems:</b>
         {% for e in entity.oc.solved_problem_list %}
             {# TODO: add more information in mouseover #}
-            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a> &nbsp; |  &nbsp;
+            <a href="{% url 'entity-detail' e.key %}" title="{{e.short_description}}">{{e.name}}</a> &nbsp; |  &nbsp;
         {% endfor %}
         <br>
         <b>Used Methods:</b>
         {% for e in entity.oc.method_package_list %}
             {# TODO: add more information in mouseover #}
-            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a>
+            <a href="{% url 'entity-detail' e.key %}" title="{{e.short_description}}">{{e.name}}</a>
         {% endfor %}
 
         {% if c.view_type == "detail" %}
@@ -127,20 +127,23 @@
         <b>Available solutions:</b>
         {% for e in entity.available_solutions_list %}
             {# TODO: add more information in mouseover #}
-            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a> &nbsp; |  &nbsp;
+            <br>
+            <a href="{% url 'entity-detail' e.key %}" title="{{e.short_description}}">{{e.name}}</a>
         {% endfor %}
         <br>
         <b>Related System Models:</b>
         {% for e in entity.oc.related_system_models_list %}
             {# TODO: add more information in mouseover #}
-            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a> &nbsp; |  &nbsp;
+            <br>
+            <a href="{% url 'entity-detail' e.key %}" title="{{e.short_description}}">{{e.name}}</a>
         {% endfor %}
         <br>
     {% elif entity.type == "system_model" %}
         <b>Related Problems:</b>
         {% for e in entity.related_problems_list %}
             {# TODO: add more information in mouseover #}
-            <a href="{% url 'entity-detail' e.key %}" title="mouseover">{{e.name}}</a> &nbsp; |  &nbsp;
+            <br>
+            <a href="{% url 'entity-detail' e.key %}" title="{{e.short_description}}">{{e.name}}</a>
         {% endfor %}
         <br>
         <b>Extensive Material:</b><br>
