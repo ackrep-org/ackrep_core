@@ -947,9 +947,10 @@ def check(key):
         logger.info(f"New env container started.")
 
     logger.info(f"Check running in Container: {container_id}")
-
+    
+    host_uid = get_host_uid()
     # run check in already running container
-    cmd = ["docker", "exec", container_id, "ackrep", "-c", key]
+    cmd = ["docker", "exec", "--user", host_uid, container_id, "ackrep", "-c", key]
     res = run_command(cmd, supress_error_message=True, capture_output=True)
     if res.returncode != 0:
         logger.error(f"{res.stdout} | {res.stderr}")
@@ -983,18 +984,32 @@ def get_docker_env_vars():
     logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
 
     # user id of host
-    host_uid = os.environ.get("HOST_UID")
-    if host_uid is not None:
-        logger.info(f"HOST_UID env var set {host_uid}")
-        cmd_extension.extend(["-e", f"HOST_UID={host_uid}"])
-    else:
-        logger.info(f"HOST_UID env var not set.")
-        host_uid = os.getuid()
-        cmd_extension.extend(["-e", f"HOST_UID={host_uid}"])
+    host_uid = get_host_uid()
+    cmd_extension.extend(["-e", f"HOST_UID={host_uid}"])
     logger.info(f"Using host id {host_uid}.")
+
+    # user name of host
+    host_name = os.environ.get("HOST_NAME")
+    if host_name is not None:
+        logger.info(f"HOST_NAME env var set {host_name}")
+    else:
+        logger.info(f"HOST_NAME env var not set.")
+        import getpass
+        host_name = getpass.getuser()
+    cmd_extension.extend(["-e", f"HOST_NAME={host_name}"])
+    logger.info(f"Using host name {host_name}.")
 
     return cmd_extension
 
+def get_host_uid():
+    # user id of host
+    host_uid = os.environ.get("HOST_UID")
+    if host_uid is not None:
+        logger.info(f"HOST_UID env var set {host_uid}")
+    else:
+        logger.info(f"HOST_UID env var not set.")
+        host_uid = os.getuid()
+    return str(host_uid)
 
 def get_data_repo_host_address():
     """data repo address on host via environment vaiable,
