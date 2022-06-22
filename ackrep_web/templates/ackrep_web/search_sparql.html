@@ -26,6 +26,77 @@
 </code>
 {% endif %}
 
+<b>Help and Examples for SPARQL Syntax:</b>
+[
+<label for="show">
+    <span class="fake_button">Show</span>
+</label>
+<input type=radio id="show" name="group">
+/
+<label for="hide">
+    <span class="fake_button"> Hide</span> 
+</label>    
+<input type=radio id="hide" name="group">
+]
+<span id="content">
+    SPARQL queries can be read as a very simple sentence of subject, predicate (sometimes a auxiliary verb such as "has"
+     or "is" is implied), object. E.g. 
+    <code style="display:block; white-space:pre-wrap">
+    SELECT ?book
+    WHERE
+    {
+        ?book has_author MarkTwain.
+    }
+    </code>
+    selects all books of the author Mark Twain existing in the database. Depending on where the subject, predicate or 
+    object is defined, different prefixes have to be prepended (e.g. "rdf:", "rdfs:" for 
+    <a href="https://www.w3.org/TR/rdf-sparql-query/#docNamespaces">general namespaces</a> and "P:" for the 
+    <a href="https://github.com/ackrep-org/ackrep_data/blob/main/ontology/ocse-prototype-01.owl.yml">ackrep-specific namespace</a>).
+    For a more detailed introduction to SPARQL Queries, see 
+    <a href="https://www.wikidata.org/wiki/Wikidata:SPARQL_tutorial#SPARQL_basics">Wikidata SPARQL tutorial</a>.
+    <br><br>
+    <b>Some examples of usefull queries in the ackrep context: </b>
+    <br>
+    Find the entity with a given key (e.g. UXMFA):
+    <code style="display:block; white-space:pre-wrap">
+    PREFIX P: &lt;https://ackrep.org/draft/ocse-prototype01#&gt;
+    SELECT ?entity
+    WHERE {
+        ?entity P:has_entity_key "UXMFA".
+    }
+    </code>
+    <br>
+    Select all ackrep entities that use linear state feedback:
+    <code style="display:block; white-space:pre-wrap">
+    PREFIX P: &lt;https://ackrep.org/draft/ocse-prototype01#&gt;
+    SELECT ?entity
+    WHERE {
+        ?entity P:has_ontology_based_tag P:iLinear_State_Feedback.
+    }
+    </code>
+    <br>
+    Select all problem solutions, that use closed loop control:
+    <code style="display:block; white-space:pre-wrap">
+    PREFIX P: &lt;https://ackrep.org/draft/ocse-prototype01#&gt;
+    SELECT ?entity
+    WHERE {
+        ?entity rdf:type P:ACKREP_ProblemSolution.
+        ?entity P:has_ontology_based_tag P:iClosed_Loop_Control.
+    }
+    </code>
+    <br>
+    Select all entites, that have both tags "Convergence_To_Desired_Trajectory" and "Trajectory_Generation":
+    <code style="display:block; white-space:pre-wrap">
+    PREFIX P: &lt;https://ackrep.org/draft/ocse-prototype01#&gt;
+    SELECT ?entity
+    WHERE {
+        ?entity P:has_ontology_based_tag P:iConvergence_To_Desired_Trajectory.
+        ?entity P:has_ontology_based_tag P:iTrajectory_Generation.
+    }
+    </code>
+</span>
+<br>
+
 <h3>Resulting ACKREP Entities ({{ackrep_entities|length}}) </h3>
 {% if ackrep_entities %}
     {% for e in ackrep_entities %}
