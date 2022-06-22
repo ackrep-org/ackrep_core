@@ -63,7 +63,7 @@ class TestCases1(DjangoTestCase):
         response = self.client.get(url)
         self.assertEqual(url, "/")
 
-        # this should be an standard response for successful HTTP requests
+        # this should be a standard response for successful HTTP requests
         self.assertEqual(response.status_code, 200)
 
         bad_url = "foo-bar/baz"
@@ -74,7 +74,7 @@ class TestCases1(DjangoTestCase):
         url = reverse("entity-list")
         response = self.client.get(url)
 
-        # this should be an standard response for successful HTTP requests
+        # this should be a standard response for successful HTTP requests
         self.assertEqual(response.status_code, 200)
 
 
