@@ -44,6 +44,9 @@ def main():
         "--check-all-system-models", help="check all system models (may take some time)", action="store_true"
     )
     argparser.add_argument(
+        "--test-ci", help="check some entities, some will fail", action="store_true"
+    )
+    argparser.add_argument(
         "--update-parameter-tex",
         metavar="metadatafile",
         help="update parameters of system model in tex file (system model entity is specified by metadata file or key)",
@@ -148,6 +151,8 @@ def main():
         check_all_solutions()
     elif args.check_all_system_models:
         check_all_system_models()
+    elif args.test_ci:
+        test_ci()
     elif args.get_metadata_abs_path_from_key:
         key = args.get_metadata_abs_path_from_key
         exitflag = not args.show_debug
@@ -261,6 +266,19 @@ def check_all_system_models():
 
     exit(sum(returncodes))
 
+def test_ci():
+    returncodes = []
+    for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
+        res = check_with_docker(key, exitflag=False)
+        returncodes.append(res.returncode)
+        print("---")
+
+    if returncodes == 0:
+        print(bgreen("All checks successfull."))
+    else:
+        print(bred("Some check failed."))
+
+    exit(sum(returncodes))
 
 def check(arg0: str, exitflag: bool = True):
     """
