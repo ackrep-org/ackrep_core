@@ -1,10 +1,13 @@
 import argparse
 import subprocess
 import pprint
+import time
+import datetime
 import questionary
 import platform
 from django.core import management
 from django.conf import settings
+import yaml
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -267,9 +270,25 @@ def check_all_system_models():
     exit(sum(returncodes))
 
 def test_ci():
+    file_name = "ci_results.yaml"
+    if os.path.exists(file_name):
+        os.remove(file_name)
     returncodes = []
     for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
+        start_time = time.time()
         res = check_with_docker(key, exitflag=False)
+        runtime = round(time.time() - start_time, 0)
+        result = res.returncode
+        if res.returncode == 0:
+            issues = ""
+        else:
+            issues = res.stdout
+        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date}}
+        with open(file_name, 'a') as file:
+            documents = yaml.dump(content, file)
+        
         returncodes.append(res.returncode)
         print("---")
 
@@ -278,7 +297,8 @@ def test_ci():
     else:
         print(bred("Some check failed."))
 
-    exit(sum(returncodes))
+    # exit(sum(returncodes))
+    exit(0)
 
 def check(arg0: str, exitflag: bool = True):
     """
