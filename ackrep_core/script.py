@@ -77,6 +77,7 @@ def main():
         metavar="metadatafile",
     )
     argparser.add_argument(
+        "-rie",
         "--run-interactive-environment",
         nargs="+",
         help="Start an interactive session with a docker container of an environment image of your choice."
