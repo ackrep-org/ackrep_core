@@ -876,7 +876,7 @@ def check(key):
             container_id = container.split("::")[0]
             logger.info(f"Running Container found: {container}")
             # check if environment container has the correct db loaded
-            # TODO: for now this checks the difference of regular and ut case
+            # TODO: for now this checks the difference between regular and ut case
             cmd = ["docker", "exec", container_id, "printenv", "ACKREP_DATA_PATH"]
             res = subprocess.run(cmd, text=True, capture_output=True)
             data_path_container = res.stdout.replace("\n", "").split("/")[-1]
@@ -932,24 +932,32 @@ def check(key):
             logger.error(f"{res.stdout} | {res.stderr}")
             assert 1 == 0, "container was not started correctly"
         else:
-            # technically this is the container name, but it works just the same
+            # running a container detached returns its id
             container_id = res.stdout.replace("\n", "")
 
         # wait for db to be loaded, since the container is running detached
+        start = time.time()
         while True:
-            cmd = ["docker", "exec", container_id, "ackrep", "--show-entity-info", key]
+            # Test with "definately existing" key UXMFA and not {key} to avoid potential issues with new keys
+            cmd = ["docker", "exec", container_id, "ackrep", "--show-entity-info", "UXMFA"]
             res = run_command(cmd, supress_error_message=True, capture_output=True)
             if res.returncode == 0:
                 break
             else:
                 logger.info("waiting for db to be loaded...")
                 time.sleep(1)
+                if time.time() - start > 15:
+                    logger.error(
+                        f"Timeout: Cant find key UXMFA in database, \
+                        which probably did not load correctly. Aborting."
+                    )
+                    return res
         logger.info(f"New env container started.")
 
-    logger.info(f"Check running in Container: {container_id}")
-
-    # run check in already running container
-    cmd = ["docker", "exec", container_id, "ackrep", "-c", key]
+    # run ackrep command in already running container
+    logger.info(f"Ackrep command running in Container: {container_id}")
+    host_uid = get_host_uid()
+    cmd = ["docker", "exec", "--user", host_uid, container_id, "ackrep", "-c", key]
     res = run_command(cmd, supress_error_message=True, capture_output=True)
     if res.returncode != 0:
         logger.error(f"{res.stdout} | {res.stderr}")
@@ -983,17 +991,22 @@ def get_docker_env_vars():
     logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
 
     # user id of host
+    host_uid = get_host_uid()
+    cmd_extension.extend(["-e", f"HOST_UID={host_uid}"])
+
+    return cmd_extension
+
+
+def get_host_uid():
+    # user id of host
     host_uid = os.environ.get("HOST_UID")
     if host_uid is not None:
         logger.info(f"HOST_UID env var set {host_uid}")
-        cmd_extension.extend(["-e", f"HOST_UID={host_uid}"])
     else:
         logger.info(f"HOST_UID env var not set.")
         host_uid = os.getuid()
-        cmd_extension.extend(["-e", f"HOST_UID={host_uid}"])
-    logger.info(f"Using host id {host_uid}.")
-
-    return cmd_extension
+    logger.info(f"Using host uid {host_uid} inside the container.")
+    return str(host_uid)
 
 
 def get_data_repo_host_address():

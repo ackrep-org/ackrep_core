@@ -308,8 +308,9 @@ class NotYetImplementedView(View):
 def _create_source_code_link(entity):
     try:
         repo = Repo(core.data_path)
-    except InvalidGitRepositoryError():
-        assert False, f"The directory {core.data_path} is not a git repository!"
+    except InvalidGitRepositoryError:
+        msg = (f"The directory {core.data_path} is not a git repository!")
+        raise InvalidGitRepositoryError(msg)
 
     base_url = settings.ACKREP_DATA_BASE_URL
     branch_name = settings.ACKREP_DATA_BRANCH
