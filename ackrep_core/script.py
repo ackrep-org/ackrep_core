@@ -46,9 +46,7 @@ def main():
     argparser.add_argument(
         "--check-all-system-models", help="check all system models (may take some time)", action="store_true"
     )
-    argparser.add_argument(
-        "--test-ci", help="check some entities, some will fail", action="store_true"
-    )
+    argparser.add_argument("--test-ci", help="check some entities, some will fail", action="store_true")
     argparser.add_argument(
         "--update-parameter-tex",
         metavar="metadatafile",
@@ -269,15 +267,15 @@ def check_all_system_models():
 
     exit(sum(returncodes))
 
+
 def test_ci():
-    file_name = "ci_results.yaml"
-    if os.path.exists(file_name):
-        os.remove(file_name)
+    date = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+    file_name = "ci_results__" + date + ".yaml"
     returncodes = []
     for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
         start_time = time.time()
         res = check_with_docker(key, exitflag=False)
-        runtime = round(time.time() - start_time, 0)
+        runtime = round(time.time() - start_time, 1)
         result = res.returncode
         if res.returncode == 0:
             issues = ""
@@ -286,19 +284,21 @@ def test_ci():
         date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date}}
-        with open(file_name, 'a') as file:
+        with open(file_name, "a") as file:
             documents = yaml.dump(content, file)
-        
+
         returncodes.append(res.returncode)
         print("---")
+
+    # TODO: curl webhook
 
     if returncodes == 0:
         print(bgreen("All checks successfull."))
     else:
         print(bred("Some check failed."))
 
-    # exit(sum(returncodes))
-    exit(0)
+    exit(sum(returncodes))
+
 
 def check(arg0: str, exitflag: bool = True):
     """

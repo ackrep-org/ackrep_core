@@ -54,9 +54,15 @@ footer {
     border: solid 1px;
     border-color:rgb(77, 62, 62);
 }
+
 .inaccurate {
     color:hsl(34, 90%, 45%);
 }
+
+.unknown {
+    color:hsl(0, 0%, 57%);
+}
+
 .success {
     color:hsl(120, 60%, 30%);
 }

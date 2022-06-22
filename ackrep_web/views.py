@@ -1,3 +1,4 @@
+from fileinput import filename
 import time
 from textwrap import dedent as twdd
 import pprint
@@ -18,6 +19,8 @@ from git import Repo, InvalidGitRepositoryError
 import os
 import numpy as np
 from ackrep_core.models import ActiveJobs
+from ackrep_core.util import run_command
+import yaml
 
 from ackrep_web.celery import app
 import subprocess
@@ -152,61 +155,49 @@ class CheckView(EntityDetailView):
             c.view_type = "check-system-model"
             c.view_type_title = "Simulation for:"
 
-        # see if key is already in active job list
-        active_job = _get_active_job_by_key(key)
-        ## job not yet active -> add to queue
-        if active_job == None:
-            try:
-                res = core.check.delay(key)
-            except kombu.exceptions.OperationalError as oe:
-                msg = (
-                    f"No connection to broker could be established. "
-                    + f"Did you start rabbit or redis?\nOriginal error message: {type(oe)} {oe}"
-                )
-                assert 1 == 0, msg
+        # TODO: modify filename to fit latest
+        results_filename = "ci_results.yaml"
+        results_path = os.path.join(core.root_path, "ci_results", results_filename)
+        with open(results_path) as results_file:
+            results = yaml.load(results_file, Loader=yaml.FullLoader)
+        try:
+            ci_result_entity = results[key]
+            c.result = ci_result_entity["result"]
+        except KeyError:
+            # TODO: Fallback to older CI Jobs
+            core.logger.warning(f"No CI result for key {key}.")
+            c.result = -1
 
-            _add_job_to_db(key, res.id)
+        # c.image_list = core.get_data_files(c.entity.base_path, endswith_str=".png", create_media_links=True)
 
-        active_job = _get_active_job_by_key(key)
-        res = AsyncResult(active_job["celery_id"], app=app)
+        c.show_debug = False
 
-        ## job already active -> check if done
-        if res.ready():
-            c.result = res.get()
-            c.image_list = core.get_data_files(c.entity.base_path, endswith_str=".png", create_media_links=True)
-
-            c.show_debug = False
-
-            if c.result.returncode == 0:
-                c.result_css_class = "success"
-                c.verbal_result = "Success."
-                c.show_output = True
-            # no major error but numerical result was unexpected
-            elif c.result.returncode == 2:
-                c.result_css_class = "inaccurate"
-                c.verbal_result = "Inaccurate. (Different result than expected.)"
-                c.show_output = True
-            else:
-                c.result_css_class = "fail"
-                c.verbal_result = "Script Error."
-                c.show_debug = settings.DEBUG
-                c.show_output = False
-
-            c.diff_time_str = round(time.time() - active_job["start_time"], 1)
-            _remove_job_from_db(key)
-            c.waiting = False
-
-        # not yet done
+        if c.result == 0:
+            c.result_css_class = "success"
+            c.verbal_result = "Success."
+            c.test_data = ci_result_entity["date"]
+            c.diff_time_str = ci_result_entity["runtime"]
+        # no major error but numerical result was unexpected
+        elif c.result == 2:
+            c.result_css_class = "inaccurate"
+            c.verbal_result = "Inaccurate. (Different result than expected.)"
+            c.test_data = ci_result_entity["date"]
+            c.issues = ci_result_entity["issues"]
+            c.diff_time_str = ci_result_entity["runtime"]
+        elif c.result == -1:
+            c.result_css_class = "unknown"
+            c.verbal_result = "Unknown. (Entity was not included in latest CI Job.)"
         else:
-            eta = c.entity.estimated_runtime
-            job_run_time = round(time.time() - active_job["start_time"], 0)
-            c.verbal_result = f"Waiting for job to be done. Estimated runtime: {job_run_time}s/{eta}."
-            c.waiting = True
-            c.refresh_timeout = settings.REFRESH_TIMEOUT
+            c.result_css_class = "fail"
+            c.verbal_result = "Script Error."
+            c.show_debug = settings.DEBUG
+            c.test_data = ci_result_entity["date"]
+            c.issues = ci_result_entity["issues"]
+            c.diff_time_str = ci_result_entity["runtime"]
 
         context = {"c": c}
         # create an object container (entity.oc) where for each string-key the real object is available
-        _purge_old_jobs()
+        # _purge_old_jobs()
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 
@@ -233,6 +224,49 @@ class NewMergeRequestView(View):
             messages.error(request, f"An error occurred: {error_str}")
 
             return redirect("new-merge-request")
+
+
+class NewCiResultView(View):
+
+    # noinspection PyMethodMayBeStatic
+    def get(self, request):
+        # assert os.environ.get("CIRCLE_TOKEN") is not None, "CIRCLE_TOKEN Env Var not set"
+        save_cwd = os.getcwd()
+        os.chdir(os.path.join(core.root_path, "ci_results"))
+
+        cmd = [
+            """curl -H 'Circle-Token: $CIRCLE_TOKEN' \
+        https://circleci.com/api/v1.1/project/github/ackrep-org/ackrep_data/latest/artifacts \
+        | grep -o 'https://[^"]*' \
+        | wget --verbose --header 'Circle-Token: $CIRCLE_TOKEN' --input-file -"""
+        ]
+        print(cmd)
+        res = subprocess.run(cmd, shell=True)
+        assert res.returncode == 0, "Unable to collect results from circleci."
+
+        with open("ci_results.yaml") as file:
+            results = yaml.load(file, Loader=yaml.FullLoader)
+
+        os.chdir(save_cwd)
+
+        context = {"results": results}
+
+        return TemplateResponse(request, "ackrep_web/new_ci_result.html", context)
+
+    # def post(self, request):
+    #     title = request.POST.get("title", "")
+    #     repo_url = request.POST.get("repo_url", "")
+    #     description = request.POST.get("description", "")
+
+    #     try:
+    #         mr = core.create_merge_request(repo_url, title, description)
+
+    #         return redirect("merge-request", key=mr.key)
+    #     except Exception as e:
+    #         error_str = str(e)
+    #         messages.error(request, f"An error occurred: {error_str}")
+
+    #         return redirect("new-merge-request")
 
 
 class MergeRequestDetailView(View):
@@ -309,7 +343,7 @@ def _create_source_code_link(entity):
     try:
         repo = Repo(core.data_path)
     except InvalidGitRepositoryError:
-        msg = (f"The directory {core.data_path} is not a git repository!")
+        msg = f"The directory {core.data_path} is not a git repository!"
         raise InvalidGitRepositoryError(msg)
 
     base_url = settings.ACKREP_DATA_BASE_URL

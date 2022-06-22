@@ -11,6 +11,7 @@ urlpatterns = [
     path("update-db", views.UpdateDatabaseView.as_view(), name="update-database"),
     path("imported", views.ImportedEntitiesView.as_view(), name="imported-entities"),
     path("new-mr", views.NewMergeRequestView.as_view(), name="new-merge-request"),
+    path("new-ci-res", views.NewCiResultView.as_view(), name="new-ci-result"),
     path("merge-requests", views.MergeRequestListView.as_view(), name="merge-request-list"),
     path("login", views.LandingPageView.as_view(), name="login"),
     path("update-mr", views.UpdateMergeRequestView.as_view(), name="update-merge-request"),
