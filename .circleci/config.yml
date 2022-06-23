@@ -60,6 +60,10 @@ jobs: # A basic unit of work in a run
           command: | 
             echo default env version:
             docker run --volumes-from dummy --entrypoint "tail" ghcr.io/ackrep-org/default_environment:latest -1 ../Dockerfile_default_environment
+            docker images
+            docker pull ghcr.io/ackrep-org/default_environment:latest
+            docker images
+            docker run --volumes-from dummy --entrypoint "tail" ghcr.io/ackrep-org/default_environment:latest -1 ../Dockerfile_default_environment
       - run:
           name: Test Core
           command: | 
