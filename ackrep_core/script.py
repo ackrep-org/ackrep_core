@@ -270,21 +270,27 @@ def check_all_system_models():
 
 
 def test_ci():
-    date = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-    file_name = "ci_results__" + date + ".yaml"
+    date = datetime.datetime.now()
+    date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
+    file_name = "ci_results__" + date_string + ".yaml"
     os.makedirs(os.path.join(core.root_path, "ackrep_ci_results/history"), exist_ok=True)
     file_path = os.path.join(core.root_path, "ackrep_ci_results/history", file_name)
     
     # save the commits of the current ci job 
-    data_log = Repo().head.log()[-1].format()
-    core_log = Repo("../ackrep_core").head.log()[-1].format()
-    content = {"commit_logs": {"ackrep_data": data_log, "ackrep_core": core_log}}
+    data_commit = Repo().commit("HEAD")
+    commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(data_commit.committed_date))
+    data_dict = {"date": commit_date, "message": data_commit.message, "author": data_commit.author}
+    
+    core_commit = Repo("../ackrep_core").commit("HEAD")
+    commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(core_commit.committed_date))
+    core_dict = {"date": commit_date, "message": core_commit.message, "author": core_commit.author}
+
+    content = {"commit_logs": {"ackrep_data": data_dict, "ackrep_core": core_dict}}
     with open(file_path, "a") as file:
         document = yaml.dump(content, file)
     
     returncodes = []
-    # for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
-    for key in ["ZPPRG", "UXMFA"]:#, "IWTAE", "HOZEE"]:
+    for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
         start_time = time.time()
         res = check_with_docker(key, exitflag=False)
         runtime = round(time.time() - start_time, 1)
@@ -293,9 +299,9 @@ def test_ci():
             issues = ""
         else:
             issues = res.stdout
-        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        date_string = date.strftime("%Y-%m-%d %H:%M:%S")
         
-        content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date}}
+        content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date_string}}
         
         if "Calculated with " in issues:
             version = issues.split("Calculated with ")[-1].split("\n\n")[0]
