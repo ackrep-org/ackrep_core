@@ -88,6 +88,14 @@
 
             <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
             <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
+            {% if c.last_time_passing %}
+                <div class="last_passing">
+                    <i>Entity passed last:</i> {{c.last_time_passing}}<br>
+                    <i>with data commit:</i> {{c.logs.ackrep_data}}<br>
+                    <i>with core commit:</i> {{c.logs.ackrep_core}}<br>
+                    <i>in environment:</i> {{c.logs.environment}}<br>
+                </div>
+            {% endif %}
             {% if c.show_output %}
                 {% if c.image_list %}
                     <b>Plot:</b><br>
@@ -145,6 +153,14 @@
 
             <b>Runtime:</b> {{c.diff_time_str}}s (estimated: {{entity.estimated_runtime}})<br>
             <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
+            {% if c.last_time_passing %}
+                <div class="last_passing">
+                    <i>Entity passed last:</i> {{c.last_time_passing}}<br>
+                    <i>with data commit:</i> {{c.logs.ackrep_data}}<br>
+                    <i>with core commit:</i> {{c.logs.ackrep_core}}<br>
+                    <i>in environment:</i> {{c.logs.environment}}<br>
+                </div>
+            {% endif %}
             {% if c.show_output %}
             
                 {% if c.image_list %}

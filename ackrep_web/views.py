@@ -174,6 +174,10 @@ class CheckView(EntityDetailView):
                 # entity passed on some old test:
                 if i > 0 and ci_result_entity["result"] == 0:
                     c.last_time_passing = ci_result_entity["date"]
+                    c.logs = core.Container()
+                    c.logs.ackrep_data = results["commit_logs"]["ackrep_data"]
+                    c.logs.ackrep_core = results["commit_logs"]["ackrep_core"]
+                    c.logs.environment = ci_result_entity["env_version"]    
                     exitflag = True
             else:
                 core.logger.info(f"Entity {key} is not in {result_filename}.")

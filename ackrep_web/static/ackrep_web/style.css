@@ -275,3 +275,7 @@ input#hide:checked ~ span#content {
 #navbar a:hover {
     background-color: #aaa;
 }
+
+.last_passing {
+    padding-left: 1cm;
+}

@@ -276,16 +276,21 @@ def test_ci():
     os.makedirs(os.path.join(core.root_path, "ackrep_ci_results/history"), exist_ok=True)
     file_path = os.path.join(core.root_path, "ackrep_ci_results/history", file_name)
     
+    content = {"commit_logs": {}}
     # save the commits of the current ci job 
-    data_commit = Repo().commit("HEAD")
-    commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(data_commit.committed_date))
-    data_dict = {"date": commit_date, "message": data_commit.message, "author": data_commit.author}
-    
-    core_commit = Repo("../ackrep_core").commit("HEAD")
-    commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(core_commit.committed_date))
-    core_dict = {"date": commit_date, "message": core_commit.message, "author": core_commit.author}
+    for repo_name in ["ackrep_data", "ackrep_core"]:
+        repo = Repo(f"../{repo_name}")
+        commit = repo.commit("HEAD")
+        commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(commit.committed_date))
+        log_dict = {
+            "date": commit_date, 
+            "branch": repo.active_branch.name,
+            "sha": commit.hexsha,
+            "message": commit.summary, 
+            "author": commit.author.name
+        }
+        content["commit_logs"][repo_name] = log_dict
 
-    content = {"commit_logs": {"ackrep_data": data_dict, "ackrep_core": core_dict}}
     with open(file_path, "a") as file:
         document = yaml.dump(content, file)
     
