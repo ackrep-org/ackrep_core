@@ -53,12 +53,13 @@ jobs: # A basic unit of work in a run
             echo 2
             docker cp /home/circleci/ackrep_data_for_unittests dummy:/code
             echo 3
-            docker run --volumes-from dummy --entrypoint "/bin/ls" ghcr.io/ackrep-org/default_environment -n ../
+            docker run --volumes-from dummy --entrypoint "/bin/ls" ghcr.io/ackrep-org/default_environment:latest -n ../
+            docker images
       - run:
           name: Show Versions
           command: | 
             echo default env version:
-            docker run --volumes-from dummy --entrypoint "tail" ghcr.io/ackrep-org/default_environment -1 ../Dockerfile_default_environment
+            docker run --volumes-from dummy --entrypoint "tail" ghcr.io/ackrep-org/default_environment:latest -1 ../Dockerfile_default_environment
       - run:
           name: Test Core
           command: | 

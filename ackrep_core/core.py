@@ -911,7 +911,7 @@ def check(key):
         # no local image -> use image from github
         else:
             logger.info("running remote image")
-            image_name = "ghcr.io/ackrep-org/" + env_name
+            image_name = "ghcr.io/ackrep-org/" + env_name + ":latest"
             cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
             # * Note: even though we are running the container in the background (detached -d), we still have to
             # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).

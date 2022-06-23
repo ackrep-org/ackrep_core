@@ -350,17 +350,20 @@ def check(arg0: str, exitflag: bool = True):
         return res
 
 def get_environment_version(entity: models.GenericEntity):
-    env_key = entity.compatible_environment
-    if env_key == "" or env_key is None:
-        env_key = "YJBOX"
-    env_name = core.get_entity(env_key).name
-    dockerfile_name = "Dockerfile_" + env_name
-    path = os.path.join(core.root_path, dockerfile_name)
-    with open(path, "r") as docker_file:
-        lines = docker_file.readlines()
-    if "LABEL" in lines[-1]:
-        version = lines[-1].split("org.opencontainers.image.description")[-1].split("|")[0]
-    else: 
+    try:
+        env_key = entity.compatible_environment
+        if env_key == "" or env_key is None:
+            env_key = "YJBOX"
+        env_name = core.get_entity(env_key).name
+        dockerfile_name = "Dockerfile_" + env_name
+        path = os.path.join(core.root_path, dockerfile_name)
+        with open(path, "r") as docker_file:
+            lines = docker_file.readlines()
+        if "LABEL" in lines[-1]:
+            version = lines[-1].split("org.opencontainers.image.description")[-1].split("|")[0]
+        else: 
+            version = "Unknown"
+    except:
         version = "Unknown"
 
     return version
