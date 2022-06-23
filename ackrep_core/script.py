@@ -360,7 +360,7 @@ def get_environment_version(entity: models.GenericEntity):
         with open(path, "r") as docker_file:
             lines = docker_file.readlines()
         if "LABEL" in lines[-1]:
-            version = lines[-1].split("org.opencontainers.image.description")[-1].split("|")[0]
+            version = lines[-1].split('org.opencontainers.image.description "')[-1].split("|")[0]
         else: 
             version = "Unknown"
     except:
@@ -590,7 +590,7 @@ def prepare_script(arg0):
     _, key = get_entity_and_key(arg0)
 
     entity, c = core.get_entity_context(key)
-    scriptpath = "/ackrep_transfer"
+    scriptpath = "/code/ackrep_data"
     core.create_execscript_from_template(entity, c, scriptpath=scriptpath)
 
     print(bgreen("Success."))
@@ -607,27 +607,12 @@ def run_interactive_environment(args):
     assert isinstance(entity, models.EnvironmentSpecification), msg
     image_name = "ghcr.io/ackrep-org/" + entity.name
     print("\nRunning Interactive Docker Container. To Exit, press Ctrl+D.\n")
-    old_cwd = os.getcwd()
-    os.chdir(core.root_path)
-    transfer_folder_name = "ackrep_transfer"
-    os.makedirs(transfer_folder_name, exist_ok=True)
-    # TODO: dynamic gid
-    try:
-        os.chown("ackrep_transfer", -1, 999)
-    except PermissionError:
-        core.logger.warning("Unable to change permissions for transfer folder.")
-    # if host is windows, path still needs to have unix seps for inside container
-    vol_host_path = os.path.join(core.root_path, transfer_folder_name)
-    vol_container_path = "/code/" + transfer_folder_name
-    vol_mapping = f"{vol_host_path}:{vol_container_path}"
 
-    cmd = ["docker", "run", "-ti", "--rm"]
+    container_id = core.start_idle_container(entity.name, try_to_use_local_image=False)
 
-    cmd.extend(core.get_docker_env_vars())
-
-    cmd.extend(core.get_data_repo_host_address())
-
-    cmd.extend(["-v", vol_mapping, image_name])
+    core.logger.info(f"Ackrep command running in Container: {container_id}")
+    host_uid = core.get_host_uid()
+    cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
 
     if len(args) == 1:
         cmd.extend(["/bin/bash", "-c", "cd ../; mc"])
@@ -637,6 +622,9 @@ def run_interactive_environment(args):
 
     print(cmd)
     res = subprocess.run(cmd)
+
+    print("Shutting down container...")
+    run_command(["docker", "stop", container_id], supress_error_message=True, capture_output=True)
 
     return res.returncode
 

@@ -869,6 +869,23 @@ def check(key):
     logger.info(f"running with environment spec: {env_name}")
 
     # check if environment container is already running
+    container_id = look_for_running_container(env_name)
+
+    # Container not yet running, start container, load db, wait
+    # container is running detached, so the script can continue
+    if container_id is None:
+        container_id = start_idle_container(env_name)
+
+    # run ackrep command in already running container
+    logger.info(f"Ackrep command running in Container: {container_id}")
+    host_uid = get_host_uid()
+    cmd = ["docker", "exec", "--user", host_uid, container_id, "ackrep", "-c", key]
+    res = run_command(cmd, supress_error_message=True, capture_output=True)
+    if res.returncode != 0:
+        logger.error(f"{res.stdout} | {res.stderr}")
+    return res
+
+def look_for_running_container(env_name):
     cmd = ["docker", "ps", "--format", "{{.ID}}::{{.Names}}"]
     res = subprocess.run(cmd, text=True, capture_output=True)
     for container in res.stdout.split("\n"):
@@ -890,86 +907,77 @@ def check(key):
             break
         else:
             container_id = None
+    return container_id
 
-    # Container not yet running, start container, load db, wait
-    # container is running detached, so the script can continue
-    if container_id is None:
-        logger.info(f"no container for {env_name} found, starting new one.")
-        # try to use local docker image (for development)
-        image_name = "ackrep_deployment_" + env_name
-        cmd = ["docker", "images", "-q", image_name]
-        res = run_command(cmd, supress_error_message=True, capture_output=True)
-        local_image_id = res.stdout.replace("\n", "")
-        logger.info(f"local image id: {local_image_id}")
-        if len(local_image_id) == 12:  # 12 characters image id + \n
-            logger.info("running local image")
-            image_name = env_name  # since docker-compose doesnt use prefix
+def start_idle_container(env_name, try_to_use_local_image=True):
+    logger.info(f"no container for {env_name} found, starting new one.")
+    # try to use local docker image (for development)
+    image_name = "ackrep_deployment_" + env_name
+    cmd = ["docker", "images", "-q", image_name]
+    res = run_command(cmd, supress_error_message=True, capture_output=True)
+    local_image_id = res.stdout.replace("\n", "")
+    logger.info(f"local image id: {local_image_id}")
+    if len(local_image_id) == 12 and try_to_use_local_image:  # 12 characters image id + \n
+        logger.info("running local image")
+        image_name = env_name  # since docker-compose doesnt use prefix
 
-            assert os.path.isdir("../ackrep_deployment"), "docker-compose file not found"
-            cmd = ["docker-compose", "--file", "../ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
+        assert os.path.isdir("../ackrep_deployment"), "docker-compose file not found"
+        cmd = ["docker-compose", "--file", "../ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
 
-        # no local image -> use image from github
-        else:
-            logger.info("running remote image")
-            image_name = "ghcr.io/ackrep-org/" + env_name + ":latest"
-            
-            # ! pull image first to ensure latest version is available
-            pull_cmd = ["docker", "pull", image_name]
-            res = run_command(pull_cmd, supress_error_message=True, capture_output=True)
-            if res.returncode != 0:
-                logger.error(f"{res.stdout} | {res.stderr}")
+    # no local image -> use image from github
+    else:
+        logger.info("running remote image")
+        image_name = "ghcr.io/ackrep-org/" + env_name + ":latest"
 
-            cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
-            # * Note: even though we are running the container in the background (detached -d), we still have to
-            # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).
-            # * Otherwise, the container would stop after running the entrypoint script (load db). This is noteworthy,
-            # * since -d and -ti seem to be contradictory.
-
-        # building the docker command
-
-        cmd.extend(get_docker_env_vars())
-
-        cmd.extend(get_data_repo_host_address())
-
-        cmd.extend([image_name, "bash"])
-
-        logger.info(f"docker command: {cmd}")
-        res = run_command(cmd, supress_error_message=True, capture_output=True)
+        # ! pull image first to ensure latest version is available
+        pull_cmd = ["docker", "pull", image_name]
+        res = run_command(pull_cmd, supress_error_message=True, capture_output=True)
         if res.returncode != 0:
             logger.error(f"{res.stdout} | {res.stderr}")
-            assert 1 == 0, "container was not started correctly"
-        else:
-            # running a container detached returns its id
-            container_id = res.stdout.replace("\n", "")
 
-        # wait for db to be loaded, since the container is running detached
-        start = time.time()
-        while True:
-            # Test with "definately existing" key UXMFA and not {key} to avoid potential issues with new keys
-            cmd = ["docker", "exec", container_id, "ackrep", "--show-entity-info", "UXMFA"]
-            res = run_command(cmd, supress_error_message=True, capture_output=True)
-            if res.returncode == 0:
-                break
-            else:
-                logger.info("waiting for db to be loaded...")
-                time.sleep(1)
-                if time.time() - start > 15:
-                    logger.error(
-                        f"Timeout: Cant find key UXMFA in database, \
-                        which probably did not load correctly. Aborting."
-                    )
-                    return res
-        logger.info(f"New env container started.")
+        cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
+        # * Note: even though we are running the container in the background (detached -d), we still have to
+        # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).
+        # * Otherwise, the container would stop after running the entrypoint script (load db). This is noteworthy,
+        # * since -d and -ti seem to be contradictory.
 
-    # run ackrep command in already running container
-    logger.info(f"Ackrep command running in Container: {container_id}")
-    host_uid = get_host_uid()
-    cmd = ["docker", "exec", "--user", host_uid, container_id, "ackrep", "-c", key]
+    # building the docker command
+
+    cmd.extend(get_docker_env_vars())
+
+    cmd.extend(get_data_repo_host_address())
+
+    cmd.extend([image_name, "bash"])
+
+    logger.info(f"docker command: {cmd}")
     res = run_command(cmd, supress_error_message=True, capture_output=True)
     if res.returncode != 0:
         logger.error(f"{res.stdout} | {res.stderr}")
-    return res
+        assert 1 == 0, "container was not started correctly"
+    else:
+        # running a container detached returns its id
+        container_id = res.stdout.replace("\n", "")
 
+    # wait for db to be loaded, since the container is running detached
+    start = time.time()
+    while True:
+        # Test with "definately existing" key UXMFA and not {key} to avoid potential issues with new keys
+        cmd = ["docker", "exec", container_id, "ackrep", "--show-entity-info", "UXMFA"]
+        res = run_command(cmd, supress_error_message=True, capture_output=True)
+        if res.returncode == 0:
+            break
+        else:
+            logger.info("waiting for db to be loaded...")
+            time.sleep(1)
+            if time.time() - start > 15:
+                logger.error(
+                    f"Timeout: Cant find key UXMFA in database, \
+                    which probably did not load correctly. Aborting."
+                )
+                return res
+    logger.info(f"New env container started.")
+
+    return container_id
 
 def get_docker_env_vars():
     """rebuild environment variables suitable inside docker container
