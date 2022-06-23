@@ -155,17 +155,32 @@ class CheckView(EntityDetailView):
             c.view_type = "check-system-model"
             c.view_type_title = "Simulation for:"
 
-        # TODO: modify filename to fit latest
-        results_filename = "ci_results.yaml"
-        results_path = os.path.join(core.root_path, "ci_results", results_filename)
-        with open(results_path) as results_file:
-            results = yaml.load(results_file, Loader=yaml.FullLoader)
-        try:
-            ci_result_entity = results[key]
-            c.result = ci_result_entity["result"]
-        except KeyError:
-            # TODO: Fallback to older CI Jobs
-            core.logger.warning(f"No CI result for key {key}.")
+        exitflag = False
+        c.result = "pending"
+        # filter all ci_results yamls and sort them newest to oldest
+        filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir("../ackrep_ci_results")), reverse=True)
+        for i, result_filename in enumerate(filename_list):
+            results_path = os.path.join(core.root_path, "ackrep_ci_results", result_filename)
+            with open(results_path) as results_file:
+                results = yaml.load(results_file, Loader=yaml.FullLoader)
+            if key in results.keys():
+                ci_result_entity = results[key]
+                # take result of first test encountered (most recent)
+                if c.result == "pending":
+                    c.result = ci_result_entity["result"]
+                # entity passed on latest test
+                if i == 0 and ci_result_entity["result"] == 0:
+                    exitflag = True
+                # entity passed on some old test:
+                if i > 0 and ci_result_entity["result"] == 0:
+                    c.last_time_passing = ci_result_entity["date"]
+                    exitflag = True
+            else:
+                core.logger.info(f"Entity {key} is not in {result_filename}.")
+            if exitflag: break
+        
+        if c.result == "pending":
+            core.logger.warning(f"Entity {key} not found in any CI result files.")
             c.result = -1
 
         # c.image_list = core.get_data_files(c.entity.base_path, endswith_str=".png", create_media_links=True)
@@ -232,7 +247,10 @@ class NewCiResultView(View):
     def get(self, request):
         # assert os.environ.get("CIRCLE_TOKEN") is not None, "CIRCLE_TOKEN Env Var not set"
         save_cwd = os.getcwd()
-        os.chdir(os.path.join(core.root_path, "ci_results"))
+        path = os.path.join(core.root_path, "ackrep_ci_results")
+        if not os.path.isdir(path):
+            os.mkdir(path)
+        os.chdir(path)
 
         cmd = [
             """curl -H 'Circle-Token: $CIRCLE_TOKEN' \
@@ -240,11 +258,14 @@ class NewCiResultView(View):
         | grep -o 'https://[^"]*' \
         | wget --verbose --header 'Circle-Token: $CIRCLE_TOKEN' --input-file -"""
         ]
-        print(cmd)
-        res = subprocess.run(cmd, shell=True)
+        # print(cmd)
+        res = subprocess.run(cmd, shell=True, text=True, capture_output=True)
         assert res.returncode == 0, "Unable to collect results from circleci."
+        str1 = b'\xe2\x80\x98'.decode('utf-8')
+        str2 = b'\xe2\x80\x99'.decode('utf-8')
+        file_name = res.stderr.split("Saving to: ")[-1].split("\n\n")[0].split(str1)[-1].split(str2)[0]
 
-        with open("ci_results.yaml") as file:
+        with open(file_name) as file:
             results = yaml.load(file, Loader=yaml.FullLoader)
 
         os.chdir(save_cwd)

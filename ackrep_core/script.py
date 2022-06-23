@@ -271,6 +271,8 @@ def check_all_system_models():
 def test_ci():
     date = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     file_name = "ci_results__" + date + ".yaml"
+    os.makedirs(os.path.join(core.root_path, "ackrep_ci_results"), exist_ok=True)
+    file_path = os.path.join(core.root_path, "ackrep_ci_results", file_name)
     returncodes = []
     for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
         start_time = time.time()
@@ -284,7 +286,7 @@ def test_ci():
         date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date}}
-        with open(file_name, "a") as file:
+        with open(file_path, "a") as file:
             documents = yaml.dump(content, file)
 
         returncodes.append(res.returncode)
