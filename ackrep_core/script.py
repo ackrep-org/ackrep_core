@@ -276,9 +276,11 @@ def test_ci():
     file_path = os.path.join(core.root_path, "ackrep_ci_results/history", file_name)
     
     # save the commits of the current ci job 
-    data_repo = Repo()
-    core_repo = Repo("../ackrep_core")
-    content = {"commit_logs": {"ackrep_data": data_repo.head.log()[-1], "ackrep_core": core_repo.head.log()[-1]}}
+    data_log = Repo().head.log()[-1].format()
+    core_log = Repo("../ackrep_core").head.log()[-1].format()
+    content = {"commit_logs": {"ackrep_data": data_log, "ackrep_core": core_log}}
+    with open(file_path, "a") as file:
+        document = yaml.dump(content, file)
     
     returncodes = []
     # for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
@@ -295,11 +297,12 @@ def test_ci():
         
         content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date}}
         
-        if hasattr(res, "env_version"):
-            content[key]["env_version"] = res.env_version
+        if "Calculated with " in issues:
+            version = issues.split("Calculated with ")[-1].split("\n\n")[0]
+            content[key]["env_version"] = version
 
         with open(file_path, "a") as file:
-            documents = yaml.dump(content, file)
+            document = yaml.dump(content, file)
 
         returncodes.append(res.returncode)
         print("---")
@@ -335,7 +338,6 @@ def check(arg0: str, exitflag: bool = True):
     env_version = get_environment_version(entity)
     if env_version != "Unknown":
         print(f"\nCalculated with {env_version}.\n")
-    res.env_version = env_version
 
     if res.returncode == 0:
         print(bgreen("Success."))
