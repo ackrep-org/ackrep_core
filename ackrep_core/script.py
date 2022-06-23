@@ -8,6 +8,7 @@ import platform
 from django.core import management
 from django.conf import settings
 import yaml
+from git import Repo
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -271,10 +272,17 @@ def check_all_system_models():
 def test_ci():
     date = datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     file_name = "ci_results__" + date + ".yaml"
-    os.makedirs(os.path.join(core.root_path, "ackrep_ci_results"), exist_ok=True)
-    file_path = os.path.join(core.root_path, "ackrep_ci_results", file_name)
+    os.makedirs(os.path.join(core.root_path, "ackrep_ci_results/history"), exist_ok=True)
+    file_path = os.path.join(core.root_path, "ackrep_ci_results/history", file_name)
+    
+    # save the commits of the current ci job 
+    data_repo = Repo()
+    core_repo = Repo("../ackrep_core")
+    content = {"commit_logs": {"ackrep_data": data_repo.head.log()[-1], "ackrep_core": core_repo.head.log()[-1]}}
+    
     returncodes = []
-    for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
+    # for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
+    for key in ["ZPPRG", "UXMFA"]:#, "IWTAE", "HOZEE"]:
         start_time = time.time()
         res = check_with_docker(key, exitflag=False)
         runtime = round(time.time() - start_time, 1)
@@ -284,13 +292,19 @@ def test_ci():
         else:
             issues = res.stdout
         date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
+        
         content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date}}
+        
+        if hasattr(res, "env_version"):
+            content[key]["env_version"] = res.env_version
+
         with open(file_path, "a") as file:
             documents = yaml.dump(content, file)
 
         returncodes.append(res.returncode)
         print("---")
+
+
 
     # TODO: curl webhook
 
@@ -317,6 +331,11 @@ def check(arg0: str, exitflag: bool = True):
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
     res = core.check_generic(key=key)
+    
+    env_version = get_environment_version(entity)
+    if env_version != "Unknown":
+        print(f"\nCalculated with {env_version}.\n")
+    res.env_version = env_version
 
     if res.returncode == 0:
         print(bgreen("Success."))
@@ -330,6 +349,21 @@ def check(arg0: str, exitflag: bool = True):
     else:
         return res
 
+def get_environment_version(entity: models.GenericEntity):
+    env_key = entity.compatible_environment
+    if env_key == "" or env_key is None:
+        env_key = "YJBOX"
+    env_name = core.get_entity(env_key).name
+    dockerfile_name = "Dockerfile_" + env_name
+    path = os.path.join(core.root_path, dockerfile_name)
+    with open(path, "r") as docker_file:
+        lines = docker_file.readlines()
+    if "LABEL" in lines[-1]:
+        version = lines[-1].split("org.opencontainers.image.description")[-1].split("|")[0]
+    else: 
+        version = "Unknown"
+
+    return version
 
 def check_with_docker(arg0: str, exitflag: bool = True):
     """run the correct environment specification

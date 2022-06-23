@@ -158,9 +158,9 @@ class CheckView(EntityDetailView):
         exitflag = False
         c.result = "pending"
         # filter all ci_results yamls and sort them newest to oldest
-        filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir("../ackrep_ci_results")), reverse=True)
+        filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir("../ackrep_ci_results/history")), reverse=True)
         for i, result_filename in enumerate(filename_list):
-            results_path = os.path.join(core.root_path, "ackrep_ci_results", result_filename)
+            results_path = os.path.join(core.root_path, "ackrep_ci_results/history", result_filename)
             with open(results_path) as results_file:
                 results = yaml.load(results_file, Loader=yaml.FullLoader)
             if key in results.keys():
@@ -247,7 +247,7 @@ class NewCiResultView(View):
     def get(self, request):
         # assert os.environ.get("CIRCLE_TOKEN") is not None, "CIRCLE_TOKEN Env Var not set"
         save_cwd = os.getcwd()
-        path = os.path.join(core.root_path, "ackrep_ci_results")
+        path = os.path.join(core.root_path, "ackrep_ci_results/history")
         if not os.path.isdir(path):
             os.mkdir(path)
         os.chdir(path)
