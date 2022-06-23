@@ -912,6 +912,13 @@ def check(key):
         else:
             logger.info("running remote image")
             image_name = "ghcr.io/ackrep-org/" + env_name + ":latest"
+            
+            # ! pull image first to ensure latest version is available
+            pull_cmd = ["docker", "pull", image_name]
+            res = run_command(pull_cmd, supress_error_message=True, capture_output=True)
+            if res.returncode != 0:
+                logger.error(f"{res.stdout} | {res.stderr}")
+
             cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
             # * Note: even though we are running the container in the background (detached -d), we still have to
             # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).

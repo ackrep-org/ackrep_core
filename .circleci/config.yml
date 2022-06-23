@@ -46,24 +46,26 @@ jobs: # A basic unit of work in a run
           version: 20.10.14
           docker_layer_caching: true
       - run: 
-          name: Copy UT Data to Remote Docker
+          name: Setup Images
           command: |
+            echo old images:
+            docker images
+            echo pulling default image
+            docker pull ghcr.io/ackrep-org/default_environment:latest
+            docker image prune -f
+            docker images
             echo 1
             docker create -v /code/ackrep_data_for_unittests --name dummy alpine:3.4 /bin/true
             echo 2
             docker cp /home/circleci/ackrep_data_for_unittests dummy:/code
             echo 3
             docker run --volumes-from dummy --entrypoint "/bin/ls" ghcr.io/ackrep-org/default_environment:latest -n ../
-            docker images
       - run:
           name: Show Versions
           command: | 
             echo default env version:
             docker run --volumes-from dummy --entrypoint "tail" ghcr.io/ackrep-org/default_environment:latest -1 ../Dockerfile_default_environment
             docker images
-            docker pull ghcr.io/ackrep-org/default_environment:latest
-            docker images
-            docker run --volumes-from dummy --entrypoint "tail" ghcr.io/ackrep-org/default_environment:latest -1 ../Dockerfile_default_environment
       - run:
           name: Test Core
           command: | 
