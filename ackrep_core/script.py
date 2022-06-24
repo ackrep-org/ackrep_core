@@ -42,12 +42,8 @@ def main():
         + "using correct environment specification (docker)",
     )
     argparser.add_argument(
-        "--check-all-solutions", help="check all solutions (may take some time)", action="store_true"
+        "--check-all-entities", help="check all entities (solutions and models) (may take some time)", action="store_true"
     )
-    argparser.add_argument(
-        "--check-all-system-models", help="check all system models (may take some time)", action="store_true"
-    )
-    argparser.add_argument("--test-ci", help="check some entities, some will fail", action="store_true")
     argparser.add_argument(
         "--update-parameter-tex",
         metavar="metadatafile",
@@ -149,12 +145,8 @@ def main():
     elif args.check_with_docker:
         metadatapath = args.check_with_docker
         check_with_docker(metadatapath)
-    elif args.check_all_solutions:
-        check_all_solutions()
-    elif args.check_all_system_models:
-        check_all_system_models()
-    elif args.test_ci:
-        test_ci()
+    elif args.check_all_entities:
+        check_all_entities()
     elif args.get_metadata_abs_path_from_key:
         key = args.get_metadata_abs_path_from_key
         exitflag = not args.show_debug
@@ -230,11 +222,13 @@ def create_new_entity():
     core.convert_dict_to_yaml(field_values, target_path=path)
 
 
-def check_all_entites():
+def check_all_entities():
     date = datetime.datetime.now()
     date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
     file_name = "ci_results__" + date_string + ".yaml"
     file_path = os.path.join(core.ci_results_path, "history", file_name)
+
+    os.makedirs(os.path.join(core.ci_results_path, "history"), exist_ok=True)
 
     content = {"commit_logs": {}}
     # save the commits of the current ci job
