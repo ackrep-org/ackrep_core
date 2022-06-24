@@ -13,10 +13,9 @@ import warnings
 import abc
 import sys
 import os
-import subprocess
 
 from . import core
-from .util import root_path
+from .util import root_path, run_command
 from . import models
 from ipydex import IPS
 
@@ -473,24 +472,16 @@ def create_pdf(key, output_path=None):
     tex_path = os.path.join(root_path, base_path, "_system_model_data")
     os.chdir(tex_path)
     if output_path is None:
-        res = subprocess.run(["pdflatex", "-halt-on-error", "documentation.tex"], capture_output=True)
+        res = run_command(["pdflatex", "-halt-on-error", "documentation.tex"], logger=core.logger, capture_output=True)
     else:
         test_dir = os.path.join(tex_path, output_path)
         if not os.path.isdir(test_dir):
             os.mkdir(test_dir)
-        res = subprocess.run(
-            ["pdflatex", "-halt-on-error", "-output-directory", output_path, "documentation.tex"], capture_output=True
+        res = run_command(
+            ["pdflatex", "-halt-on-error", "-output-directory", output_path, "documentation.tex"],
+            logger=core.logger,
+            capture_output=True,
         )
-    res.exited = res.returncode
-    res.stdout = res.stdout.decode("utf8")
-    res.stderr = res.stderr.decode("utf8")
-    if res.returncode != 0:
-        core.logger.error(f"Error when executing pdflatex.")
-        # some error messages live on stderr, some on stderr
-        if res.stdout:
-            core.logger.error(res.stdout)
-        if res.stderr:
-            core.logger.error(res.stderr)
 
     # clean up auxiliary files
     import time
@@ -606,7 +597,7 @@ def check_system_parameters(parameters):
 
 def create_system_model_list_pdf():
     """create a pdf file of all know system models"""
-    res = subprocess.run(["pdflatex", "-version"], capture_output=False)
+    res = run_command(["pdflatex", "-version"], logger=core.logger, capture_output=False)
     assert res.returncode == 0, "Command 'pdflatex' not recognized. Check installation and availability in PATH."
 
     # put tex and pdf in root directory
@@ -682,17 +673,7 @@ def create_system_model_list_pdf():
     tex_file.write("\n\\end{document}")
     tex_file.close()
 
-    res = subprocess.run(["pdflatex", "-halt-on-error", tex_file_name], capture_output=True)
-    res.exited = res.returncode
-    res.stdout = res.stdout.decode("utf8")
-    res.stderr = res.stderr.decode("utf8")
-    if res.returncode != 0:
-        core.logger.error(f"Error when executing pdflatex.")
-        # some error messages live on stderr, some on stderr
-        if res.stdout:
-            core.logger.error(res.stdout)
-        if res.stderr:
-            core.logger.error(res.stderr)
+    res = run_command(["pdflatex", "-halt-on-error", tex_file_name], logger=core.logger, capture_output=True)
 
     return res
 

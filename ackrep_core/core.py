@@ -3,7 +3,6 @@ import yaml
 import os, sys
 import pathlib
 import time
-import subprocess
 import shutil
 import logging
 from typing import List
@@ -43,6 +42,7 @@ from .util import (
     ResultContainer,
     InconsistentMetaDataError,
     DuplicateKeyError,
+    DockerError,
     run_command,
 )
 
@@ -685,19 +685,8 @@ def run_execscript(scriptpath):
     """
     logger.info(f"  ... running exec-script {scriptpath} ... ")
 
-    res = run_command(["python", scriptpath], supress_error_message=True, capture_output=True)
-    res.exited = res.returncode
-    if res.returncode == 2:
-        if res.stdout:
-            logger.warning(res.stdout)
-    elif res.returncode != 0:
-        logger.error(f"Error in execscript: {scriptpath}")
-        # some error messages live on stderr, some on stderr
-        if res.stdout:
-            logger.error(res.stdout)
-        if res.stderr:
-            logger.error(res.stderr)
-    else:
+    res = run_command(["python", scriptpath], logger=logger, capture_output=True)
+    if res.returncode == 0:
         # propagate output of execscript through multiple subprocesses
         print((res.stdout), file=sys.stdout)
 
@@ -877,15 +866,14 @@ def check(key, try_to_use_local_image=True):
     # Container not yet running, start container, load db, wait
     # container is running detached, so the script can continue
     if container_id is None:
+        logger.info(f"no container for {env_name} found, starting new one.")
         container_id = start_idle_container(env_name, try_to_use_local_image)
 
     # run ackrep command in already running container
     logger.info(f"Ackrep command running in Container: {container_id}")
     host_uid = get_host_uid()
     cmd = ["docker", "exec", "--user", host_uid, container_id, "ackrep", "-c", key]
-    res = run_command(cmd, supress_error_message=True, capture_output=True)
-    if res.returncode != 0:
-        logger.error(f"{res.stdout} | {res.stderr}")
+    res = run_command(cmd, logger=logger, capture_output=True)
     return res
 
 
@@ -902,21 +890,23 @@ def look_for_running_container(env_name):
         str or None: container_id
     """
     cmd = ["docker", "ps", "--format", "{{.ID}}::{{.Names}}"]
-    res = subprocess.run(cmd, text=True, capture_output=True)
+    res = run_command(cmd, logger=logger, capture_output=True)
     for container in res.stdout.split("\n"):
         if env_name in container:
             container_id = container.split("::")[0]
             logger.info(f"Running Container found: {container}")
-            # check if environment container has the correct db loaded
-            # TODO: for now this checks the difference between regular and ut case
+
+            # check if environment container has the correct db loaded by comparing env vars
             cmd = ["docker", "exec", container_id, "printenv", "ACKREP_DATA_PATH"]
-            res = subprocess.run(cmd, text=True, capture_output=True)
+            res = run_command(cmd, capture_output=True)
             data_path_container = res.stdout.replace("\n", "").split("/")[-1]
-            assert data_path_container in ["ackrep_data", "ackrep_data_for_unittests"]
+            logger.info(f"data_path inside container: {data_path_container}")
+
+            # no db or wrong db in container:
             if data_path_container != data_path.split("/")[-1]:
                 logger.info("Running container has wrong db loaded. Shutting down.")
                 cmd = ["docker", "stop", container_id]
-                res = subprocess.run(cmd, text=True, capture_output=True)
+                res = run_command(cmd, logger=logger, capture_output=True)
                 assert res.returncode == 0
                 container_id = None
             break
@@ -937,11 +927,10 @@ def start_idle_container(env_name, try_to_use_local_image=True):
     Returns:
         str: container_id
     """
-    logger.info(f"no container for {env_name} found, starting new one.")
     # try to use local docker image (for development)
     image_name = "ackrep_deployment_" + env_name
     cmd = ["docker", "images", "-q", image_name]
-    res = run_command(cmd, supress_error_message=True, capture_output=True)
+    res = run_command(cmd, logger=logger, capture_output=True)
     local_image_id = res.stdout.replace("\n", "")
     logger.info(f"local image id: {local_image_id}")
     if len(local_image_id) == 12 and try_to_use_local_image:  # 12 characters image id + \n
@@ -952,15 +941,20 @@ def start_idle_container(env_name, try_to_use_local_image=True):
         cmd = ["docker-compose", "--file", "../ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
 
     # no local image -> use image from github
+    # this is the default for everyone who doesnt build images locally
     else:
         logger.info("running remote image")
         image_name = "ghcr.io/ackrep-org/" + env_name + ":latest"
 
         # ! pull image first to ensure latest version is available
+        logger.info("pulling docker image")
         pull_cmd = ["docker", "pull", image_name]
-        res = run_command(pull_cmd, supress_error_message=True, capture_output=True)
-        if res.returncode != 0:
-            logger.error(f"{res.stdout} | {res.stderr}")
+        res = run_command(pull_cmd, logger=logger, capture_output=True)
+
+        logger.info("stopping old containers")
+        # stop all running containers with env_name to ensure name uniqueness
+        stop_cmd = [f"docker stop $(docker ps --filter 'name={env_name}' -q)"]
+        res = run_command(stop_cmd, logger=logger, capture_output=True, shell=True)
 
         cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
         # * Note: even though we are running the container in the background (detached -d), we still have to
@@ -977,10 +971,9 @@ def start_idle_container(env_name, try_to_use_local_image=True):
     cmd.extend([image_name, "bash"])
 
     logger.info(f"docker command: {cmd}")
-    res = run_command(cmd, supress_error_message=True, capture_output=True)
+    res = run_command(cmd, logger=logger, capture_output=True)
     if res.returncode != 0:
-        logger.error(f"{res.stdout} | {res.stderr}")
-        assert 1 == 0, "container was not started correctly"
+        raise DockerError("container was not started correctly")
     else:
         # running a container detached returns its id
         container_id = res.stdout.replace("\n", "")
@@ -991,7 +984,7 @@ def start_idle_container(env_name, try_to_use_local_image=True):
         logger.info("waiting for db to be loaded...")
         # Test with "definately existing" key UXMFA and not {key} to avoid potential issues with new keys
         cmd = ["docker", "exec", container_id, "ackrep", "--show-entity-info", "UXMFA"]
-        res = run_command(cmd, supress_error_message=True, capture_output=True)
+        res = run_command(cmd, capture_output=True)
         if res.returncode == 0:
             break
         else:

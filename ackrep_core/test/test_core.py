@@ -1,7 +1,6 @@
 import os
 import sys
 import platform
-import subprocess
 
 from unittest import skipIf, skipUnless
 from django.test import TestCase as DjangoTestCase, SimpleTestCase
@@ -25,7 +24,7 @@ The order of classes in the file reflects the execution order, see also
 Possibilities to run (some of) the tests:
 
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core`
-`python manage.py test --keepdb --nocapture ackrep_core.test.test_core`
+`python manage.py test --keepdb -v 2 --nocapture ackrep_core.test.test_core`
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases1`
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases3.test_get_metadata_path_from_key`
 
@@ -492,7 +491,7 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-c", "UXMFA"], supress_error_message=True)
+        res = run_command(["ackrep", "-c", "UXMFA"])
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
@@ -521,7 +520,7 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-c", "UKJZI"], supress_error_message=True)
+        res = run_command(["ackrep", "-c", "UKJZI"])
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
@@ -541,8 +540,7 @@ class TestCases3(SimpleTestCase):
             "ackrep -c UXMFA; \
             cd ../; ls; cd ackrep_data_for_unittests; ls",
         ]
-        res = run_command(cmd, capture_output=True)
-        core.logger.debug(res)
+        res = run_command(cmd, logger=core.logger, capture_output=True)
         self.assertEqual(res.returncode, 0)
         expected_directories = ["system_models", "Success"]
         for info in expected_directories:

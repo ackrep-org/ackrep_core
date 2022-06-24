@@ -1,5 +1,4 @@
 import os
-import subprocess
 from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core

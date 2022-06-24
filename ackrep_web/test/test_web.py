@@ -33,7 +33,7 @@ This module contains the tests for the web application module (not ackrep_core)
 
 
 python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_web.test.test_web:TestCases1
-python manage.py test --keepdb --nocapture ackrep_web.test.test_web:TestCases1
+python manage.py test --keepdb -v 2 --nocapture ackrep_web.test.test_web
 
 For more infos see doc/devdoc/README.md.
 """

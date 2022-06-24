@@ -23,7 +23,7 @@ from ackrep_core.util import run_command
 import yaml
 
 from ackrep_web.celery import app
-import subprocess
+
 from celery.result import AsyncResult
 import kombu
 
@@ -268,7 +268,7 @@ class NewCiResultView(View):
         | wget --verbose --header 'Circle-Token: $CIRCLE_TOKEN' --input-file -"""
         ]
         # print(cmd)
-        res = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+        res = run_command(cmd, logger=core.logger, capture_output=True, shell=True)
         assert res.returncode == 0, "Unable to collect results from circleci."
         str1 = b"\xe2\x80\x98".decode("utf-8")
         str2 = b"\xe2\x80\x99".decode("utf-8")

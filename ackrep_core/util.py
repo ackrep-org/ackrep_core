@@ -1,3 +1,4 @@
+import logging
 from colorama import Style, Fore
 from django.utils import timezone
 import yaml
@@ -64,6 +65,10 @@ class DuplicateKeyError(Exception):
 
 
 class QueryError(Exception):
+    pass
+
+
+class DockerError(Exception):
     pass
 
 
@@ -144,7 +149,7 @@ def strip_decode(obj) -> str:
     return utf8decode(obj)
 
 
-def run_command(arglist, supress_error_message=False, capture_output=True, **kwargs):
+def run_command(arglist, logger=None, capture_output=True, **kwargs):
     """
     Unified handling of calling commands.
     Automatically prints an error message if necessary.
@@ -153,7 +158,7 @@ def run_command(arglist, supress_error_message=False, capture_output=True, **kwa
     res.exited = res.returncode
     res.stdout = strip_decode(res.stdout)
     res.stderr = strip_decode(res.stderr)
-    if res.returncode != 0 and not supress_error_message:
+    if res.returncode != 0:
         msg = f"""
         The command `{' '.join(arglist)}` exited with returncode {res.returncode}.
 
@@ -161,7 +166,8 @@ def run_command(arglist, supress_error_message=False, capture_output=True, **kwa
 
         stderr: {res.stderr}
         """
-        print(msg)
+        if type(logger) == logging.Logger:
+            logger.error(msg)
 
     return res
 

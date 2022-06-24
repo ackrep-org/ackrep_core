@@ -81,14 +81,14 @@ jobs: # A basic unit of work in a run
             . venv/bin/activate
             python manage.py makemigrations
             ackrep --bootstrap-test-db
-            python manage.py test --keepdb ackrep_core.test.test_core
+            python manage.py test -v 2 --keepdb ackrep_core.test.test_core
       - run:
           name: Test Web
           # for debugging:
           # background: True
           command: |
             . venv/bin/activate
-            python manage.py test --keepdb ackrep_web.test.test_web
+            python manage.py test -v 2 --keepdb ackrep_web.test.test_web
       # for debugging:
       # in test_web.py/TestCases2.setUp change celery worker to debug mode 
       # - run:

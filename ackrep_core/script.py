@@ -42,7 +42,9 @@ def main():
         + "using correct environment specification (docker)",
     )
     argparser.add_argument(
-        "--check-all-entities", help="check all entities (solutions and models) (may take some time)", action="store_true"
+        "--check-all-entities",
+        help="check all entities (solutions and models) (may take some time)",
+        action="store_true",
     )
     argparser.add_argument(
         "--update-parameter-tex",
@@ -594,10 +596,10 @@ def run_interactive_environment(args):
         cmd.extend(["/bin/bash", "-c", c])
 
     print(cmd)
-    res = subprocess.run(cmd)
+    res = run_command(cmd, capture_output=False)
 
     print("Shutting down container...")
-    run_command(["docker", "stop", container_id], supress_error_message=True, capture_output=True)
+    run_command(["docker", "stop", container_id], logger=core.logger, capture_output=True)
 
     return res.returncode
 
