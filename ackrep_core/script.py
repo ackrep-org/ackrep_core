@@ -230,46 +230,7 @@ def create_new_entity():
     core.convert_dict_to_yaml(field_values, target_path=path)
 
 
-def check_all_solutions():
-
-    returncodes = []
-    for ps in models.ProblemSolution.objects.all():
-        # res = check(ps.key, exitflag=False)
-
-        res = check_with_docker(ps.key, exitflag=False)
-        returncodes.append(res.returncode)
-        print("---")
-
-    if returncodes == 0:
-        print(bgreen("All checks successfull."))
-    else:
-        print(bred("Some check failed."))
-
-    exit(sum(returncodes))
-
-
-def check_all_system_models():
-
-    returncodes = []
-    for sm in models.SystemModel.objects.all():
-        # res = check(sm.key, exitflag=False)
-        if sm.key == "YHS5B":
-            print("skipping mmc!")
-            print("---")
-            continue
-        res = check_with_docker(sm.key, exitflag=False)
-        returncodes.append(res.returncode)
-        print("---")
-
-    if returncodes == 0:
-        print(bgreen("All checks successfull."))
-    else:
-        print(bred("Some check failed."))
-
-    exit(sum(returncodes))
-
-
-def test_ci():
+def check_all_entites():
     date = datetime.datetime.now()
     date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
     file_name = "ci_results__" + date_string + ".yaml"
@@ -294,8 +255,13 @@ def test_ci():
         document = yaml.dump(content, file)
 
     returncodes = []
-    # for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
-    for key in ["UKJZI", "UXMFA", "LRHZX"]:
+    entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
+    for entity in entity_list:
+        key = entity.key
+        if key == "YHS5B":
+            print("skipping mmc!")
+            print("---")
+            continue
         start_time = time.time()
         res = check_with_docker(key, exitflag=False)
         runtime = round(time.time() - start_time, 1)
@@ -318,7 +284,7 @@ def test_ci():
         returncodes.append(res.returncode)
         print("---")
 
-    # TODO: curl webhook
+    # TODO: curl webhook or use webhook feature of circleci
 
     if returncodes == 0:
         print(bgreen("All checks successfull."))
