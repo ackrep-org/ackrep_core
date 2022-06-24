@@ -962,7 +962,7 @@ def start_idle_container(env_name, try_to_use_local_image=True):
         if res.returncode != 0:
             logger.error(f"{res.stdout} | {res.stderr}")
 
-        cmd = ["docker", "run", "-d", "-ti", "--rm"]
+        cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
         # * Note: even though we are running the container in the background (detached -d), we still have to
         # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).
         # * Otherwise, the container would stop after running the entrypoint script (load db). This is noteworthy,
@@ -1005,7 +1005,7 @@ def start_idle_container(env_name, try_to_use_local_image=True):
                     f"Timeout: Cant find key UXMFA in database, \
                     which probably did not load correctly. Aborting."
                 )
-    logger.info(f"New env container started after {time.time() - start} seconds.")
+    logger.info(f"New env container started after {round(time.time() - start, 1)} seconds.")
     return container_id
 
 
