@@ -2,6 +2,7 @@ from colorama import Style, Fore
 from django.utils import timezone
 import yaml
 import subprocess
+from git import Repo
 
 import os
 from ipydex import Container
@@ -25,6 +26,12 @@ data_path = os.environ.get("ACKREP_DATA_PATH")
 if not (data_path):
     # paths for (ackrep_data and its test-related clone)
     data_path = os.path.join(root_path, "ackrep_data")
+
+# this env-variable will be set e.g. by unit tests to make cli invocations from tests work
+ci_results_path = os.environ.get("ACKREP_CI_RESULTS_PATH")
+if not (ci_results_path):
+    # paths for (ackrep_data and its test-related clone)
+    ci_results_path = os.path.join(root_path, "ackrep_ci_results")
 
 
 class ResultContainer(Container):
@@ -157,3 +164,11 @@ def run_command(arglist, supress_error_message=False, capture_output=True, **kwa
         print(msg)
 
     return res
+
+
+def git_push(repo_path: str, files_to_add, message: str):
+    repo = Repo(repo_path)
+    repo.git.add(files_to_add)
+    repo.index.commit(message)
+    origin = repo.remote(name="origin")
+    origin.push()

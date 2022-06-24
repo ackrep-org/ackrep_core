@@ -51,6 +51,12 @@ os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core",
 # (comment out for debugging)
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
+# inform the core module which path it should consinder as results repo
+ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
+    core.root_path, "ackrep_ci_results_for_unittests"
+)
+os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
+
 
 class TestCases1(DjangoTestCase):
     def test_00(self):
@@ -111,23 +117,18 @@ class TestCases2(SimpleTestCase):
         self.assertContains(response, "utc_entity_full")
         self.assertContains(response, "utc_check_solution")
 
-        # wait for asynchronous result
-        while "utc_waiting" in response.content.decode("utf8"):
-            time.sleep(1)
-            response = self.client.get(url)
-
         self.assertContains(response, "Success")
 
         # skip test if done in CI, see https://ackrep-doc.readthedocs.io/en/latest/devdoc/design_considerations.html#ci
-        if os.environ.get("CI") != "true":
-            self.assertContains(response, "utc_img_url")
+        # if os.environ.get("CI") != "true":
+        #     self.assertContains(response, "utc_img_url")
 
-            regex = re.compile("utc_img_url:<(.*?)>")
-            img_url = regex.findall(response.content.decode("utf8"))
+        #     regex = re.compile("utc_img_url:<(.*?)>")
+        #     img_url = regex.findall(response.content.decode("utf8"))
 
-            response = self.client.get(img_url)
+        #     response = self.client.get(img_url)
 
-            # TODO test that this url returns a file
+        #     # TODO test that this url returns a file
 
     def test_check_system_model(self):
         url = reverse("check-system-model", kwargs={"key": "UXMFA"})
@@ -137,23 +138,18 @@ class TestCases2(SimpleTestCase):
         self.assertContains(response, "utc_entity_full")
         self.assertContains(response, "utc_check_system_model")
 
-        # wait for asynchronous result
-        while "utc_waiting" in response.content.decode("utf8"):
-            time.sleep(1)
-            response = self.client.get(url)
-
         self.assertContains(response, "Success")
 
         # skip test if done in CI, see https://ackrep-doc.readthedocs.io/en/latest/devdoc/design_considerations.html#ci
-        if os.environ.get("CI") != "true":  #!
-            self.assertContains(response, "utc_img_url")
+        # if os.environ.get("CI") != "true":  #!
+        #     self.assertContains(response, "utc_img_url")
 
-            regex = re.compile("utc_img_url:<(.*?)>")
-            img_url = regex.findall(response.content.decode("utf8"))
+        #     regex = re.compile("utc_img_url:<(.*?)>")
+        #     img_url = regex.findall(response.content.decode("utf8"))
 
-            response = self.client.get(img_url)
+        #     response = self.client.get(img_url)
 
-            # TODO test that this url returns a file
+        #     # TODO test that this url returns a file
 
     @override_settings(DEBUG=True)
     def test_debug_message_printing(self):
@@ -168,9 +164,6 @@ class TestCases2(SimpleTestCase):
         # first: check if debug message shows when it should
         settings.DEBUG = True
         response = self.client.get(url)
-        while "utc_waiting" in response.content.decode("utf8"):
-            time.sleep(1)
-            response = self.client.get(url)
 
         expected_error_infos = ["utc_debug", "SyntaxError", "parameters.py", "line"]
         for info in expected_error_infos:
@@ -180,9 +173,6 @@ class TestCases2(SimpleTestCase):
         # second: check if debug message shows when it shouldn't
         settings.DEBUG = False
         response = self.client.get(url)
-        while "utc_waiting" in response.content.decode("utf8"):
-            time.sleep(1)
-            response = self.client.get(url)
 
         expected_error_infos = ["utc_debug", "SyntaxError"]
         for info in expected_error_infos:
@@ -190,6 +180,13 @@ class TestCases2(SimpleTestCase):
         self.assertNotContains(response, "utc_output")
 
         core.logger.setLevel(loglevel)
+
+    def test_show_last_passing(self):
+        url = reverse("check-system-model", kwargs={"key": "LRHZX"})
+        response = self.client.get(url)
+        infos = ["Entity passed last:", "2022-06-24 00:00:00"]
+        for info in infos:
+            self.assertContains(response, info)
 
     def test_sparql_query(self):
 

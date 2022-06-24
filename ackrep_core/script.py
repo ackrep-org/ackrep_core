@@ -273,29 +273,29 @@ def test_ci():
     date = datetime.datetime.now()
     date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
     file_name = "ci_results__" + date_string + ".yaml"
-    os.makedirs(os.path.join(core.root_path, "ackrep_ci_results/history"), exist_ok=True)
-    file_path = os.path.join(core.root_path, "ackrep_ci_results/history", file_name)
-    
+    file_path = os.path.join(core.ci_results_path, "history", file_name)
+
     content = {"commit_logs": {}}
-    # save the commits of the current ci job 
+    # save the commits of the current ci job
     for repo_name in ["ackrep_data", "ackrep_core"]:
         repo = Repo(f"../{repo_name}")
         commit = repo.commit("HEAD")
         commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(commit.committed_date))
         log_dict = {
-            "date": commit_date, 
+            "date": commit_date,
             "branch": repo.active_branch.name,
             "sha": commit.hexsha,
-            "message": commit.summary, 
-            "author": commit.author.name
+            "message": commit.summary,
+            "author": commit.author.name,
         }
         content["commit_logs"][repo_name] = log_dict
 
     with open(file_path, "a") as file:
         document = yaml.dump(content, file)
-    
+
     returncodes = []
-    for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
+    # for key in ["ZPPRG", "UXMFA", "IWTAE", "HOZEE"]:
+    for key in ["UKJZI", "UXMFA", "LRHZX"]:
         start_time = time.time()
         res = check_with_docker(key, exitflag=False)
         runtime = round(time.time() - start_time, 1)
@@ -305,9 +305,9 @@ def test_ci():
         else:
             issues = res.stdout
         date_string = date.strftime("%Y-%m-%d %H:%M:%S")
-        
+
         content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date_string}}
-        
+
         if "Calculated with " in issues:
             version = issues.split("Calculated with ")[-1].split("\n\n")[0]
             content[key]["env_version"] = version
@@ -317,8 +317,6 @@ def test_ci():
 
         returncodes.append(res.returncode)
         print("---")
-
-
 
     # TODO: curl webhook
 
@@ -345,7 +343,7 @@ def check(arg0: str, exitflag: bool = True):
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
     res = core.check_generic(key=key)
-    
+
     env_version = get_environment_version(entity)
     if env_version != "Unknown":
         print(f"\nCalculated with {env_version}.\n")
@@ -362,6 +360,7 @@ def check(arg0: str, exitflag: bool = True):
     else:
         return res
 
+
 def get_environment_version(entity: models.GenericEntity):
     try:
         env_key = entity.compatible_environment
@@ -374,12 +373,13 @@ def get_environment_version(entity: models.GenericEntity):
             lines = docker_file.readlines()
         if "LABEL" in lines[-1]:
             version = lines[-1].split('org.opencontainers.image.description "')[-1].split("|")[0]
-        else: 
+        else:
             version = "Unknown"
     except:
         version = "Unknown"
 
     return version
+
 
 def check_with_docker(arg0: str, exitflag: bool = True):
     """run the correct environment specification
@@ -628,7 +628,7 @@ def run_interactive_environment(args):
     cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
 
     if len(args) == 1:
-        cmd.extend(["/bin/bash", "-c", "cd ../; mc"])
+        cmd.extend(["/bin/bash"])
     else:
         c = " ".join(args[1:])
         cmd.extend(["/bin/bash", "-c", c])

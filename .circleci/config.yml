@@ -34,6 +34,14 @@ jobs: # A basic unit of work in a run
             mv ackrep_data ackrep_data_for_unittests
             cd ackrep_data_for_unittests
             git checkout for_unittests
+      - run:
+          name: Load Test Results
+          command: | 
+            cd ../
+            git clone https://github.com/ackrep-org/ackrep_ci_results.git
+            mv ackrep_ci_results ackrep_ci_results_for_unittests
+            cd ackrep_ci_results_for_unittests
+            git checkout for_unittests
       # - run:
       #     name: Change Permissions
       #     command: |

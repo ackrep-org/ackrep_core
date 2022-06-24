@@ -157,32 +157,37 @@ class CheckView(EntityDetailView):
 
         exitflag = False
         c.result = "pending"
+        results_base_path = os.path.join(core.ci_results_path, "history")
         # filter all ci_results yamls and sort them newest to oldest
-        filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir("../ackrep_ci_results/history")), reverse=True)
+        filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir(results_base_path)), reverse=True)
+        # iterate all result files
         for i, result_filename in enumerate(filename_list):
-            results_path = os.path.join(core.root_path, "ackrep_ci_results/history", result_filename)
+            results_path = os.path.join(results_base_path, result_filename)
             with open(results_path) as results_file:
                 results = yaml.load(results_file, Loader=yaml.FullLoader)
+            # if key is in current file
             if key in results.keys():
                 ci_result_entity = results[key]
                 # take result of first test encountered (most recent)
                 if c.result == "pending":
                     c.result = ci_result_entity["result"]
+                    c.ci_result_entiry = ci_result_entity
                 # entity passed on latest test
                 if i == 0 and ci_result_entity["result"] == 0:
                     exitflag = True
                 # entity passed on some old test:
-                if i > 0 and ci_result_entity["result"] == 0:
+                elif i > 0 and ci_result_entity["result"] == 0:
                     c.last_time_passing = ci_result_entity["date"]
                     c.logs = core.Container()
                     c.logs.ackrep_data = results["commit_logs"]["ackrep_data"]
                     c.logs.ackrep_core = results["commit_logs"]["ackrep_core"]
-                    c.logs.environment = ci_result_entity["env_version"]    
+                    c.logs.environment = ci_result_entity["env_version"]
                     exitflag = True
             else:
                 core.logger.info(f"Entity {key} is not in {result_filename}.")
-            if exitflag: break
-        
+            if exitflag:
+                break
+
         if c.result == "pending":
             core.logger.warning(f"Entity {key} not found in any CI result files.")
             c.result = -1
@@ -194,25 +199,26 @@ class CheckView(EntityDetailView):
         if c.result == 0:
             c.result_css_class = "success"
             c.verbal_result = "Success."
-            c.test_data = ci_result_entity["date"]
-            c.diff_time_str = ci_result_entity["runtime"]
+            c.test_date = c.ci_result_entiry["date"]
+            c.diff_time_str = c.ci_result_entiry["runtime"]
         # no major error but numerical result was unexpected
         elif c.result == 2:
             c.result_css_class = "inaccurate"
             c.verbal_result = "Inaccurate. (Different result than expected.)"
-            c.test_data = ci_result_entity["date"]
-            c.issues = ci_result_entity["issues"]
-            c.diff_time_str = ci_result_entity["runtime"]
+            c.test_date = c.ci_result_entiry["date"]
+            c.issues = c.ci_result_entiry["issues"]
+            c.diff_time_str = c.ci_result_entiry["runtime"]
+        # entity did not show in any result file
         elif c.result == -1:
             c.result_css_class = "unknown"
-            c.verbal_result = "Unknown. (Entity was not included in latest CI Job.)"
+            c.verbal_result = "Unknown. (Entity was not included in any CI Job.)"
         else:
             c.result_css_class = "fail"
             c.verbal_result = "Script Error."
             c.show_debug = settings.DEBUG
-            c.test_data = ci_result_entity["date"]
-            c.issues = ci_result_entity["issues"]
-            c.diff_time_str = ci_result_entity["runtime"]
+            c.test_date = c.ci_result_entiry["date"]
+            c.issues = c.ci_result_entiry["issues"]
+            c.diff_time_str = c.ci_result_entiry["runtime"]
 
         context = {"c": c}
         # create an object container (entity.oc) where for each string-key the real object is available
@@ -249,9 +255,8 @@ class NewCiResultView(View):
 
     # noinspection PyMethodMayBeStatic
     def get(self, request):
-        # assert os.environ.get("CIRCLE_TOKEN") is not None, "CIRCLE_TOKEN Env Var not set"
         save_cwd = os.getcwd()
-        path = os.path.join(core.root_path, "ackrep_ci_results/history")
+        path = os.path.join(core.ci_results_path, "history")
         if not os.path.isdir(path):
             os.mkdir(path)
         os.chdir(path)
@@ -265,12 +270,14 @@ class NewCiResultView(View):
         # print(cmd)
         res = subprocess.run(cmd, shell=True, text=True, capture_output=True)
         assert res.returncode == 0, "Unable to collect results from circleci."
-        str1 = b'\xe2\x80\x98'.decode('utf-8')
-        str2 = b'\xe2\x80\x99'.decode('utf-8')
+        str1 = b"\xe2\x80\x98".decode("utf-8")
+        str2 = b"\xe2\x80\x99".decode("utf-8")
         file_name = res.stderr.split("Saving to: ")[-1].split("\n\n")[0].split(str1)[-1].split(str2)[0]
 
         with open(file_name) as file:
             results = yaml.load(file, Loader=yaml.FullLoader)
+
+        util.git_push(".", file_name, f"add: {file_name}")
 
         os.chdir(save_cwd)
 

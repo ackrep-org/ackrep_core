@@ -38,6 +38,7 @@ from .util import (
     core_pkg_path,
     root_path,
     data_path,
+    ci_results_path,
     ObjectContainer,
     ResultContainer,
     InconsistentMetaDataError,
@@ -824,7 +825,7 @@ AOM = ACKREP_OntologyManager()
 
 
 @app.task
-def check(key):
+def check(key, try_to_use_local_image=True):
     """General function to check system model or solution, calculated inside docker image.
     The image is chosen from the compatible environment of the given entity
     structogram:
@@ -846,6 +847,8 @@ def check(key):
 
     Args:
         key (str): entity key
+        try_to_use_local_image (bool, optional): prefer locally build images. Only relevant for devs. Defaults to True.
+
 
     Raises:
         NotImplementedError: if key is neither solution nor system_model
@@ -874,7 +877,7 @@ def check(key):
     # Container not yet running, start container, load db, wait
     # container is running detached, so the script can continue
     if container_id is None:
-        container_id = start_idle_container(env_name)
+        container_id = start_idle_container(env_name, try_to_use_local_image)
 
     # run ackrep command in already running container
     logger.info(f"Ackrep command running in Container: {container_id}")
@@ -885,7 +888,19 @@ def check(key):
         logger.error(f"{res.stdout} | {res.stderr}")
     return res
 
+
 def look_for_running_container(env_name):
+    """check if a container with the image in question if already running.
+    If so, check if the correct db is loaded inside (this is done implicitly by comparing env vars).
+    If a valid container is found, return this containers id.
+    Otherwise shut down invalid containers and return None.
+
+    Args:
+        env_name (str): name of environment (e.g. default_environment)
+
+    Returns:
+        str or None: container_id
+    """
     cmd = ["docker", "ps", "--format", "{{.ID}}::{{.Names}}"]
     res = subprocess.run(cmd, text=True, capture_output=True)
     for container in res.stdout.split("\n"):
@@ -909,7 +924,19 @@ def look_for_running_container(env_name):
             container_id = None
     return container_id
 
+
 def start_idle_container(env_name, try_to_use_local_image=True):
+    """start container for given environment in background (detached). Use local image or pull image from remote.
+    set all necessary env vars. Then wait for db to be loaded inside container.
+    Note: this command does not execute ackrep commands, that is done by 'exec-ing' into the idle container.
+
+    Args:
+        env_name (str): name of environment (e.g. default_environment)
+        try_to_use_local_image (bool, optional): prefer locally build images. Only relevant for devs. Defaults to True.
+
+    Returns:
+        str: container_id
+    """
     logger.info(f"no container for {env_name} found, starting new one.")
     # try to use local docker image (for development)
     image_name = "ackrep_deployment_" + env_name
@@ -935,7 +962,7 @@ def start_idle_container(env_name, try_to_use_local_image=True):
         if res.returncode != 0:
             logger.error(f"{res.stdout} | {res.stderr}")
 
-        cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
+        cmd = ["docker", "run", "-d", "-ti", "--rm"]
         # * Note: even though we are running the container in the background (detached -d), we still have to
         # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).
         # * Otherwise, the container would stop after running the entrypoint script (load db). This is noteworthy,
@@ -961,23 +988,26 @@ def start_idle_container(env_name, try_to_use_local_image=True):
     # wait for db to be loaded, since the container is running detached
     start = time.time()
     while True:
+        logger.info("waiting for db to be loaded...")
         # Test with "definately existing" key UXMFA and not {key} to avoid potential issues with new keys
         cmd = ["docker", "exec", container_id, "ackrep", "--show-entity-info", "UXMFA"]
         res = run_command(cmd, supress_error_message=True, capture_output=True)
         if res.returncode == 0:
             break
         else:
-            logger.info("waiting for db to be loaded...")
             time.sleep(1)
-            if time.time() - start > 15:
+            if time.time() - start > 60:
                 logger.error(
                     f"Timeout: Cant find key UXMFA in database, \
                     which probably did not load correctly. Aborting."
                 )
-                return res
-    logger.info(f"New env container started.")
-
+                raise TimeoutError(
+                    f"Timeout: Cant find key UXMFA in database, \
+                    which probably did not load correctly. Aborting."
+                )
+    logger.info(f"New env container started after {time.time() - start} seconds.")
     return container_id
+
 
 def get_docker_env_vars():
     """rebuild environment variables suitable inside docker container

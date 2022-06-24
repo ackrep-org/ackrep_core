@@ -46,6 +46,12 @@ os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core",
 # (comment out for debugging)
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
+# inform the core module which path it should consinder as results repo
+ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
+    core.root_path, "ackrep_ci_results_for_unittests"
+)
+os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
+
 # use `git log -1` to display the full hash
 default_repo_head_hash = "353225c64f2d74aa76685d1be4b05ed72088446b"  # 2022-06-07 branch for_unittests
 
@@ -280,6 +286,24 @@ class TestCases3(SimpleTestCase):
         # TODO: remove this if png is removed from repo
         reset_repo(ackrep_data_test_repo_path)
 
+    def test_check_with_docker(self):
+        # first: run directly
+        # when testing locally, also test local image
+        if os.environ.get("CI") != "true":
+            res = core.check("UXMFA")
+            if res.returncode != 0:
+                print(res.stdout)
+            self.assertEqual(res.returncode, 0)
+        # test remote image
+        res = core.check("UXMFA", try_to_use_local_image=False)
+        if res.returncode != 0:
+            print(res.stdout)
+        self.assertEqual(res.returncode, 0)
+
+        # second: run via commandline
+        res = run_command(["ackrep", "-cwd", "UXMFA"])
+        self.assertEqual(res.returncode, 0)
+
     def test_check_key(self):
         res = run_command(["ackrep", "--key"])
         self.assertEqual(res.returncode, 0)
@@ -510,11 +534,17 @@ class TestCases3(SimpleTestCase):
         reset_repo(ackrep_data_test_repo_path)
 
     def test_run_interactive_environment(self):
-        cmd = ["ackrep", "--run-interactive-environment", "YJBOX", "ackrep -c UXMFA; cd ../; ls; cd ackrep_data; ls"]
+        cmd = [
+            "ackrep",
+            "--run-interactive-environment",
+            "YJBOX",
+            "ackrep -c UXMFA; \
+            cd ../; ls; cd ackrep_data_for_unittests; ls",
+        ]
         res = run_command(cmd, capture_output=True)
         core.logger.debug(res)
         self.assertEqual(res.returncode, 0)
-        expected_directories = ["ackrep_transfer", "Success"]
+        expected_directories = ["system_models", "Success"]
         for info in expected_directories:
             self.assertIn(info, res.stdout)
 
