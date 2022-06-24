@@ -70,6 +70,7 @@ class GenericModel:
 
         pp : list[float] or dict{sympy.symbol:float}
             Parameters of the model.
+            if pp=None (default) then values from parameters.py are used
 
         Notes:
         =====
@@ -104,6 +105,8 @@ class GenericModel:
         self.pp_symb = None
         # Parameter dictionary with symbol:value entries
         self.pp_dict = None
+        # Parameter dictionary with str(symbol):value entries
+        self.pp_str_dict = None
         # Parameter Substitution List for sp.subs methods
         self.pp_subs_list = None
         # Input function
@@ -122,10 +125,13 @@ class GenericModel:
         self._create_symb_xx_xxuu()
         # Create parameter dict, subs_list and symbolic parameter vector
         self.set_parameters(pp)
+        # Create a dict like self.pp_dict but with strings as keys instead of symbols.
+        self._create_pp_str_dict()
         # Create Symbolic parameter vector and subs list
         self._create_symb_pp()
         # Create Substitution list
         self._create_subs_list()
+
         # choose input function
         if self.u_dim == 0:
             self.set_input_func(self.uu_autonomous_func())
@@ -258,7 +264,7 @@ class GenericModel:
         """
         Create symbolic function of the model with the parameter values.
 
-        :params:(boolean) parameter to substitute
+        :params:(dict) parameter to substitute
         :return:(matrix) matrix with right hand side symbolic functions with parameters
         """
         # transform symbolic function to numerical function
@@ -401,6 +407,12 @@ class GenericModel:
 
         # Case: Should never happen.
         raise Exception("Critical Error: Check Source Code of set_parameters.")
+
+    def _create_pp_str_dict(self) -> None:
+        """
+        Create a dict like self.pp_dict but with strings as keys instead of symbols.
+        """
+        self.pp_str_dict = dict([(str(key), value) for key, value in self.pp_dict.items()])
 
 
 ### Parameter fetching and tex-ing ###
