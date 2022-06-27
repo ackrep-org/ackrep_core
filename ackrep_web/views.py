@@ -1,4 +1,3 @@
-from fileinput import filename
 import time
 from textwrap import dedent as twdd
 import pprint
@@ -21,6 +20,7 @@ import numpy as np
 from ackrep_core.models import ActiveJobs
 from ackrep_core.util import run_command
 import yaml
+import shutil
 
 from ackrep_web.celery import app
 
@@ -176,7 +176,7 @@ class EntityDetailView(View):
             core.logger.warning(f"Entity {key} not found in any CI result files.")
             c.result = -1
 
-        # c.image_list = core.get_data_files(c.entity.base_path, endswith_str=".png", create_media_links=True)
+        c.image_list = core.get_data_files(f"ackrep_plots/{key}", endswith_str=".png", create_media_links=True)
 
         c.show_debug = False
 
@@ -235,13 +235,15 @@ class NewMergeRequestView(View):
 
 
 class NewCiResultView(View):
+    """get plots and results from CI"""
 
     # noinspection PyMethodMayBeStatic
     def get(self, request):
         save_cwd = os.getcwd()
-        path = os.path.join(core.ci_results_path, "history")
-        if not os.path.isdir(path):
-            os.mkdir(path)
+        path = os.path.join(core.root_path, "tmp")
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        os.mkdir(path)
         os.chdir(path)
 
         cmd = [
@@ -253,14 +255,23 @@ class NewCiResultView(View):
         # print(cmd)
         res = run_command(cmd, logger=core.logger, capture_output=True, shell=True)
         assert res.returncode == 0, "Unable to collect results from circleci."
-        str1 = b"\xe2\x80\x98".decode("utf-8")
-        str2 = b"\xe2\x80\x99".decode("utf-8")
-        file_name = res.stderr.split("Saving to: ")[-1].split("\n\n")[0].split(str1)[-1].split(str2)[0]
 
-        with open(file_name) as file:
-            results = yaml.load(file, Loader=yaml.FullLoader)
-
-        util.git_push("../", f"history/{file_name}", f"add: {file_name}")
+        files = os.listdir(".")
+        # sort the received files into the correct directories
+        for file_name in files:
+            name, ending = file_name.split(".")
+            if ending == "yaml":
+                dest = os.path.join(core.ci_results_path, "history")
+                shutil.copy(file_name, dest)
+                util.git_push(core.ci_results_path, f"history/{file_name}", f"add: {file_name}")
+                with open(file_name) as file:
+                    results = yaml.load(file, Loader=yaml.FullLoader)
+            elif ending == "png":
+                dest = os.path.join(core.root_path, "ackrep_plots", name.split("_")[-1])
+                os.makedirs(dest, exist_ok=True)
+                shutil.copy(file_name, f"{dest}/plot.png")
+            else:
+                raise TypeError(f"File of unkknown type {ending} detected.")
 
         os.chdir(save_cwd)
 

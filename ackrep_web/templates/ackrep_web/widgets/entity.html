@@ -88,13 +88,11 @@
                     <i>in environment:</i> {{c.logs.environment}}<br>
                 </div>
             {% endif %}
-            {% if c.show_output %}
-                {% if c.image_list %}
-                    <b>Plot:</b><br>
-                    {% for image in c.image_list %}
-                        <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
-                    {% endfor %}
-                {% endif %}
+            {% if c.image_list %}
+                <b>Plot:</b><br>
+                {% for image in c.image_list %}
+                    <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
+                {% endfor %}
             {% endif %}
             {% if c.show_debug %}
                 <!--utc_debug -->
@@ -147,14 +145,11 @@
                     <i>in environment:</i> {{c.logs.environment}}<br>
                 </div>
             {% endif %}
-            {% if c.show_output %}
-            
-                {% if c.image_list %}
-                    <b>Plot:</b><br>
-                    {% for image in c.image_list %}
-                        <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
-                    {% endfor %}
-                {% endif %}
+            {% if c.image_list %}
+                <b>Plot:</b><br>
+                {% for image in c.image_list %}
+                    <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
+                {% endfor %}
             {% endif %}
             {% if c.show_debug %} 
                 <!--utc_debug -->

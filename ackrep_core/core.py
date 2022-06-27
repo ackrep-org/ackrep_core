@@ -465,7 +465,7 @@ def get_data_files(base_path, endswith_str=None, create_media_links=False):
     elif "problem_solutions" in base_path:
         startdir = os.path.join(root_path, base_path, "_solution_data")
     else:
-        raise FileNotFoundError("invalid path!")
+        startdir = os.path.join(root_path, base_path)
 
     if not os.path.isdir(startdir):
         return []

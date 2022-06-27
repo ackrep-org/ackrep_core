@@ -253,8 +253,7 @@ def check_all_entities():
 
     returncodes = []
     failes_entities = []
-    # entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
-    entity_list = list(models.SystemModel.objects.all())
+    entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
     for entity in entity_list:
         key = entity.key
         if key == "YHS5B":
@@ -268,17 +267,16 @@ def check_all_entities():
         if res.returncode == 0:
             # copy plot to collection directory
             if type(entity) == models.ProblemSolution:
-                tail = "_solution_data" 
+                tail = "_solution_data"
             elif type(entity) == models.SystemModel:
                 tail = "_system_model_data"
             else:
                 raise TypeError(f"{key} is not of a checkable type")
             src = f"dummy:/code/{entity.base_path}/{tail}/plot.png"
-            dest = os.path.join(core.root_path, "artifacts", "ackrep_plots")
+            dest = os.path.join(core.root_path, "artifacts", "ackrep_plots", f"plot_{key}.png")
             os.makedirs(dest, exist_ok=True)
             # docker cp has to be used, see https://circleci.com/docs/2.0/building-docker-images#mounting-folders
-            res = run_command(["docker", "cp", src, dest])
-            os.rename("../artifacts/ackrep_plots/plot.png", f"../artifacts/ackrep_plots/plot_{key}.png")
+            run_command(["docker", "cp", src, dest])
 
             issues = ""
         else:
