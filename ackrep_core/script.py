@@ -9,6 +9,7 @@ from django.core import management
 from django.conf import settings
 import yaml
 from git import Repo
+import shutil
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -225,12 +226,12 @@ def create_new_entity():
 
 
 def check_all_entities():
+    # setup ci_results folder
     date = datetime.datetime.now()
     date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
     file_name = "ci_results__" + date_string + ".yaml"
-    file_path = os.path.join(core.ci_results_path, "history", file_name)
-
-    os.makedirs(os.path.join(core.ci_results_path, "history"), exist_ok=True)
+    file_path = os.path.join(core.root_path, "artifacts", "ackrep_ci_results", file_name)
+    os.makedirs(os.path.join(core.root_path, "artifacts", "ackrep_ci_results"), exist_ok=True)
 
     content = {"commit_logs": {}}
     # save the commits of the current ci job
@@ -252,7 +253,8 @@ def check_all_entities():
 
     returncodes = []
     failes_entities = []
-    entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
+    # entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
+    entity_list = list(models.SystemModel.objects.all())
     for entity in entity_list:
         key = entity.key
         if key == "YHS5B":
@@ -264,6 +266,20 @@ def check_all_entities():
         runtime = round(time.time() - start_time, 1)
         result = res.returncode
         if res.returncode == 0:
+            # copy plot to collection directory
+            if type(entity) == models.ProblemSolution:
+                tail = "_solution_data" 
+            elif type(entity) == models.SystemModel:
+                tail = "_system_model_data"
+            else:
+                raise TypeError(f"{key} is not of a checkable type")
+            src = f"dummy:/code/{entity.base_path}/{tail}/plot.png"
+            dest = os.path.join(core.root_path, "artifacts", "ackrep_plots")
+            os.makedirs(dest, exist_ok=True)
+            # docker cp has to be used, see https://circleci.com/docs/2.0/building-docker-images#mounting-folders
+            res = run_command(["docker", "cp", src, dest])
+            os.rename("../artifacts/ackrep_plots/plot.png", f"../artifacts/ackrep_plots/plot_{key}.png")
+
             issues = ""
         else:
             issues = res.stdout
