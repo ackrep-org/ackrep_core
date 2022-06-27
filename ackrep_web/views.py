@@ -277,7 +277,7 @@ class NewCiResultView(View):
         with open(file_name) as file:
             results = yaml.load(file, Loader=yaml.FullLoader)
 
-        util.git_push(".", file_name, f"add: {file_name}")
+        util.git_push("../", f"history/{file_name}", f"add: {file_name}")
 
         os.chdir(save_cwd)
 

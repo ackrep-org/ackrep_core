@@ -411,6 +411,9 @@ class GenericModel:
         """
         Create a dict like self.pp_dict but with strings as keys instead of symbols.
         """
+        # in case of models without params
+        if self.pp_dict is None:
+            return
         self.pp_str_dict = dict([(str(key), value) for key, value in self.pp_dict.items()])
 
 
