@@ -136,24 +136,8 @@ class EntityDetailView(View):
 
     # noinspection PyMethodMayBeStatic
     def get(self, request, key):
-        c = self.get_context_container(key)
-        context = {"c": c}
-
-        return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
-
-
-class CheckView(EntityDetailView):
-    def get(self, request, key):
         # inherit cotext data from EntityDetailView like source code and pdf
         c = self.get_context_container(key)
-
-        if type(c.entity) == models.ProblemSolution:
-            c.view_type = "check-solution"
-            c.view_type_title = "Check Solution for:"
-
-        elif type(c.entity) == models.SystemModel:
-            c.view_type = "check-system-model"
-            c.view_type_title = "Simulation for:"
 
         exitflag = False
         c.result = "pending"
@@ -221,8 +205,7 @@ class CheckView(EntityDetailView):
             c.diff_time_str = c.ci_result_entiry["runtime"]
 
         context = {"c": c}
-        # create an object container (entity.oc) where for each string-key the real object is available
-        # _purge_old_jobs()
+
         return TemplateResponse(request, "ackrep_web/entity_detail.html", context)
 
 

@@ -251,6 +251,7 @@ def check_all_entities():
         document = yaml.dump(content, file)
 
     returncodes = []
+    failes_entities = []
     entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
     for entity in entity_list:
         key = entity.key
@@ -278,6 +279,8 @@ def check_all_entities():
             document = yaml.dump(content, file)
 
         returncodes.append(res.returncode)
+        if res.returncode != 0:
+            failes_entities.append(key)
         print("---")
 
     # TODO: curl webhook or use webhook feature of circleci
@@ -285,7 +288,8 @@ def check_all_entities():
     if returncodes == 0:
         print(bgreen("All checks successfull."))
     else:
-        print(bred("Some check failed."))
+        print(bred(f"{len(failes_entities)}/{len(entity_list)} checks failed."))
+        print("Failed entities:", failes_entities)
 
     exit(sum(returncodes))
 

@@ -108,15 +108,13 @@ class TestCases2(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, "utc_entity_full")
+        self.assertContains(response, "Success")
 
-    def test_check_solution(self):
-        url = reverse("check-solution", kwargs={"key": "UKJZI"})
+        url = reverse("entity-detail", kwargs={"key": "UXMFA"})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, "utc_entity_full")
-        self.assertContains(response, "utc_check_solution")
-
         self.assertContains(response, "Success")
 
         # skip test if done in CI, see https://ackrep-doc.readthedocs.io/en/latest/devdoc/design_considerations.html#ci
@@ -130,32 +128,11 @@ class TestCases2(SimpleTestCase):
 
         #     # TODO test that this url returns a file
 
-    def test_check_system_model(self):
-        url = reverse("check-system-model", kwargs={"key": "UXMFA"})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        self.assertContains(response, "utc_entity_full")
-        self.assertContains(response, "utc_check_system_model")
-
-        self.assertContains(response, "Success")
-
-        # skip test if done in CI, see https://ackrep-doc.readthedocs.io/en/latest/devdoc/design_considerations.html#ci
-        # if os.environ.get("CI") != "true":  #!
-        #     self.assertContains(response, "utc_img_url")
-
-        #     regex = re.compile("utc_img_url:<(.*?)>")
-        #     img_url = regex.findall(response.content.decode("utf8"))
-
-        #     response = self.client.get(img_url)
-
-        #     # TODO test that this url returns a file
-
     @override_settings(DEBUG=True)
     def test_debug_message_printing(self):
 
         # broken lorenz system
-        url = reverse("check-system-model", kwargs={"key": "LRHZX"})
+        url = reverse("entity-detail", kwargs={"key": "LRHZX"})
 
         # prevent expected error logs from showing during test
         loglevel = core.logger.level
@@ -182,7 +159,7 @@ class TestCases2(SimpleTestCase):
         core.logger.setLevel(loglevel)
 
     def test_show_last_passing(self):
-        url = reverse("check-system-model", kwargs={"key": "LRHZX"})
+        url = reverse("entity-detail", kwargs={"key": "LRHZX"})
         response = self.client.get(url)
         infos = ["Entity passed last:", "2022-06-24 00:00:00"]
         for info in infos:

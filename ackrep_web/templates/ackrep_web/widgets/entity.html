@@ -28,7 +28,11 @@
 <div class="entity">
     <b>Name:</b> {{entity.name}}
     (Key: <a href="{% url 'entity-detail' entity.key %}" title="show details">{{entity.key}}</a>)<br>
-    <b>Path:</b> <tt>{{entity.base_path}}</tt><br>
+    <b>Path:</b> <tt>{{entity.base_path}}</tt>
+    {% if c.source_code_link %}
+            <a id="source_code_link" title="view on GitHub" href={{c.source_code_link}}>View on GitHub</a>
+    {% endif %}
+    <br>
     <b>Type:</b> {{entity.type}}<br>
     
     {% if display == "full"%}
@@ -47,12 +51,6 @@
     <input type=radio id="hide" name="group" value="hide" onchange="setDefaultValue('hide');">
     ]
     <span id="content">
-        {% if c.source_code_link %}
-            <a id="source_code_link" href={{c.source_code_link}}>{{c.source_code_link}}</a>
-        {% endif %}
-    
-        <br>
-
         {% for obj in c.source_code_container.object_list %}
             <b>{{obj.file_name}}</b>
             
@@ -78,12 +76,6 @@
 
         {% if c.view_type == "detail" %}
             <!--utc_entity_detial -->
-            <br>
-            <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
-            <br>
-            <a href="{% url 'check-solution' entity.key %}">check this solution</a> (this might take some time)<br>
-        {% elif c.view_type == "check-solution"%}
-            <!--utc_check_solution -->
             <br>
 
             <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
@@ -144,12 +136,6 @@
         {% if c.view_type == "detail" %}
             <!--utc_entity_detial -->
             <br>
-            <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
-            <br>
-            <a href="{% url 'check-system-model' entity.key %}">simulate this model</a> (this might take some time)<br>
-        {% elif c.view_type == "check-system-model"%}
-            <!--utc_check_system_model -->
-            <br>
 
             <b>Runtime:</b> {{c.diff_time_str}}s (estimated: {{entity.estimated_runtime}})<br>
             <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
@@ -183,17 +169,8 @@
 {#--------------------------------------------------------------------------------------------------------------------#}
 
 
-{% else %} {#display full#}
-    <!--utc_entity_short -->
-    {% if entity.type == "problem_solution"%}
-        <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
-        <br>
-        <a href="{% url 'check-solution' entity.key %}">check this solution</a> (this might take some time)
-    {% elif entity.type == "system_model"%}
-        <b>Estimated Runtime:</b> {{entity.estimated_runtime}}
-        <br>
-        <a href="{% url 'check-system-model' entity.key %}">simulate this model</a> (this might take some time)
-    {% endif %}
+
+
 {% endif %} {#display full#}
 </div>
 
