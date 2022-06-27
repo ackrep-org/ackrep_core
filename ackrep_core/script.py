@@ -76,7 +76,7 @@ def main():
     argparser.add_argument("--start-workers", help="start the celery workers", action="store_true")
     argparser.add_argument(
         "--prepare-script",
-        help="render the execscript and place it in the docker transfer folder (specified by path to metadata file or key)",
+        help="render the execscript and place it in the docker ackrep_data folder (specified by path to metadata file or key)",
         metavar="metadatafile",
     )
     argparser.add_argument(
@@ -557,7 +557,7 @@ def start_workers():
 
 
 def prepare_script(arg0):
-    """prepare exexscript and place it in transfer folder
+    """prepare exexscript and place it in ackrep_data folder
 
     Args:
         arg0 (str): entity key or metadata path
@@ -572,7 +572,7 @@ def prepare_script(arg0):
 
 
 def run_interactive_environment(args):
-    """get imagename, create transfer direktory, change permissions, start container"""
+    """get imagename, start container"""
     if platform.system() != "Linux":
         msg = f"No support for {platform.system()}"
         raise NotImplementedError(msg)
