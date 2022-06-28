@@ -39,6 +39,10 @@
     <!--utc_entity_full -->
     <b>Short Description:</b> {{entity.short_description}}<br>
     <b>Created:</b> {{entity.creation_date}}<br>
+    {% if c.env_key %}
+        <b>Compatible Environment:</b> {{c.env_name}} (Key: <a href="{% url 'entity-detail' c.env_key %}" title="show details">{{c.env_key}}</a>)<br>
+    {% endif %}
+    {% if c.source_code_container.object_list %}
     <b>Source Code</b>
     [<label for="show">
         <span class="fake_button">Show</span>
@@ -60,6 +64,7 @@
 
     </span>
     <br>
+    {% endif %}
 {#--------------------------------------------------------------------------------------------------------------------#}
     {% if entity.type == "problem_solution"%}
         <b>Solved Problems:</b>
@@ -73,36 +78,35 @@
             {# TODO: add more information in mouseover #}
             <a href="{% url 'entity-detail' e.key %}" title="{{e.short_description}}">{{e.name}}</a>
         {% endfor %}
+        <br>
+        <!--utc_entity_detial -->
 
-        {% if c.view_type == "detail" %}
-            <!--utc_entity_detial -->
-            <br>
+        
+        <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
+        <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
+        {% if c.last_time_passing %}
+            <div class="last_passing">
+                <i>Entity passed last:</i> {{c.last_time_passing}}<br>
+                <i>with data commit:</i> {{c.logs.ackrep_data}}<br>
+                <i>with core commit:</i> {{c.logs.ackrep_core}}<br>
+                <i>in environment:</i> {{c.logs.environment}}<br>
+            </div>
+        {% endif %}
+        {% if c.image_list %}
+            <b>Plot:</b><br>
+            {% for image in c.image_list %}
+                <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
+            {% endfor %}
+        {% endif %}
+        {% if c.show_debug %}
+            <!--utc_debug -->
+            <b>Debug:</b>
+            <div class="debug_output">
+                <pre>{{c.issues}}</pre>
+            </div>
+        {% endif %}
 
-            <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
-            <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
-            {% if c.last_time_passing %}
-                <div class="last_passing">
-                    <i>Entity passed last:</i> {{c.last_time_passing}}<br>
-                    <i>with data commit:</i> {{c.logs.ackrep_data}}<br>
-                    <i>with core commit:</i> {{c.logs.ackrep_core}}<br>
-                    <i>in environment:</i> {{c.logs.environment}}<br>
-                </div>
-            {% endif %}
-            {% if c.image_list %}
-                <b>Plot:</b><br>
-                {% for image in c.image_list %}
-                    <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
-                {% endfor %}
-            {% endif %}
-            {% if c.show_debug %}
-                <!--utc_debug -->
-                <b>Debug:</b>
-                <div class="debug_output">
-                    <pre>{{c.issues}}</pre>
-                </div>
-            {% endif %}
 
-        {% endif %} {#viewtype#}
     {% elif entity.type == "problem_specification" %}
         <b>Available solutions:</b>
         {% for e in entity.available_solutions_list %}
@@ -131,35 +135,32 @@
             <a href="{{pdf}}">Download pdf</a><br>
         {% endfor %}
 
-        {% if c.view_type == "detail" %}
-            <!--utc_entity_detial -->
-            <br>
+        <!--utc_entity_detial -->
 
-            <b>Runtime:</b> {{c.diff_time_str}}s (estimated: {{entity.estimated_runtime}})<br>
-            <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
-            {% if c.last_time_passing %}
-                <div class="last_passing">
-                    <i>Entity passed last:</i> {{c.last_time_passing}}<br>
-                    <i>with data commit:</i> {{c.logs.ackrep_data}}<br>
-                    <i>with core commit:</i> {{c.logs.ackrep_core}}<br>
-                    <i>in environment:</i> {{c.logs.environment}}<br>
-                </div>
-            {% endif %}
-            {% if c.image_list %}
-                <b>Plot:</b><br>
-                {% for image in c.image_list %}
-                    <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
-                {% endfor %}
-            {% endif %}
-            {% if c.show_debug %} 
-                <!--utc_debug -->
-                <b>Debug:</b>
-                <div class="debug_output">
-                    <pre>{{c.issues}}</pre>
-                </div>
-            {% endif %}
+        <b>Runtime:</b> {{c.diff_time_str}}s (estimated: {{entity.estimated_runtime}})<br>
+        <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
+        {% if c.last_time_passing %}
+            <div class="last_passing">
+                <i>Entity passed last:</i> {{c.last_time_passing}}<br>
+                <i>with data commit:</i> {{c.logs.ackrep_data}}<br>
+                <i>with core commit:</i> {{c.logs.ackrep_core}}<br>
+                <i>in environment:</i> {{c.logs.environment}}<br>
+            </div>
+        {% endif %}
+        {% if c.image_list %}
+            <b>Plot:</b><br>
+            {% for image in c.image_list %}
+                <img src="{{image}}"><!--utc_img_url:<{{image}}> --><br>
+            {% endfor %}
+        {% endif %}
+        {% if c.show_debug %} 
+            <!--utc_debug -->
+            <b>Debug:</b>
+            <div class="debug_output">
+                <pre>{{c.issues}}</pre>
+            </div>
+        {% endif %}
 
-        {% endif %} {#viewtype#}
     {% endif %} {#entity.type#}
 {#--------------------------------------------------------------------------------------------------------------------#}
 

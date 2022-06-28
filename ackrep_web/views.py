@@ -129,6 +129,13 @@ class EntityDetailView(View):
         c.source_code_link = _create_source_code_link(entity)
         c.source_code_container = _get_source_code(entity)
 
+        if type(entity) in [core.models.SystemModel, core.models.ProblemSolution]:
+            env_key = entity.compatible_environment
+            if env_key == "" or env_key is None:
+                env_key = settings.DEFAULT_ENVIRONMENT_KEY
+            c.env_name = core.get_entity(env_key).name
+            c.env_key = env_key
+
         # create an object container (entity.oc) where for each string-keys the real object is available
         core.resolve_keys(entity)
 

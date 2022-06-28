@@ -11,6 +11,7 @@ from ipydex import Container  # for functionality
 from git import Repo
 import sqlite3
 from ackrep_web.celery import app
+from ackrep_core_django_settings import settings
 
 # settings might be accessed from other modules which import this one (core)
 # noinspection PyUnresolvedReferences
@@ -850,13 +851,11 @@ def check(key, try_to_use_local_image=True):
     is_system_model = isinstance(entity, models.SystemModel)
     assert is_solution or is_system_model, f"key {key} is of neither solution nor system model. Unsure what to do."
 
-    default_env_key = "YJBOX"
-
     # get environment name
     env_key = entity.compatible_environment
     if env_key == "" or env_key is None:
         logger.info("No environment specification found. Using default env.")
-        env_key = default_env_key
+        env_key = settings.DEFAULT_ENVIRONMENT_KEY
     env_name = get_entity(env_key).name
     logger.info(f"running with environment spec: {env_name}")
 
