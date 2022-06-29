@@ -44,7 +44,15 @@ else:
         class UnsafeConfiguration(BaseException):
             pass
         msg = f"Using the example config is not allowed outside development mode.{DEVMODE} " + str(sys.argv)
-        raise UnsafeConfiguration(msg)
+        # raise UnsafeConfiguration(msg)
+
+        # TODO:
+        # This security issue is only relevant for the ackrep-server, not for the command line interface (cli).
+        # Cli should work directly after installing. However, we prevent to accidentally run the production
+        # webserver with the example config
+
+# this serves to check the path via the debugging page
+CONFIG_PATH = config.path
 
 # TODO: save the config path and DEVMODE to logfile
 

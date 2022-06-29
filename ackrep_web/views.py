@@ -4,7 +4,7 @@ import pprint
 from django.db import OperationalError
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.template.response import TemplateResponse
+from django.template.response import TemplateResponse, HttpResponse
 from django.shortcuts import redirect, reverse
 from django.http import Http404
 from django.utils import timezone
@@ -370,6 +370,43 @@ class NotYetImplementedView(View):
         context = {}
 
         return TemplateResponse(request, "ackrep_web/not_yet_implemented.html", context)
+
+
+class DebugView(View):
+    """
+    This View serves as simple entrypoint for debugging
+    """
+
+    # noinspection PyMethodMayBeStatic
+    def get(self, request):
+        if not settings.DEBUG:
+            return HttpResponse("Debug mode is deactivated", content_type="text/plain")
+
+        import bleach
+
+        # IPS()
+
+        output_data = [
+            ("settings.CONFIG_PATH", settings.CONFIG_PATH),
+            ("request", request),
+            ("request.headers", request.headers),
+            ("request.body", request.body),
+        ]
+
+        lines = [
+            f"<tr><td>{x}</td><td>&nbsp;</td><td><pre>{bleach.clean(repr(y))}</pre></td></tr>" for x, y in output_data
+        ]
+        line_str = "\n".join(lines)
+        res = f"""
+        <!DOCTYPE html>
+        <b>Debugging page</b><br>
+        
+        <table>
+        {line_str}
+        </table>
+        """
+
+        return HttpResponse(res, content_type="text/html")
 
 
 def _create_source_code_link(entity):
