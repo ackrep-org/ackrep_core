@@ -110,6 +110,12 @@ def main():
     argparser.add_argument(
         "--test-logging", help="print out some dummy messages for each logging category", action="store_true"
     )
+    argparser.add_argument(
+        "--unittest",
+        "-ut",
+        help="some commands use this flag to behave differently during unittests",
+        action="store_true",
+    )
 
     args = argparser.parse_args()
 
@@ -149,7 +155,7 @@ def main():
         metadatapath = args.check_with_docker
         check_with_docker(metadatapath)
     elif args.check_all_entities:
-        check_all_entities()
+        check_all_entities(args.unittest)
     elif args.get_metadata_abs_path_from_key:
         key = args.get_metadata_abs_path_from_key
         exitflag = not args.show_debug
@@ -225,7 +231,9 @@ def create_new_entity():
     core.convert_dict_to_yaml(field_values, target_path=path)
 
 
-def check_all_entities():
+def check_all_entities(unittest=False):
+    """this function is called during CI.
+    All (checkable) entities are checked and the results stored in a yaml file."""
     # setup ci_results folder
     date = datetime.datetime.now()
     date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
@@ -249,20 +257,25 @@ def check_all_entities():
         content["commit_logs"][repo_name] = log_dict
 
     with open(file_path, "a") as file:
-        document = yaml.dump(content, file)
+        yaml.dump(content, file)
 
     returncodes = []
-    failes_entities = []
-    entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
+    failed_entities = []
+    if unittest:
+        entity_list = [core.get_entity("UXMFA"), core.get_entity("LRHZX")]
+    else:
+        entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
     for entity in entity_list:
         key = entity.key
         if key == "YHS5B":
             print("skipping mmc!")
             print("---")
             continue
+
         start_time = time.time()
         res = check_with_docker(key, exitflag=False)
         runtime = round(time.time() - start_time, 1)
+
         result = res.returncode
         if res.returncode == 0:
             # copy plot to collection directory
@@ -273,8 +286,9 @@ def check_all_entities():
             else:
                 raise TypeError(f"{key} is not of a checkable type")
             src = f"dummy:/code/{entity.base_path}/{tail}/plot.png"
-            dest = os.path.join(core.root_path, "artifacts", "ackrep_plots", f"plot_{key}.png")
-            os.makedirs(dest, exist_ok=True)
+            dest_dir = os.path.join(core.root_path, "artifacts", "ackrep_plots")
+            os.makedirs(dest_dir, exist_ok=True)
+            dest = os.path.join(dest_dir, f"plot_{key}.png")
             # docker cp has to be used, see https://circleci.com/docs/2.0/building-docker-images#mounting-folders
             run_command(["docker", "cp", src, dest])
 
@@ -290,20 +304,20 @@ def check_all_entities():
             content[key]["env_version"] = version
 
         with open(file_path, "a") as file:
-            document = yaml.dump(content, file)
+            yaml.dump(content, file)
 
         returncodes.append(res.returncode)
         if res.returncode != 0:
-            failes_entities.append(key)
+            failed_entities.append(key)
         print("---")
 
     # TODO: curl webhook or use webhook feature of circleci
 
-    if returncodes == 0:
+    if sum(returncodes) == 0:
         print(bgreen("All checks successfull."))
     else:
-        print(bred(f"{len(failes_entities)}/{len(entity_list)} checks failed."))
-        print("Failed entities:", failes_entities)
+        print(bred(f"{len(failed_entities)}/{len(entity_list)} checks failed."))
+        print("Failed entities:", failed_entities)
 
     exit(sum(returncodes))
 
@@ -583,7 +597,7 @@ def prepare_script(arg0):
     _, key = get_entity_and_key(arg0)
 
     entity, c = core.get_entity_context(key)
-    scriptpath = "/code/ackrep_data"
+    scriptpath = os.path.join(core.root_path, "ackrep_data")
     core.create_execscript_from_template(entity, c, scriptpath=scriptpath)
 
     print(bgreen("Success."))

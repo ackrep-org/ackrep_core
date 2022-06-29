@@ -1,6 +1,6 @@
 import os
 import sys
-import platform
+import yaml
 
 from unittest import skipIf, skipUnless
 from django.test import TestCase as DjangoTestCase, SimpleTestCase
@@ -284,6 +284,29 @@ class TestCases3(SimpleTestCase):
         # ensure repo is clean again
         # TODO: remove this if png is removed from repo
         reset_repo(ackrep_data_test_repo_path)
+
+    def test_check_all_entities(self):
+        # this test only works in ci, not locally
+        res = run_command(["ackrep", "--check-all-entities", "-ut"])
+        self.assertEqual(res.returncode, 1)
+
+        # test results.yaml
+        yaml_path = "../artifacts/ackrep_ci_results"
+        yamls = os.listdir(yaml_path)
+        self.assertEqual(len(yamls), 1)
+        with open(os.path.join(yaml_path, yamls[0])) as file:
+            results = yaml.load(file, Loader=yaml.FullLoader)
+        self.assertIn("ackrep_core", results["commit_logs"].keys())
+        self.assertIn("ackrep_data", results["commit_logs"].keys())
+        self.assertEqual(results["UXMFA"]["result"], 0)
+        self.assertEqual(results["LRHZX"]["result"], 1)
+        self.assertIn("SyntaxError", results["LRHZX"]["issues"])
+
+        # test plots
+        plot_path = "../artifacts/ackrep_plots"
+        plots = os.listdir(plot_path)
+        self.assertEqual(len(plots), 1)
+        self.assertEqual("plot_UXMFA.png", plots[0])
 
     def test_check_with_docker(self):
         # first: run directly
