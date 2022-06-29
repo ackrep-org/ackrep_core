@@ -888,29 +888,39 @@ def look_for_running_container(env_name):
     Returns:
         str or None: container_id
     """
-    cmd = ["docker", "ps", "--format", "{{.ID}}::{{.Names}}"]
-    res = run_command(cmd, logger=logger, capture_output=True)
-    for container in res.stdout.split("\n"):
-        if env_name in container:
-            container_id = container.split("::")[0]
-            logger.info(f"Running Container found: {container}")
+    container_id = None
 
-            # check if environment container has the correct db loaded by comparing env vars
-            cmd = ["docker", "exec", container_id, "printenv", "ACKREP_DATA_PATH"]
-            res = run_command(cmd, capture_output=True)
-            data_path_container = res.stdout.replace("\n", "").split("/")[-1]
-            logger.info(f"data_path inside container: {data_path_container}")
+    # check if image is up to date with remote
+    cmd = ["docker", "pull", f"ghcr.io/ackrep-org/{env_name}:latest"]
+    pull = run_command(cmd, logger=logger, capture_output=True)
+    up_to_date = "Image is up to date" in pull.stdout
 
-            # no db or wrong db in container:
-            if data_path_container != data_path.split("/")[-1]:
-                logger.info("Running container has wrong db loaded. Shutting down.")
-                cmd = ["docker", "stop", container_id]
-                res = run_command(cmd, logger=logger, capture_output=True)
-                assert res.returncode == 0
-                container_id = None
-            break
-        else:
-            container_id = None
+    if up_to_date:
+        logger.info("image was up to date")
+        cmd = ["docker", "ps", "--filter", f"name={env_name}", "--format", "{{.ID}}::{{.Names}}"]
+        active_containers = run_command(cmd, logger=logger, capture_output=True)
+        for container in active_containers.stdout.split("\n"):
+            # disregard last split item
+            if container != "":
+                container_id = container.split("::")[0]
+                logger.info(f"Running Container found: {container}")
+
+                # check if environment container has the correct db loaded by comparing env vars
+                cmd = ["docker", "exec", container_id, "printenv", "ACKREP_DATA_PATH"]
+                res = run_command(cmd, capture_output=True)
+                data_path_container = res.stdout.replace("\n", "").split("/")[-1]
+                logger.info(f"data_path inside container: {data_path_container}")
+
+                # no db or wrong db in container:
+                if data_path_container != data_path.split("/")[-1]:
+                    logger.info("Running container has wrong db loaded. Shutting down.")
+                    cmd = ["docker", "stop", container_id]
+                    res = run_command(cmd, logger=logger, capture_output=True)
+                    assert res.returncode == 0
+                    container_id = None
+                break
+    else:
+        logger.info("image was NOT up to date")
     return container_id
 
 
