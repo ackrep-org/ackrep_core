@@ -33,15 +33,20 @@ else:
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PARENT_DIR = os.path.dirname(BASE_DIR)
 
-# TODO: save the config path and DEVMODE to logfile
-try:
-    config = du.get_nearest_config(os.path.join(PARENT_DIR, "config.ini"), devmode=DEVMODE)
-except FileNotFoundError:
+# Note: catching a FileNotFoundException here leads to strange error.
+# ("RuntimeError: Script manage.py does not exist.") -> use if-based sanity check
+cfgpath = os.path.join(PARENT_DIR, "config.ini")
+if os.path.isfile(cfgpath):
+    config = du.get_nearest_config(cfgpath, devmode=DEVMODE)
+else:
     config = du.get_nearest_config(os.path.join(BASE_DIR, "config-example.ini"), devmode=DEVMODE)
     if not DEVMODE:
-        msg = "Using the example config is not allowed outside development mode."
-        raise RuntimeError(msg)
+        class UnsafeConfiguration(BaseException):
+            pass
+        msg = f"Using the example config is not allowed outside development mode.{DEVMODE} " + str(sys.argv)
+        raise UnsafeConfiguration(msg)
 
+# TODO: save the config path and DEVMODE to logfile
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
