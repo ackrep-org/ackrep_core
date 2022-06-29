@@ -293,6 +293,7 @@ class TestCases3(SimpleTestCase):
         # test results.yaml
         yaml_path = "../artifacts/ackrep_ci_results"
         yamls = os.listdir(yaml_path)
+        core.logger.info(yamls)
         self.assertEqual(len(yamls), 1)
         with open(os.path.join(yaml_path, yamls[0])) as file:
             results = yaml.load(file, Loader=yaml.FullLoader)
