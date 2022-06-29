@@ -11,9 +11,36 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import sys
+import deploymentutils as du
+
+
+# DEVMODE should be False by default.
+# Exceptions:
+#   - server program is started by `manage.py runserver` command
+#   - DEVMODE explicitly activated by ENV-Variable DJANGO_DEVMODE
+# Also, for  some management commands (on the production server) we want to explicitly switch off DEVMODE
+
+# export DJANGO_DEVMODE=True; py3 manage.py <some_command>
+env_devmode = os.getenv("DJANGO_DEVMODE")
+if env_devmode is None:
+    DEVMODE = "runserver" in sys.argv
+else:
+    DEVMODE = (env_devmode.lower() == "true")
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+# this is the repo root (where manage.py lives)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PARENT_DIR = os.path.dirname(BASE_DIR)
+
+# TODO: save the config path and DEVMODE to logfile
+try:
+    config = du.get_nearest_config(os.path.join(PARENT_DIR, "config.ini"), devmode=DEVMODE)
+except FileNotFoundError:
+    config = du.get_nearest_config(os.path.join(BASE_DIR, "config-example.ini"), devmode=DEVMODE)
+    if not DEVMODE:
+        msg = "Using the example config is not allowed outside development mode."
+        raise RuntimeError(msg)
 
 
 # Quick-start development settings - unsuitable for production
@@ -21,12 +48,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # (the following key is only used for local testing but not for production deployment)
-SECRET_KEY = "4(bbovkj6lx0txurbo4uozpr+sk&y%cu-o$8w0kww&cgyp)hww"
+SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# note this might be influenced by DEVMODE
+DEBUG = config("DEBUG", cast=bool)
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "demo.ackrep.org"]
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=config.Csv())
 
 
 # Application definition
@@ -130,6 +158,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
+# TODO: consider using config("TIME_ZONE") (which is currently "Europe/Berlin")
 TIME_ZONE = "UTC"
 
 USE_I18N = True
@@ -155,6 +184,7 @@ BACKUP_PATH = os.path.join(BASE_DIR, "db_backups")
 
 TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
 
+# TODO: this should be taken from config("...")
 # static url of the current ackrep_data branch running on the server (used to show link to source code)
 ACKREP_DATA_BASE_URL = "https://github.com/ackrep-org/ackrep_data.git"
 ACKREP_DATA_BRANCH = "tree/systemModelsCatalog"
@@ -172,10 +202,3 @@ DEFAULT_ENVIRONMENT_KEY = "YJBOX"
 # The following mechanism allows to incorporate custom settings (which are maintained
 # outside of the repository, see ackrep_deployment)
 
-try:
-    # noinspection PyUnresolvedReferences
-    from .custom_settings import *
-except ImportError:
-    pass
-except SyntaxError:
-    print("\n" * 2, " !! Warning: Syntax-Error in custom_settings.py !!", "\n\n")
