@@ -1,6 +1,7 @@
 # ackrep-specific
 # ---------------
 
+deployment_date.txt
 media/*
 
 # general

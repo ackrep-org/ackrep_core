@@ -388,6 +388,7 @@ class DebugView(View):
 
         output_data = [
             ("settings.CONFIG_PATH", settings.CONFIG_PATH),
+            ("settings.LAST_DEPLOYMENT", settings.LAST_DEPLOYMENT),
             ("request", request),
             ("request.headers", request.headers),
             ("request.body", request.body),

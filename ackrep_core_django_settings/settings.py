@@ -212,6 +212,8 @@ RESULT_EXPIRATION_TIME = 3600  # [ms]
 
 DEFAULT_ENVIRONMENT_KEY = "YJBOX"
 
-# The following mechanism allows to incorporate custom settings (which are maintained
-# outside of the repository, see ackrep_deployment)
-
+try:
+    with open(os.path.join(BASE_DIR, "deployment_date.txt")) as txtfile:
+        LAST_DEPLOYMENT = txtfile.read().strip()
+except FileNotFoundError:
+    LAST_DEPLOYMENT = "<not available>"
