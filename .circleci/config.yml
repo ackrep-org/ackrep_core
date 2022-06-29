@@ -89,6 +89,14 @@ jobs: # A basic unit of work in a run
           command: |
             . venv/bin/activate
             python manage.py test -v 2 --keepdb ackrep_web.test.test_web
+      - run: 
+          name: Debug
+          when: on_fail
+          command: |
+            echo 1
+            ls ../artifacts
+            echo 2
+            ls ../artifacts/ackrep_ci_results
       # for debugging:
       # in test_web.py/TestCases2.setUp change celery worker to debug mode 
       # - run:

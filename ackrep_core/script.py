@@ -243,7 +243,8 @@ def check_all_entities(unittest=False):
 
     content = {"commit_logs": {}}
     # save the commits of the current ci job
-    for repo_name in ["ackrep_data", "ackrep_core"]:
+    current_data_repo = os.path.split(data_path)[-1]
+    for repo_name in [current_data_repo, "ackrep_core"]:
         repo = Repo(f"../{repo_name}")
         commit = repo.commit("HEAD")
         commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(commit.committed_date))
