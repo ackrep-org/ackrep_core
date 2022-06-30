@@ -88,6 +88,11 @@ def main():
         + "Environment key must be specified. Additional arguments ('a; b; c') for inside the env are optional.",
         metavar="key",
     )
+    argparser.add_argument(
+        "--jupyter",
+        help="run Jupyter Notebook",
+        action="store_true"
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -204,6 +209,8 @@ def main():
     elif args.run_interactive_environment:
         args = args.run_interactive_environment
         run_interactive_environment(args)
+    elif args.jupyter:
+        run_jupyter()
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -636,6 +643,10 @@ def run_interactive_environment(args):
 
     return res.returncode
 
+
+def run_jupyter():
+    """jupyter notebook --notebook-dir=/code/ackrep_data --ip='*' --port=8888 --no-browser --allow-root"""
+    pass
 
 def get_entity_and_key(arg0):
     """return entity and key for a given key or metadata path
