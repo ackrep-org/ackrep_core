@@ -167,7 +167,7 @@ CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_RESULT_BACKEND = "redis://redis:6379/0"
 RESULT_EXPIRATION_TIME = 3600  # [ms]
 
-DEFAULT_ENVIRONMENT_KEY = "CDAMA"
+DEFAULT_ENVIRONMENT_KEY = "YJBOX"
 
 # The following mechanism allows to incorporate custom settings (which are maintained
 # outside of the repository, see ackrep_deployment)
