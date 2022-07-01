@@ -346,7 +346,7 @@ def check(arg0: str, exitflag: bool = True):
 
     env_version = get_environment_version(entity)
     if env_version != "Unknown":
-        print(f"\nCalculated with {env_version}.\n")
+        print(f"\nCalculated with {env_version}\n")
 
     if res.returncode == 0:
         print(bgreen("Success."))
@@ -372,7 +372,7 @@ def get_environment_version(entity: models.GenericEntity):
         with open(path, "r") as docker_file:
             lines = docker_file.readlines()
         if "LABEL" in lines[-1]:
-            version = lines[-1].split('org.opencontainers.image.description "')[-1].split("|")[0]
+            version = lines[-1].split('org.opencontainers.image.description "')[-1].split(". |")[0]
         else:
             version = "Unknown"
     except:
@@ -398,6 +398,7 @@ def check_with_docker(arg0: str, exitflag: bool = True):
     res = core.check(key=key)
 
     if res.returncode == 0:
+        print(res.stdout)
         print(bgreen("Success."))
     elif res.returncode == 2:
         print(yellow("Inaccurate."))

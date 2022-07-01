@@ -4,7 +4,7 @@ import pprint
 from django.db import OperationalError
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.template.response import TemplateResponse
+from django.template.response import TemplateResponse, HttpResponse
 from django.shortcuts import redirect, reverse
 from django.http import Http404
 from django.utils import timezone
@@ -21,11 +21,16 @@ from ackrep_core.models import ActiveJobs
 from ackrep_core.util import run_command
 import yaml
 import shutil
+import hmac
+import json
 
 from ackrep_web.celery import app
 
 from celery.result import AsyncResult
 import kombu
+
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
@@ -240,67 +245,126 @@ class NewMergeRequestView(View):
 
             return redirect("new-merge-request")
 
-
-class NewCiResultView(View):
+@method_decorator(csrf_exempt, name='dispatch')
+class Webhook(View):
     """get plots and results from CI"""
 
-    # noinspection PyMethodMayBeStatic
+     # noinspection PyMethodMayBeStatic
     def get(self, request):
-        save_cwd = os.getcwd()
-        path = os.path.join(core.root_path, "tmp")
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-        os.mkdir(path)
-        os.chdir(path)
-
-        cmd = [
-            """curl -H 'Circle-Token: $CIRCLE_TOKEN' \
-        https://circleci.com/api/v1.1/project/github/ackrep-org/ackrep_data/latest/artifacts \
-        | grep -o 'https://[^"]*' \
-        | wget --verbose --header 'Circle-Token: $CIRCLE_TOKEN' --input-file -"""
-        ]
-        # print(cmd)
-        res = run_command(cmd, logger=core.logger, capture_output=True, shell=True)
-        assert res.returncode == 0, "Unable to collect results from circleci."
-
-        files = os.listdir(".")
-        # sort the received files into the correct directories
-        for file_name in files:
-            name, ending = file_name.split(".")
-            if ending == "yaml":
-                dest = os.path.join(core.ci_results_path, "history")
-                shutil.copy(file_name, dest)
-                util.git_push(core.ci_results_path, f"history/{file_name}", f"add: {file_name}")
-                with open(file_name) as file:
-                    results = yaml.load(file, Loader=yaml.FullLoader)
-            elif ending == "png":
-                dest = os.path.join(core.root_path, "ackrep_plots", name.split("_")[-1])
-                os.makedirs(dest, exist_ok=True)
-                shutil.copy(file_name, f"{dest}/plot.png")
+        
+        def recursive_table(d):
+            if type(d) == dict:
+                res = f""
+                for key, value in d.items():
+                    res += f"""<tr><td>{key}</td><td>{recursive_table(value)}</td></tr>"""
+                return f"""<table>{res}</table>"""
             else:
-                raise TypeError(f"File of unkknown type {ending} detected.")
+                return d
 
-        os.chdir(save_cwd)
+        path = os.path.join(core.root_path, "tmp")
+        try:
+            files = os.listdir(path)
+            for file_name in files:
+                name, ending = file_name.split(".")
+                if ending == "yaml":
+                    with open(os.path.join(path, file_name)) as file:
+                        results = yaml.load(file, Loader=yaml.FullLoader)
+            content = recursive_table(results)
+        except FileNotFoundError:
+            content = "nothing in the temp folder"
+       
+        style = "<style>table, th, td { border: 1px solid black;  border-collapse: collapse; padding: 5px}</style>"
+        res = f"""
+        <!DOCTYPE html>
+        {style}
+        <b>Last CI Report</b><br><br>
 
-        context = {"results": results}
+        {content}
+        """
 
-        return TemplateResponse(request, "ackrep_web/new_ci_result.html", context)
+        return HttpResponse(res, content_type="text/html")
 
-    # def post(self, request):
-    #     title = request.POST.get("title", "")
-    #     repo_url = request.POST.get("repo_url", "")
-    #     description = request.POST.get("description", "")
 
-    #     try:
-    #         mr = core.create_merge_request(repo_url, title, description)
+    # noinspection PyMethodMayBeStatic
+    def post(self, request):
+        secret = settings.SECRET_CIRCLECI_WEBHOOK_KEY
+        if self.verify_signature(secret, request):
+            if request.headers["Circleci-Event-Type"] == 'workflow-completed':
+                body = json.loads(request.body.decode())
 
-    #         return redirect("merge-request", key=mr.key)
-    #     except Exception as e:
-    #         error_str = str(e)
-    #         messages.error(request, f"An error occurred: {error_str}")
+                branch_name = body["pipeline"]["vcs"]["branch"]
+                if branch_name == "feature_webhook":
+                    IPS()
+                # TODO: update branchname once data repo has stable production branch
+                elif branch_name == "systemModelsCatalog":
+                    save_cwd = os.getcwd()
+                    path = os.path.join(core.root_path, "tmp")
+                    if os.path.isdir(path):
+                        shutil.rmtree(path)
+                    os.mkdir(path)
+                    os.chdir(path)
 
-    #         return redirect("new-merge-request")
+                    circle_token = settings.SECRET_CIRCLECI_API_KEY
+                    cmd = [
+                        f"""curl -H 'Circle-Token: {circle_token}' \
+                    https://circleci.com/api/v1.1/project/github/ackrep-org/ackrep_data/latest/artifacts?branch={branch_name} \
+                    | grep -o 'https://[^"]*' \
+                    | wget --verbose --header 'Circle-Token: {circle_token}' --input-file -"""
+                    ]
+                    # print(cmd)
+                    res = run_command(cmd, logger=core.logger, capture_output=True, shell=True)
+                    assert res.returncode == 0, "Unable to collect results from circleci."
 
+                    files = os.listdir(".")
+                    # sort the received files into the correct directories
+                    for file_name in files:
+                        name, ending = file_name.split(".")
+                        if ending == "yaml":
+                            dest = os.path.join(core.ci_results_path, "history")
+                            shutil.copy(file_name, dest)
+                            content = {"webhook body": json.loads(request.body.decode())}
+                            with open(file_name, "a") as file:
+                                yaml.dump(content, file)
+                            # util.git_push(core.ci_results_path, f"history/{file_name}", f"add: {file_name}")
+                        elif ending == "png":
+                            dest = os.path.join(core.root_path, "ackrep_plots", name.split("_")[-1])
+                            os.makedirs(dest, exist_ok=True)
+                            shutil.copy(file_name, f"{dest}/plot.png")
+                        else:
+                            raise TypeError(f"File of unkknown type {ending} detected.")
+
+                    os.chdir(save_cwd)
+
+            elif request.headers["Circleci-Event-Type"] == "ping":
+                IPS()
+
+
+        context = {}
+        return TemplateResponse(request, "ackrep_web/webhook.html", context)
+
+    def verify_signature(self, secret, request):
+        headers = request.headers
+        try:
+            body = bytes(request.body, "utf-8")
+        except TypeError:
+            # body already in bytes
+            body = request.body
+        try:
+            secret = bytes(secret, 'utf-8')
+        except:
+            pass
+        # get the v1 signature from the `circleci-signature` header
+        signature_from_header = {
+            k: v for k, v in [
+                pair.split('=') for pair in headers['circleci-signature'].split(',')
+            ]
+        }['v1']
+
+        # Run HMAC-SHA256 on the request body using the configured signing secret
+        valid_signature = hmac.new(secret, body, 'sha256').hexdigest()
+
+        # use constant time string comparison to prevent timing attacks
+        return hmac.compare_digest(valid_signature, signature_from_header)
 
 class MergeRequestDetailView(View):
     def get(self, request, key):
@@ -370,6 +434,49 @@ class NotYetImplementedView(View):
         context = {}
 
         return TemplateResponse(request, "ackrep_web/not_yet_implemented.html", context)
+
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DebugView(View):
+    """
+    This View serves as simple entrypoint for debugging
+    """
+
+    # noinspection PyMethodMayBeStatic
+    def get(self, request):
+        if not settings.DEBUG:
+            return HttpResponse("Debug mode is deactivated", content_type="text/plain")
+
+        import bleach
+
+        IPS()
+
+        output_data = [
+            ("settings.CONFIG_PATH", settings.CONFIG_PATH),
+            ("settings.LAST_DEPLOYMENT", settings.LAST_DEPLOYMENT),
+            ("request", request),
+            ("request.headers", request.headers),
+            ("request.body", request.body),
+        ]
+
+        lines = [
+            f"<tr><td>{x}</td><td>&nbsp;</td><td><pre>{bleach.clean(repr(y)).replace(',', ',<br>')}</pre></td></tr>" for x, y in output_data
+        ]
+        line_str = "\n".join(lines)
+        res = f"""
+        <!DOCTYPE html>
+        <b>Debugging page</b><br>
+        
+        <table>
+        {line_str}
+        </table>
+        """
+        core.logger.info(bleach.clean(repr(request.headers)).replace(',', ',\n'))
+        core.logger.info(request.body)
+
+
+        return HttpResponse(res, content_type="text/html")
 
 
 def _create_source_code_link(entity):
