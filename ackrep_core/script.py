@@ -275,10 +275,6 @@ def check_all_entities(unittest=False):
         entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
     for entity in entity_list:
         key = entity.key
-        if key == "YHS5B":
-            print("skipping mmc!")
-            print("---")
-            continue
 
         start_time = time.time()
         res = check_with_docker(key, exitflag=False)
