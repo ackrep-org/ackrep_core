@@ -273,6 +273,8 @@ def check_all_entities(unittest=False):
         entity_list = [core.get_entity("UXMFA"), core.get_entity("LRHZX")]
     else:
         entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
+        # for faster CI testing:
+        # entity_list = [core.get_entity("UXMFA"), core.get_entity("CK7EX"), core.get_entity("CZKWU")]
     for entity in entity_list:
         key = entity.key
 

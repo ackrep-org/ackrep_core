@@ -891,8 +891,11 @@ def look_for_running_container(env_name):
     container_id = None
 
     # check if image is up to date with remote
-    cmd = ["docker", "pull", f"ghcr.io/ackrep-org/{env_name}:latest"]
+    image_name = f"ghcr.io/ackrep-org/{env_name}:latest"
+    cmd = ["docker", "pull", image_name]
     pull = run_command(cmd, logger=logger, capture_output=True)
+    assert pull.returncode == 0, f"Unable to pull image from remote. Does '{image_name}' exist?"
+
     up_to_date = "Image is up to date" in pull.stdout
 
     if up_to_date:
@@ -959,6 +962,7 @@ def start_idle_container(env_name, try_to_use_local_image=True):
         logger.info("pulling docker image")
         pull_cmd = ["docker", "pull", image_name]
         res = run_command(pull_cmd, logger=logger, capture_output=True)
+        assert res.returncode == 0, f"Unable to pull image from remote. Does '{image_name}' exist?"
 
         logger.info("stopping old containers")
         # stop all running containers with env_name to ensure name uniqueness

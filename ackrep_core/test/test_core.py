@@ -52,7 +52,7 @@ ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
 # use `git log -1` to display the full hash
-default_repo_head_hash = "353225c64f2d74aa76685d1be4b05ed72088446b"  # 2022-06-07 branch for_unittests
+default_repo_head_hash = "d22b6f08042548402854b8026cf1a197158c06aa"  # 2022-06-29 branch for_unittests
 
 
 class TestCases1(DjangoTestCase):
@@ -288,17 +288,18 @@ class TestCases3(SimpleTestCase):
     def test_check_all_entities(self):
         # this test only works in ci, not locally
         res = run_command(["ackrep", "--check-all-entities", "-ut"])
+        core.logger.info(res)
         self.assertEqual(res.returncode, 1)
 
         # test results.yaml
-        yaml_path = "../artifacts/ackrep_ci_results"
+        yaml_path = os.path.join(core.root_path, "artifacts", "ackrep_ci_results")
         yamls = os.listdir(yaml_path)
         core.logger.info(yamls)
         self.assertEqual(len(yamls), 1)
         with open(os.path.join(yaml_path, yamls[0])) as file:
             results = yaml.load(file, Loader=yaml.FullLoader)
         self.assertIn("ackrep_core", results["commit_logs"].keys())
-        self.assertIn("ackrep_data", results["commit_logs"].keys())
+        self.assertIn("ackrep_data_for_unittests", results["commit_logs"].keys())
         self.assertEqual(results["UXMFA"]["result"], 0)
         self.assertEqual(results["LRHZX"]["result"], 1)
         self.assertIn("SyntaxError", results["LRHZX"]["issues"])

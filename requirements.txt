@@ -1,5 +1,5 @@
 # main packages to run ackrep from the command line
-# ipydex
+ipydex
 pyyaml
 colorama
 questionary
