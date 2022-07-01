@@ -62,6 +62,8 @@ CONFIG_PATH = config.path
 # SECURITY WARNING: keep the secret key used in production secret!
 # (the following key is only used for local testing but not for production deployment)
 SECRET_KEY = config("SECRET_KEY")
+SECRET_CIRCLECI_WEBHOOK_KEY = config("SECRET_CIRCLECI_WEBHOOK_KEY")
+SECRET_CIRCLECI_API_KEY = config("SECRET_CIRCLECI_API_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # note this might be influenced by DEVMODE

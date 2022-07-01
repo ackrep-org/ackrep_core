@@ -88,6 +88,11 @@ def main():
         + "Environment key must be specified. Additional arguments ('a; b; c') for inside the env are optional.",
         metavar="key",
     )
+    argparser.add_argument(
+        "--jupyter",
+        help="run Jupyter Notebook",
+        action="store_true"
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -204,6 +209,8 @@ def main():
     elif args.run_interactive_environment:
         args = args.run_interactive_environment
         run_interactive_environment(args)
+    elif args.jupyter:
+        run_jupyter()
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -243,7 +250,8 @@ def check_all_entities(unittest=False):
 
     content = {"commit_logs": {}}
     # save the commits of the current ci job
-    for repo_name in ["ackrep_data", "ackrep_core"]:
+    current_data_repo = os.path.split(data_path)[-1]
+    for repo_name in [current_data_repo, "ackrep_core"]:
         repo = Repo(f"../{repo_name}")
         commit = repo.commit("HEAD")
         commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(commit.committed_date))
@@ -267,10 +275,6 @@ def check_all_entities(unittest=False):
         entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
     for entity in entity_list:
         key = entity.key
-        if key == "YHS5B":
-            print("skipping mmc!")
-            print("---")
-            continue
 
         start_time = time.time()
         res = check_with_docker(key, exitflag=False)
@@ -299,8 +303,8 @@ def check_all_entities(unittest=False):
 
         content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date_string}}
 
-        if "Calculated with " in issues:
-            version = issues.split("Calculated with ")[-1].split("\n\n")[0]
+        if "Calculated with " in res.stdout:
+            version = res.stdout.split("Calculated with ")[-1].split("\n\n")[0]
             content[key]["env_version"] = version
 
         with open(file_path, "a") as file:
@@ -340,7 +344,7 @@ def check(arg0: str, exitflag: bool = True):
 
     env_version = get_environment_version(entity)
     if env_version != "Unknown":
-        print(f"\nCalculated with {env_version}.\n")
+        print(f"\nCalculated with {env_version}\n")
 
     if res.returncode == 0:
         print(bgreen("Success."))
@@ -366,7 +370,7 @@ def get_environment_version(entity: models.GenericEntity):
         with open(path, "r") as docker_file:
             lines = docker_file.readlines()
         if "LABEL" in lines[-1]:
-            version = lines[-1].split('org.opencontainers.image.description "')[-1].split("|")[0]
+            version = lines[-1].split('org.opencontainers.image.description "')[-1].split(". |")[0]
         else:
             version = "Unknown"
     except:
@@ -392,6 +396,7 @@ def check_with_docker(arg0: str, exitflag: bool = True):
     res = core.check(key=key)
 
     if res.returncode == 0:
+        print(res.stdout)
         print(bgreen("Success."))
     elif res.returncode == 2:
         print(yellow("Inaccurate."))
@@ -635,6 +640,10 @@ def run_interactive_environment(args):
 
     return res.returncode
 
+
+def run_jupyter():
+    """jupyter notebook --notebook-dir=/code/ackrep_data --ip='*' --port=8888 --no-browser --allow-root"""
+    pass
 
 def get_entity_and_key(arg0):
     """return entity and key for a given key or metadata path
