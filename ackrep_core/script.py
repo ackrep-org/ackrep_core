@@ -304,8 +304,8 @@ def check_all_entities(unittest=False):
 
         content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date_string}}
 
-        if "Calculated with " in issues:
-            version = issues.split("Calculated with ")[-1].split("\n\n")[0]
+        if "Calculated with " in res.stdout:
+            version = res.stdout.split("Calculated with ")[-1].split("\n\n")[0]
             content[key]["env_version"] = version
 
         with open(file_path, "a") as file:
