@@ -94,10 +94,6 @@ class TestCases2(SimpleTestCase):
     def setUp(self):
         reset_repo(ackrep_data_test_repo_path)
         self.load_db()
-        cmd = "ackrep --start-workers"
-        self.worker = subprocess.Popen(f"nohup {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        # for debugging, use:
-        # self.worker = subprocess.Popen(f"nohup {cmd}", shell=True)
 
     def load_db(self):
         load_repo_to_db_for_ut(ackrep_data_test_repo_path)
@@ -181,10 +177,6 @@ class TestCases2(SimpleTestCase):
 
     def tearDown(self) -> None:
         reset_repo(ackrep_data_test_repo_path)
-        old_cwd = os.getcwd()
-        os.chdir(os.path.join(core.root_path, "ackrep_core"))
-        res = subprocess.run(["celery", "-A", "ackrep_web", "control", "shutdown"], text=True, capture_output=True)
-        os.chdir(old_cwd)
         return super().tearDown()
 
 

@@ -13,6 +13,3 @@ symbtools
 pytrajectory
 tabulate
 deploymentutils
-
-# for command line usage of ackrep, celery is imported but not actively used
-celery

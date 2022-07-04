@@ -8,22 +8,20 @@ jobs: # A basic unit of work in a run
         environment: # environment variables for primary container
           SKIP_TEST_CREATE_PDF: "True"
           CI: "True"
-      - image: rabbitmq:3.8.16-management-alpine
     steps: # steps that comprise the `build` job
       - checkout # check out source code to working directory
       - restore_cache:
       # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
-          key: deps1--{{ checksum "requirements.txt" }}--{{ checksum "requirements_celery.txt" }}
+          key: deps1--{{ checksum "requirements.txt" }}--
       - run:
           name: Install Dependancies
           command: | 
             python -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
-            pip install -r requirements_celery.txt
             pip install -e .
       - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
-          key: deps1--{{ checksum "requirements.txt" }}--{{ checksum "requirements_celery.txt" }}
+          key: deps1--{{ checksum "requirements.txt" }}--
           paths:
             - "venv"
       - run:
@@ -97,13 +95,6 @@ jobs: # A basic unit of work in a run
             ls ../artifacts
             echo 2
             ls ../artifacts/ackrep_ci_results
-      # for debugging:
-      # in test_web.py/TestCases2.setUp change celery worker to debug mode 
-      # - run:
-      #     name: check nohup
-      #     command: |
-      #       touch ./nohup.out
-      #       x=1; while [ $x -le 10 ]; do cat nohup.out; x=$(( $x + 1 )); sleep 5; done
 
 workflows:
   version: 2 

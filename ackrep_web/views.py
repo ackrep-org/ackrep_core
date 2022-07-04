@@ -17,17 +17,11 @@ from ackrep_core_django_settings import settings
 from git import Repo, InvalidGitRepositoryError
 import os
 import numpy as np
-from ackrep_core.models import ActiveJobs
 from ackrep_core.util import run_command
 import yaml
 import shutil
 import hmac
 import json
-
-from ackrep_web.celery import app
-
-from celery.result import AsyncResult
-import kombu
 
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -513,38 +507,3 @@ def _get_source_code(entity):
 
     return c
 
-
-def _get_active_job_by_key(key):
-    """queries the database for active jobs with the given key. if none are found, None is returned. If exactly one is
-    found, this job is returned. Otherwise an error is rasied.
-    :return: tuple (key, celery_id)"""
-    active_job_list = ActiveJobs.objects.filter(key=key).values()
-    if len(active_job_list) == 0:
-        active_job = None
-    elif len(active_job_list) == 1:
-        active_job = active_job_list[0]
-    else:
-        msg = "There should not be multiple active jobs with the same key. Maybe job adding or removing is bugged."
-        assert 1 == 0, msg
-
-    return active_job
-
-
-def _add_job_to_db(key, celery_id):
-    """add an entry to db with key and celery_id"""
-    new_entry = ActiveJobs(key=key, celery_id=celery_id, start_time=time.time())
-    new_entry.save()
-    return 0
-
-
-def _remove_job_from_db(key):
-    """delete db entry with given key"""
-    ActiveJobs.objects.filter(key=key).delete()
-    return 0
-
-
-def _purge_old_jobs():
-    active_job_list = ActiveJobs.objects.all().values()
-    for job in active_job_list:
-        if time.time() - job["start_time"] > settings.RESULT_EXPIRATION_TIME:
-            _remove_job_from_db(job["key"])

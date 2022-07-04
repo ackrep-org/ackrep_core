@@ -10,7 +10,6 @@ from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
 import sqlite3
-from ackrep_web.celery import app
 from ackrep_core_django_settings import settings
 
 # settings might be accessed from other modules which import this one (core)
@@ -814,7 +813,6 @@ def print_entity_info(key: str) -> None:
 AOM = ACKREP_OntologyManager()
 
 
-@app.task
 def check(key, try_to_use_local_image=True):
     """General function to check system model or solution, calculated inside docker image.
     The image is chosen from the compatible environment of the given entity
@@ -979,7 +977,7 @@ def start_idle_container(env_name, try_to_use_local_image=True):
 
     cmd.extend(get_docker_env_vars())
 
-    cmd.extend(get_data_repo_host_address())
+    cmd.extend(get_volume_mapping())
 
     cmd.extend([image_name, "bash"])
 
@@ -1060,23 +1058,15 @@ def get_host_uid():
     return str(host_uid)
 
 
-def get_data_repo_host_address():
-    """data repo address on host via environment vaiable,
-    especially necessary when starting env container out of celery container
-    return array with flags and paths to extend docker cmd
+def get_volume_mapping():
+    """mount the appropriate data repo
     """
 
     # nominal case
     if os.environ.get("CI") != "true":
-        host_address = os.environ.get("DATA_REPO_HOST_ADDRESS")
-        # env variable will be empty when running local server without docker
-        if host_address is None:
-            logger.info(f"env var DATA_REPO_HOST_ADDRESS is not set. Setting it to default {data_path}")
-            host_address = data_path
+        host_address = data_path
         logger.info(f"data host address: {host_address}")
-        assert host_address is not None, "env var DATA_REPO_HOST_ADDRESS is not set."
         target = os.path.split(host_address)[1]
-        assert "ackrep_data" in target, f"{target} is not a valid volume destination"
         cmd_extension = ["-v", f"{host_address}:/code/{target}"]
     # circleci unittest case
     else:

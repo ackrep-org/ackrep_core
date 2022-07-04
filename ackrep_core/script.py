@@ -74,7 +74,6 @@ def main():
     argparser.add_argument(
         "--bootstrap-test-db", help="delete database for unittests and recreate it (without data)", action="store_true"
     )
-    argparser.add_argument("--start-workers", help="start the celery workers", action="store_true")
     argparser.add_argument(
         "--prepare-script",
         help="render the execscript and place it in the docker ackrep_data folder (specified by path to metadata file or key)",
@@ -201,8 +200,6 @@ def main():
         core.send_log_messages()
     elif args.version:
         print("Version", release.__version__)
-    elif args.start_workers:
-        start_workers()
     elif args.prepare_script:
         metadatapath = args.prepare_script
         prepare_script(metadatapath)
@@ -586,13 +583,6 @@ def bootstrap_db(db: str) -> None:
 
     # return to old working dir
     os.chdir(old_workdir)
-
-
-def start_workers():
-    try:
-        res = subprocess.run(["celery", "-A", "ackrep_web", "worker", "--loglevel=INFO", "-c" "4"])
-    except KeyboardInterrupt:
-        exit(0)
 
 
 def prepare_script(arg0):
