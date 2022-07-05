@@ -1064,14 +1064,14 @@ def get_volume_mapping():
 
     # nominal case
     if os.environ.get("CI") != "true":
-        host_address = data_path
-        logger.info(f"data host address: {host_address}")
-        target = os.path.split(host_address)[1]
-        cmd_extension = ["-v", f"{host_address}:/code/{target}"]
+        logger.info(f"data path: {data_path}")
+        target = os.path.split(data_path)[1]
+        cmd_extension = ["-v", f"{data_path}:/code/{target}"]
     # circleci unittest case
     else:
         # volumes cant be mounted in cirlceci, this is the workaround,
         # see https://circleci.com/docs/2.0/building-docker-images/#mounting-folders
+        # dummy is created in .circleci/config.yaml
         cmd_extension = ["--volumes-from", "dummy"]
 
     return cmd_extension

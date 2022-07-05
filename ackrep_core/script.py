@@ -261,6 +261,12 @@ def check_all_entities(unittest=False):
         }
         content["commit_logs"][repo_name] = log_dict
 
+    content["ci_logs"] = {}
+    # log some info about the ci run (url)
+    if os.environ.get("CIRCLECI"):
+        content["ci_logs"]["build_url"] = os.environ.get("CIRCLE_BUILD_URL")
+        content["ci_logs"]["build_number"] = os.environ.get("CIRCLE_BUILD_NUM")
+
     with open(file_path, "a") as file:
         yaml.dump(content, file)
 

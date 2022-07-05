@@ -160,8 +160,9 @@ class EntityDetailView(View):
                 ci_result_entity = results[key]
                 # take result of first test encountered (most recent)
                 if c.result == "pending":
+                    c.ci_result_entity = ci_result_entity
                     c.result = ci_result_entity["result"]
-                    c.ci_result_entiry = ci_result_entity
+                    c.build_url = results["ci_logs"]["build_url"]
                 # entity passed on latest test
                 if i == 0 and ci_result_entity["result"] == 0:
                     exitflag = True
@@ -171,7 +172,9 @@ class EntityDetailView(View):
                     c.logs = core.Container()
                     c.logs.ackrep_data = results["commit_logs"]["ackrep_data"]
                     c.logs.ackrep_core = results["commit_logs"]["ackrep_core"]
+                    c.logs.build_url = results["ci_logs"]["build_url"]
                     c.logs.environment = ci_result_entity["env_version"]
+
                     exitflag = True
             else:
                 core.logger.info(f"Entity {key} is not in {result_filename}.")
@@ -183,21 +186,26 @@ class EntityDetailView(View):
             c.result = -1
 
         c.image_list = core.get_data_files(f"ackrep_plots/{key}", endswith_str=".png", create_media_links=True)
+        # if ci didnt provide image, check fallback image folder
+        if len(c.image_list) == 0:
+            core.logger.info("No image found, checking fallback repo.")
+            c.image_list = core.get_data_files(f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True)
+            c.plot_disclaimer = True
 
         c.show_debug = False
 
         if c.result == 0:
             c.result_css_class = "success"
             c.verbal_result = "Success."
-            c.test_date = c.ci_result_entiry["date"]
-            c.diff_time_str = c.ci_result_entiry["runtime"]
+            c.test_date = c.ci_result_entity["date"]
+            c.diff_time_str = c.ci_result_entity["runtime"]
         # no major error but numerical result was unexpected
         elif c.result == 2:
             c.result_css_class = "inaccurate"
             c.verbal_result = "Inaccurate. (Different result than expected.)"
-            c.test_date = c.ci_result_entiry["date"]
-            c.issues = c.ci_result_entiry["issues"]
-            c.diff_time_str = c.ci_result_entiry["runtime"]
+            c.test_date = c.ci_result_entity["date"]
+            c.issues = c.ci_result_entity["issues"]
+            c.diff_time_str = c.ci_result_entity["runtime"]
         # entity did not show in any result file
         elif c.result == -1:
             c.result_css_class = "unknown"
@@ -206,9 +214,9 @@ class EntityDetailView(View):
             c.result_css_class = "fail"
             c.verbal_result = "Script Error."
             c.show_debug = settings.DEBUG
-            c.test_date = c.ci_result_entiry["date"]
-            c.issues = c.ci_result_entiry["issues"]
-            c.diff_time_str = c.ci_result_entiry["runtime"]
+            c.test_date = c.ci_result_entity["date"]
+            c.issues = c.ci_result_entity["issues"]
+            c.diff_time_str = c.ci_result_entity["runtime"]
 
         context = {"c": c}
 
@@ -245,6 +253,13 @@ class Webhook(View):
 
      # noinspection PyMethodMayBeStatic
     def get(self, request):
+
+        if not settings.DEVMODE:
+            res = f"""
+            <!DOCTYPE html>
+            Enable DEVMODE to look at webhook data.
+            """
+            return HttpResponse(res, content_type="text/html")
         
         def recursive_table(d):
             if type(d) == dict:
@@ -289,8 +304,7 @@ class Webhook(View):
                 branch_name = body["pipeline"]["vcs"]["branch"]
                 if branch_name == "feature_webhook":
                     IPS()
-                # TODO: update branchname once data repo has stable production branch
-                elif branch_name == "systemModelsCatalog":
+                elif branch_name == settings.ACKREP_DATA_BRANCH:
                     save_cwd = os.getcwd()
                     path = os.path.join(core.root_path, "tmp")
                     if os.path.isdir(path):
@@ -319,7 +333,6 @@ class Webhook(View):
                             content = {"webhook body": json.loads(request.body.decode())}
                             with open(file_name, "a") as file:
                                 yaml.dump(content, file)
-                            # util.git_push(core.ci_results_path, f"history/{file_name}", f"add: {file_name}")
                         elif ending == "png":
                             dest = os.path.join(core.root_path, "ackrep_plots", name.split("_")[-1])
                             os.makedirs(dest, exist_ok=True)
@@ -483,7 +496,7 @@ def _create_source_code_link(entity):
     base_url = settings.ACKREP_DATA_BASE_URL
     branch_name = settings.ACKREP_DATA_BRANCH
     rel_code_path = entity.base_path.replace("\\", "/").split("ackrep_data")[-1]
-    link = base_url.split(".git")[0] + "/" + branch_name + rel_code_path
+    link = base_url.split(".git")[0] + "/tree/" + branch_name + rel_code_path
 
     return link
 
