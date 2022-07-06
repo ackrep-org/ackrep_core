@@ -13,6 +13,8 @@ import warnings
 import abc
 import sys
 import os
+import subprocess
+import matplotlib.pyplot as plt
 
 from . import core
 from .util import root_path, run_command
@@ -137,7 +139,7 @@ class GenericModel:
         else:
             assert hasattr(
                 self, "uu_default_func"
-            ), f"Your system has an input dimension of {self.u_dim} but no methode 'uu_default_func'."
+            ), f"Your system has an input dimension of {self.u_dim} but no method 'uu_default_func'."
             self.set_input_func(self.uu_default_func())
             if u_func is not None:
                 self.set_input_func(u_func)
@@ -266,9 +268,9 @@ class GenericModel:
         :params:(dict) parameter to substitute
         :return:(matrix) matrix with right hand side symbolic functions with parameters
         """
-        # transform symbolic function to numerical function
+        # create symbolic matrix
         rhs_symb = sp.Matrix(self.get_rhs_symbolic())
-        # Substitute Parameters with numerical Values
+        # substitute parameters with numerical values
         self._create_subs_list()
         rhs_symb_num_params = sp.Matrix(rhs_symb.subs(self.pp_subs_list))
 
@@ -415,6 +417,27 @@ class GenericModel:
         if self.pp_dict is None:
             return
         self.pp_str_dict = dict([(str(key), value) for key, value in self.pp_dict.items()])
+
+    def get_parameter_value(self, p_str):
+        value = self.pp_str_dict[p_str]
+        return value
+
+
+def save_plot_in_dir(path, plt):
+    """
+    parameters: path of the file directory, plot
+    """
+    if "solution" in path:
+        str_path = "_solution_data"
+    elif "model" in path:
+        str_path = "_system_model_data"
+    else:
+        raise NotImplementedError
+
+    plot_dir = os.path.join(path, str_path)
+    if not os.path.isdir(plot_dir):
+        os.mkdir(plot_dir)
+    plt.savefig(os.path.join(plot_dir, "plot.png"), dpi=96 * 2)
 
 
 ### Parameter fetching and tex-ing ###
