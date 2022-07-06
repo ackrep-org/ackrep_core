@@ -14,6 +14,7 @@ import abc
 import sys
 import os
 import subprocess
+import matplotlib.pyplot as plt
 
 from . import core
 from .util import root_path
@@ -421,8 +422,24 @@ class GenericModel:
         self.pp_str_dict = dict([(str(key), value) for key, value in self.pp_dict.items()])
         
 
-### Parameter fetching and tex-ing ###
+def save_plot_in_dir(path, plt):
+    """
+    parameters: path of the file directory, plot
+    """
+    if 'solution' in path:
+        str_path = '_solution_data'
+    else:
+        str_path = '_system_model_data'
 
+    plot_dir = os.path.join(path, str_path)
+    if not os.path.isdir(plot_dir):
+        os.mkdir(plot_dir)
+    plt.savefig(os.path.join(plot_dir, 'plot.png'), dpi=96 * 2)
+
+
+
+
+### Parameter fetching and tex-ing ###
 
 def update_parameter_tex(key):
     """search for parameter file of system_model key
