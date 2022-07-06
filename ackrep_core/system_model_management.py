@@ -432,8 +432,10 @@ def save_plot_in_dir(path, plt):
     """
     if 'solution' in path:
         str_path = '_solution_data'
-    else:
+    if 'model' in path:
         str_path = '_system_model_data'
+    else:
+        raise NotImplementedError 
 
     plot_dir = os.path.join(path, str_path)
     if not os.path.isdir(plot_dir):
