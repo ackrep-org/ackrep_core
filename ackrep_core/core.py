@@ -280,7 +280,7 @@ class ACKREP_OntologyManager(object):
 
         if len(list(self.OM.n.ACKREP_ProblemSolution.instances())) == 0:
             msg = "Instances of ACKREP_ProblemSolution are missing. This is unexpected."
-            IPS()
+            #IPS()
             raise ValueError(msg)
 
         for ocse_entity in self.OM.n.OCSE_Entity.instances():
