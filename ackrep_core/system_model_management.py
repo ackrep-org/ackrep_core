@@ -432,7 +432,7 @@ def save_plot_in_dir(path, plt):
     """
     if 'solution' in path:
         str_path = '_solution_data'
-    if 'model' in path:
+    elif 'model' in path:
         str_path = '_system_model_data'
     else:
         raise NotImplementedError 
