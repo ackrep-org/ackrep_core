@@ -138,7 +138,7 @@ class GenericModel:
         else:
             assert hasattr(
                 self, "uu_default_func"
-            ), f"Your system has an input dimension of {self.u_dim} but no methode 'uu_default_func'."
+            ), f"Your system has an input dimension of {self.u_dim} but no method 'uu_default_func'."
             self.set_input_func(self.uu_default_func())
             if u_func is not None:
                 self.set_input_func(u_func)
@@ -267,9 +267,9 @@ class GenericModel:
         :params:(dict) parameter to substitute
         :return:(matrix) matrix with right hand side symbolic functions with parameters
         """
-        # transform symbolic function to numerical function
+        # create symbolic matrix
         rhs_symb = sp.Matrix(self.get_rhs_symbolic())
-        # Substitute Parameters with numerical Values
+        # substitute parameters with numerical values
         self._create_subs_list()
         rhs_symb_num_params = sp.Matrix(rhs_symb.subs(self.pp_subs_list))
 
