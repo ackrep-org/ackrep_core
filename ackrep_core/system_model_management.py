@@ -420,6 +420,10 @@ class GenericModel:
         if self.pp_dict is None:
             return
         self.pp_str_dict = dict([(str(key), value) for key, value in self.pp_dict.items()])
+
+    def get_parameter_value(self, p_str):
+        value = self.pp_str_dict[p_str]
+        return value
         
 
 def save_plot_in_dir(path, plt):
