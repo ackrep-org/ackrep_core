@@ -22,6 +22,7 @@ import yaml
 import shutil
 import hmac
 import json
+from git import Repo
 
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -189,7 +190,9 @@ class EntityDetailView(View):
         # if ci didnt provide image, check fallback image folder
         if len(c.image_list) == 0:
             core.logger.info("No image found, checking fallback repo.")
-            c.image_list = core.get_data_files(f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True)
+            c.image_list = core.get_data_files(
+                f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True
+            )
             c.plot_disclaimer = True
 
         c.show_debug = False
@@ -247,11 +250,12 @@ class NewMergeRequestView(View):
 
             return redirect("new-merge-request")
 
-@method_decorator(csrf_exempt, name='dispatch')
+
+@method_decorator(csrf_exempt, name="dispatch")
 class Webhook(View):
     """get plots and results from CI"""
 
-     # noinspection PyMethodMayBeStatic
+    # noinspection PyMethodMayBeStatic
     def get(self, request):
 
         if not settings.DEVMODE:
@@ -260,7 +264,7 @@ class Webhook(View):
             Enable DEVMODE to look at webhook data.
             """
             return HttpResponse(res, content_type="text/html")
-        
+
         def recursive_table(d):
             if type(d) == dict:
                 res = f""
@@ -281,7 +285,7 @@ class Webhook(View):
             content = recursive_table(results)
         except FileNotFoundError:
             content = "nothing in the temp folder"
-       
+
         style = "<style>table, th, td { border: 1px solid black;  border-collapse: collapse; padding: 5px}</style>"
         res = f"""
         <!DOCTYPE html>
@@ -293,12 +297,11 @@ class Webhook(View):
 
         return HttpResponse(res, content_type="text/html")
 
-
     # noinspection PyMethodMayBeStatic
     def post(self, request):
         secret = settings.SECRET_CIRCLECI_WEBHOOK_KEY
         if self.verify_signature(secret, request):
-            if request.headers["Circleci-Event-Type"] == 'workflow-completed':
+            if request.headers["Circleci-Event-Type"] == "workflow-completed":
                 body = json.loads(request.body.decode())
 
                 branch_name = body["pipeline"]["vcs"]["branch"]
@@ -328,8 +331,14 @@ class Webhook(View):
                     for file_name in files:
                         name, ending = file_name.split(".")
                         if ending == "yaml":
-                            dest = os.path.join(core.ci_results_path, "history")
-                            shutil.copy(file_name, dest)
+                            # dest = os.path.join(core.ci_results_path, "history")
+                            # shutil.copy(file_name, dest)
+                            repo = Repo("../ackrep_ci_results")
+                            repo.remotes.origin.pull()
+                            yaml_files = os.listdir("../ackrep_ci_results/history")
+                            assert (
+                                file_name in yaml_files
+                            ), "Discrepany between ackrep_ci_results repo and downloaded artifacts!"
                             content = {"webhook body": json.loads(request.body.decode())}
                             with open(file_name, "a") as file:
                                 yaml.dump(content, file)
@@ -345,7 +354,6 @@ class Webhook(View):
             elif request.headers["Circleci-Event-Type"] == "ping":
                 IPS()
 
-
         context = {}
         return TemplateResponse(request, "ackrep_web/webhook.html", context)
 
@@ -357,21 +365,20 @@ class Webhook(View):
             # body already in bytes
             body = request.body
         try:
-            secret = bytes(secret, 'utf-8')
+            secret = bytes(secret, "utf-8")
         except:
             pass
         # get the v1 signature from the `circleci-signature` header
         signature_from_header = {
-            k: v for k, v in [
-                pair.split('=') for pair in headers['circleci-signature'].split(',')
-            ]
-        }['v1']
+            k: v for k, v in [pair.split("=") for pair in headers["circleci-signature"].split(",")]
+        }["v1"]
 
         # Run HMAC-SHA256 on the request body using the configured signing secret
-        valid_signature = hmac.new(secret, body, 'sha256').hexdigest()
+        valid_signature = hmac.new(secret, body, "sha256").hexdigest()
 
         # use constant time string comparison to prevent timing attacks
         return hmac.compare_digest(valid_signature, signature_from_header)
+
 
 class MergeRequestDetailView(View):
     def get(self, request, key):
@@ -443,8 +450,7 @@ class NotYetImplementedView(View):
         return TemplateResponse(request, "ackrep_web/not_yet_implemented.html", context)
 
 
-
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(csrf_exempt, name="dispatch")
 class DebugView(View):
     """
     This View serves as simple entrypoint for debugging
@@ -468,7 +474,8 @@ class DebugView(View):
         ]
 
         lines = [
-            f"<tr><td>{x}</td><td>&nbsp;</td><td><pre>{bleach.clean(repr(y)).replace(',', ',<br>')}</pre></td></tr>" for x, y in output_data
+            f"<tr><td>{x}</td><td>&nbsp;</td><td><pre>{bleach.clean(repr(y)).replace(',', ',<br>')}</pre></td></tr>"
+            for x, y in output_data
         ]
         line_str = "\n".join(lines)
         res = f"""
@@ -479,9 +486,8 @@ class DebugView(View):
         {line_str}
         </table>
         """
-        core.logger.info(bleach.clean(repr(request.headers)).replace(',', ',\n'))
+        core.logger.info(bleach.clean(repr(request.headers)).replace(",", ",\n"))
         core.logger.info(request.body)
-
 
         return HttpResponse(res, content_type="text/html")
 
@@ -519,4 +525,3 @@ def _get_source_code(entity):
             py_file.close()
 
     return c
-

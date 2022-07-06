@@ -47,6 +47,7 @@ def main():
         help="check all entities (solutions and models) (may take some time)",
         action="store_true",
     )
+    argparser.add_argument("-da", "--download-artifacts", help="download artifacts from CI", action="store_true")
     argparser.add_argument(
         "--update-parameter-tex",
         metavar="metadatafile",
@@ -87,11 +88,7 @@ def main():
         + "Environment key must be specified. Additional arguments ('a; b; c') for inside the env are optional.",
         metavar="key",
     )
-    argparser.add_argument(
-        "--jupyter",
-        help="run Jupyter Notebook",
-        action="store_true"
-    )
+    argparser.add_argument("--jupyter", help="run Jupyter Notebook", action="store_true")
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -160,6 +157,8 @@ def main():
         check_with_docker(metadatapath)
     elif args.check_all_entities:
         check_all_entities(args.unittest)
+    elif args.download_artifacts:
+        download_artifacts()
     elif args.get_metadata_abs_path_from_key:
         key = args.get_metadata_abs_path_from_key
         exitflag = not args.show_debug
@@ -642,6 +641,11 @@ def run_interactive_environment(args):
 def run_jupyter():
     """jupyter notebook --notebook-dir=/code/ackrep_data --ip='*' --port=8888 --no-browser --allow-root"""
     pass
+
+
+def download_artifacts():
+    pass
+
 
 def get_entity_and_key(arg0):
     """return entity and key for a given key or metadata path

@@ -26,7 +26,7 @@ env_devmode = os.getenv("DJANGO_DEVMODE")
 if env_devmode is None:
     DEVMODE = "runserver" in sys.argv
 else:
-    DEVMODE = (env_devmode.lower() == "true")
+    DEVMODE = env_devmode.lower() == "true"
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 # this is the repo root (where manage.py lives)
@@ -41,8 +41,10 @@ if os.path.isfile(cfgpath):
 else:
     config = du.get_nearest_config(os.path.join(BASE_DIR, "config-example.ini"), devmode=DEVMODE)
     if not DEVMODE:
+
         class UnsafeConfiguration(BaseException):
             pass
+
         msg = f"Using the example config is not allowed outside development mode.{DEVMODE} " + str(sys.argv)
         # raise UnsafeConfiguration(msg)
 

@@ -1059,8 +1059,7 @@ def get_host_uid():
 
 
 def get_volume_mapping():
-    """mount the appropriate data repo
-    """
+    """mount the appropriate data repo"""
 
     # nominal case
     if os.environ.get("CI") != "true":
