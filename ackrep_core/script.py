@@ -88,7 +88,11 @@ def main():
         + "Environment key must be specified. Additional arguments ('a; b; c') for inside the env are optional.",
         metavar="key",
     )
-    argparser.add_argument("--jupyter", help="run Jupyter Notebook", action="store_true")
+    argparser.add_argument(
+        "--jupyter",
+        help="start jupyter server in environment with given key",
+        metavar="key",
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -206,7 +210,8 @@ def main():
         args = args.run_interactive_environment
         run_interactive_environment(args)
     elif args.jupyter:
-        run_jupyter()
+        key = args.jupyter
+        run_jupyter(key)
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -614,7 +619,6 @@ def run_interactive_environment(args):
     entity, key = get_entity_and_key(args[0])
     msg = f"{key} is not an EnvironmentSpecification key."
     assert isinstance(entity, models.EnvironmentSpecification), msg
-    image_name = "ghcr.io/ackrep-org/" + entity.name
     print("\nRunning Interactive Docker Container. To Exit, press Ctrl+D.\n")
 
     container_id = core.start_idle_container(entity.name, try_to_use_local_image=False)
@@ -638,13 +642,48 @@ def run_interactive_environment(args):
     return res.returncode
 
 
-def run_jupyter():
-    """jupyter notebook --notebook-dir=/code/ackrep_data --ip='*' --port=8888 --no-browser --allow-root"""
-    pass
+def run_jupyter(key):
+    """run jupyter server out of docker environment container
+    jupyter notebook --notebook-dir=/code/ackrep_data --ip='*' --port=8888 --no-browser --allow-root
+    """
+
+    entity, key = get_entity_and_key(key)
+    msg = f"{key} is not an EnvironmentSpecification key."
+    assert isinstance(entity, models.EnvironmentSpecification), msg
+    print("\nRunning Jupyter Server in Docker Container. To Stop the Server, press Ctrl+C twice.")
+    print("To access the Notebook, click one of the provided links below.\n")
+
+    port_dict = {8888: 8888}
+    container_id = core.start_idle_container(entity.name, try_to_use_local_image=True, port_dict=port_dict)
+
+    core.logger.info(f"Ackrep command running in Container: {container_id}")
+    host_uid = core.get_host_uid()
+    cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
+
+    cmd.extend(
+        [
+            "jupyter",
+            "notebook",
+            "--notebook-dir=/code/ackrep_data",
+            "--ip='*'",
+            "--port=8888",
+            "--no-browser",
+            "--allow-root",
+        ]
+    )
+
+    print(cmd)
+    res = run_command(cmd, capture_output=False)
+
+    print("Shutting down container...")
+    run_command(["docker", "stop", container_id], logger=core.logger, capture_output=True)
+
+    return res.returncode
 
 
 def download_artifacts():
-    pass
+    core.download_and_store_artifacts(settings.ACKREP_DATA_BRANCH)
+    print(bgreen("Done."))
 
 
 def get_entity_and_key(arg0):

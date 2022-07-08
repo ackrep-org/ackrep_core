@@ -204,7 +204,7 @@ TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
 ACKREP_DATA_BASE_URL = config("ACKREP_DATA_BASE_URL")
 ACKREP_DATA_BRANCH = config("ACKREP_DATA_BRANCH")
 
-DEFAULT_ENVIRONMENT_KEY = "YJBOX"
+DEFAULT_ENVIRONMENT_KEY = "CDAMA"  # "YJBOX"
 
 try:
     with open(os.path.join(BASE_DIR, "deployment_date.txt")) as txtfile:

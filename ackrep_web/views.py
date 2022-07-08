@@ -308,49 +308,8 @@ class Webhook(View):
                 if branch_name == "feature_webhook":
                     IPS()
                 elif branch_name == settings.ACKREP_DATA_BRANCH:
-                    save_cwd = os.getcwd()
-                    path = os.path.join(core.root_path, "tmp")
-                    if os.path.isdir(path):
-                        shutil.rmtree(path)
-                    os.mkdir(path)
-                    os.chdir(path)
-
-                    circle_token = settings.SECRET_CIRCLECI_API_KEY
-                    cmd = [
-                        f"""curl -H 'Circle-Token: {circle_token}' \
-                    https://circleci.com/api/v1.1/project/github/ackrep-org/ackrep_data/latest/artifacts?branch={branch_name} \
-                    | grep -o 'https://[^"]*' \
-                    | wget --verbose --header 'Circle-Token: {circle_token}' --input-file -"""
-                    ]
-                    # print(cmd)
-                    res = run_command(cmd, logger=core.logger, capture_output=True, shell=True)
-                    assert res.returncode == 0, "Unable to collect results from circleci."
-
-                    files = os.listdir(".")
-                    # sort the received files into the correct directories
-                    for file_name in files:
-                        name, ending = file_name.split(".")
-                        if ending == "yaml":
-                            # dest = os.path.join(core.ci_results_path, "history")
-                            # shutil.copy(file_name, dest)
-                            repo = Repo("../ackrep_ci_results")
-                            repo.remotes.origin.pull()
-                            yaml_files = os.listdir("../ackrep_ci_results/history")
-                            assert (
-                                file_name in yaml_files
-                            ), "Discrepany between ackrep_ci_results repo and downloaded artifacts!"
-                            content = {"webhook body": json.loads(request.body.decode())}
-                            with open(file_name, "a") as file:
-                                yaml.dump(content, file)
-                        elif ending == "png":
-                            dest = os.path.join(core.root_path, "ackrep_plots", name.split("_")[-1])
-                            os.makedirs(dest, exist_ok=True)
-                            shutil.copy(file_name, f"{dest}/plot.png")
-                        else:
-                            raise TypeError(f"File of unkknown type {ending} detected.")
-
-                    os.chdir(save_cwd)
-
+                    core.download_and_store_artifacts(branch_name, request)
+                    
             elif request.headers["Circleci-Event-Type"] == "ping":
                 IPS()
 
