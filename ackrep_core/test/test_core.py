@@ -243,7 +243,7 @@ class TestCases3(SimpleTestCase):
         self.assertEquals(entity.oc.method_package_list[0].key, "UENQQ")
         self.assertTrue(entity.oc.predecessor_key is None)
 
-        default_env = core.model_utils.get_entity("YJBOX")
+        default_env = core.model_utils.get_entity(core.settings.DEFAULT_ENVIRONMENT_KEY)
         # TODO: this should be activated when ackrep_data is fixed
         if 0:
             self.assertTrue(isinstance(entity.oc.compatible_environment, core.models.EnvironmentSpecification))
@@ -561,7 +561,7 @@ class TestCases3(SimpleTestCase):
         cmd = [
             "ackrep",
             "--run-interactive-environment",
-            "YJBOX",
+            core.settings.DEFAULT_ENVIRONMENT_KEY,
             "ackrep -c UXMFA; \
             cd ../; ls; cd ackrep_data_for_unittests; ls",
         ]

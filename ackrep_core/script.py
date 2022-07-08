@@ -93,6 +93,12 @@ def main():
         help="start jupyter server in environment with given key",
         metavar="key",
     )
+    argparser.add_argument(
+        "-p",
+        "--pull-and-show-envs",
+        help="pull env images and print infos (mainly used in CI run)",
+        action="store_true",
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -163,6 +169,8 @@ def main():
         check_all_entities(args.unittest)
     elif args.download_artifacts:
         download_artifacts()
+    elif args.pull_and_show_envs:
+        pull_and_show_envs()
     elif args.get_metadata_abs_path_from_key:
         key = args.get_metadata_abs_path_from_key
         exitflag = not args.show_debug
@@ -372,7 +380,7 @@ def get_environment_version(entity: models.GenericEntity):
     try:
         env_key = entity.compatible_environment
         if env_key == "" or env_key is None:
-            env_key = "YJBOX"
+            env_key = settings.DEFAULT_ENVIRONMENT_KEY
         env_name = core.get_entity(env_key).name
         dockerfile_name = "Dockerfile_" + env_name
         path = os.path.join(core.root_path, dockerfile_name)
@@ -684,6 +692,40 @@ def run_jupyter(key):
 def download_artifacts():
     core.download_and_store_artifacts(settings.ACKREP_DATA_BRANCH)
     print(bgreen("Done."))
+
+
+def pull_and_show_envs():
+    entities = list(models.EnvironmentSpecification.objects.all())
+    print("\nEnvironment Infos:\n")
+    for entity in entities:
+        env_key = entity.key
+        env_name = entity.name
+
+        dockerfile_name = "Dockerfile_" + env_name
+        # pull most recent image
+        cmd = ["docker", "pull", f"ghcr.io/ackrep-org/{env_name}:latest"]
+        pull = run_command(cmd, core.logger, capture_output=True)
+        # get version info of image
+        cmd = [
+            "docker",
+            "run",
+            "--entrypoint",
+            "tail",
+            f"ghcr.io/ackrep-org/{env_name}:latest",
+            "-1",
+            f"../{dockerfile_name}",
+        ]
+        res = run_command(cmd, core.logger, capture_output=True)
+        infos = res.stdout.split('org.opencontainers.image.description "')[-1].split("|")
+
+        print(f"{env_name} ({env_key}):")
+        row_template = "  {}"
+        for info in infos:
+            print(row_template.format(info))
+        print()
+    default_key = settings.DEFAULT_ENVIRONMENT_KEY
+    default_name = core.get_entity(default_key).name
+    print(f"Default environment is {default_name} ({default_key})")
 
 
 def get_entity_and_key(arg0):

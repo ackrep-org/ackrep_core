@@ -309,7 +309,7 @@ class Webhook(View):
                     IPS()
                 elif branch_name == settings.ACKREP_DATA_BRANCH:
                     core.download_and_store_artifacts(branch_name, request)
-                    
+
             elif request.headers["Circleci-Event-Type"] == "ping":
                 IPS()
 

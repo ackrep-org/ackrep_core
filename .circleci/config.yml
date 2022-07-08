@@ -39,38 +39,23 @@ jobs: # A basic unit of work in a run
             mv ackrep_ci_results ackrep_ci_results_for_unittests
             cd ackrep_ci_results_for_unittests
             git checkout for_unittests
-      # - run:
-      #     name: Change Permissions
-      #     command: |
-      #       cd ../
-      #       sudo chown -R 3434:999 ackrep_data_for_unittests
-      #       sudo chmod -R g+rw ackrep_data_for_unittests
-      #       ls -n
-      #       id
       - setup_remote_docker:
           version: 20.10.14
           docker_layer_caching: true
       - run: 
-          name: Setup Images
+          name: Setup Containers
           command: |
-            echo old images:
-            docker images
-            echo pulling default image
-            docker pull ghcr.io/ackrep-org/default_environment:latest
+            . venv/bin/activate
+            ackrep --bootstrap-db
+            ackrep -l ../ackrep_data_for_unittests
+            echo Pulling environment images
+            ackrep --pull-and-show-envs
             docker image prune -f
             docker images
-            echo 1
+            echo Create dummy container
             docker create -v /code/ackrep_data_for_unittests --name dummy alpine:3.4 /bin/true
-            echo 2
+            echo Copy ackrep_data to dummy
             docker cp /home/circleci/ackrep_data_for_unittests dummy:/code
-            echo 3
-            docker run --volumes-from dummy --entrypoint "/bin/ls" ghcr.io/ackrep-org/default_environment:latest -n ../
-      - run:
-          name: Show Versions
-          command: | 
-            echo default env version:
-            docker run --volumes-from dummy --entrypoint "tail" ghcr.io/ackrep-org/default_environment:latest -1 ../Dockerfile_default_environment
-            docker images
       - run:
           name: Test Core
           command: | 
