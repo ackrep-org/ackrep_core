@@ -309,8 +309,14 @@ class Webhook(View):
                     IPS()
                 elif branch_name == settings.ACKREP_DATA_BRANCH:
                     core.download_and_store_artifacts(branch_name, request)
+                else:
+                    core.logger.critical(f"No action specified for branch name {branch_name}")
+                    IPS()
 
             elif request.headers["Circleci-Event-Type"] == "ping":
+                IPS()
+            else:
+                core.logger.critical(f"No action specified for event type {request.headers['Circleci-Event-Type']}")
                 IPS()
 
         context = {}

@@ -10,3 +10,6 @@ symbtools
 control
 pyblocksim
 pyinduct
+ipympl
+ipywidgets
+nbmake

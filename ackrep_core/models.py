@@ -304,6 +304,21 @@ class ProblemSolution(GenericEntity):
     )
 
 
+class Notebook(GenericEntity):
+    _type = "notebook"
+    estimated_runtime = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    compatible_environment = EntityKeyField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    notebook_file = models.CharField(max_length=500, null=True, blank=True, default="notebook.ipynb")
+
+
 class ProblemClass(GenericEntity):
     _type = "problem_class"
 

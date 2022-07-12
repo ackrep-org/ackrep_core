@@ -287,7 +287,11 @@ def check_all_entities(unittest=False):
     if unittest:
         entity_list = [core.get_entity("UXMFA"), core.get_entity("LRHZX")]
     else:
-        entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
+        entity_list = (
+            list(models.ProblemSolution.objects.all())
+            + list(models.SystemModel.objects.all())
+            + list(models.Notebook.objects.all())
+        )
         # for faster CI testing:
         # entity_list = [core.get_entity("UXMFA"), core.get_entity("CK7EX"), core.get_entity("CZKWU")]
     for entity in entity_list:
@@ -354,10 +358,22 @@ def check(arg0: str, exitflag: bool = True):
 
     entity, key = get_entity_and_key(arg0)
 
-    assert isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel)
+    assert (
+        isinstance(entity, models.ProblemSolution)
+        or isinstance(entity, models.SystemModel)
+        or isinstance(entity, models.Notebook)
+    ), f"No support for entity with type {type(entity)}."
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
-    res = core.check_generic(key=key)
+
+    if isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel):
+        res = core.check_generic(key=key)
+    elif isinstance(entity, models.Notebook):
+        path = os.path.join(core.root_path, entity.base_path, entity.notebook_file)
+        cmd = ["pytest", "--disable-warnings", "--nbmake", path]
+        res = run_command(cmd, logger=core.logger, capture_output=False)
+    else:
+        raise NotImplementedError
 
     env_version = get_environment_version(entity)
     if env_version != "Unknown":
@@ -407,7 +423,11 @@ def check_with_docker(arg0: str, exitflag: bool = True):
 
     entity, key = get_entity_and_key(arg0)
 
-    assert isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel)
+    assert (
+        isinstance(entity, models.ProblemSolution)
+        or isinstance(entity, models.SystemModel)
+        or isinstance(entity, models.Notebook)
+    ), f"No support for entity with type {type(entity)}."
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
     res = core.check(key=key)
@@ -658,6 +678,9 @@ def run_jupyter(key):
     entity, key = get_entity_and_key(key)
     msg = f"{key} is not an EnvironmentSpecification key."
     assert isinstance(entity, models.EnvironmentSpecification), msg
+
+    run_command([f"docker stop $(docker ps --filter name={entity.name} -q)"], shell=True)
+
     print("\nRunning Jupyter Server in Docker Container. To Stop the Server, press Ctrl+C twice.")
     print("To access the Notebook, click one of the provided links below.\n")
 

@@ -847,7 +847,10 @@ def check(key, try_to_use_local_image=True):
     entity = get_entity(key)
     is_solution = isinstance(entity, models.ProblemSolution)
     is_system_model = isinstance(entity, models.SystemModel)
-    assert is_solution or is_system_model, f"key {key} is of neither solution nor system model. Unsure what to do."
+    is_notebook = isinstance(entity, models.Notebook)
+    assert (
+        is_solution or is_system_model or is_notebook
+    ), f"key {key} is of neither solution, system model nor notebook. Unsure what to do."
 
     # get environment name
     env_key = entity.compatible_environment
@@ -933,6 +936,7 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
     Args:
         env_name (str): name of environment (e.g. default_environment)
         try_to_use_local_image (bool, optional): prefer locally build images. Only relevant for devs. Defaults to True.
+        port_dict (dict, optional): port dictionary {container_port:host_port} to publish data from inside container.
 
     Returns:
         str: container_id
