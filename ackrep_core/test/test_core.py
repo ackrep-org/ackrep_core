@@ -291,7 +291,7 @@ class TestCases3(SimpleTestCase):
         os.chdir(ackrep_data_test_repo_path)
 
         # this assumes the acrep script to be available in $PATH
-        res = run_command(["ackrep", "-c", "7WIQH"])
+        res = run_command(["ackrep", "-cwd", "7WIQH"])
         self.assertEqual(res.returncode, 0)
 
         # ensure repo is clean again
@@ -570,8 +570,8 @@ class TestCases3(SimpleTestCase):
         reset_repo(ackrep_data_test_repo_path)
 
         ## test error messages of notebooks
-        # test for retcode != 0
-        res = run_command(["ackrep", "-c", "ARMBC"])
+        # test for retcode != 0 (entity already broken)
+        res = run_command(["ackrep", "-cwd", "ARMBC"])
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
