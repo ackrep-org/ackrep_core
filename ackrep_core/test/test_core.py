@@ -52,7 +52,7 @@ ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
 # use `git log -1` to display the full hash
-default_repo_head_hash = "d22b6f08042548402854b8026cf1a197158c06aa"  # 2022-06-29 branch for_unittests
+default_repo_head_hash = "f41fc966e29688e77af4f1947535fa31843a1242"  # 2022-07-13 branch for_unittests
 
 
 class TestCases1(DjangoTestCase):
@@ -285,8 +285,20 @@ class TestCases3(SimpleTestCase):
         # TODO: remove this if png is removed from repo
         reset_repo(ackrep_data_test_repo_path)
 
+    def test_check_notebook(self):
+
+        # run via commandline
+        os.chdir(ackrep_data_test_repo_path)
+
+        # this assumes the acrep script to be available in $PATH
+        res = run_command(["ackrep", "-c", "7WIQH"])
+        self.assertEqual(res.returncode, 0)
+
+        # ensure repo is clean again
+        reset_repo(ackrep_data_test_repo_path)
+
     def test_check_all_entities(self):
-        # this test only works in ci, not locally
+        # this test only works in ci, not locally, due to the way plots are copied (docker cp dummy -> artifacts)
         res = run_command(["ackrep", "--check-all-entities", "-ut"])
         core.logger.info(res)
         self.assertEqual(res.returncode, 1)
@@ -551,6 +563,20 @@ class TestCases3(SimpleTestCase):
         # check error message for existance (and readability?)
 
         expected_error_infos = ["SyntaxError", "problem.py", "line"]
+        for info in expected_error_infos:
+            self.assertIn(info, res.stdout)
+
+        # reset unittest_repo
+        reset_repo(ackrep_data_test_repo_path)
+
+        ## test error messages of notebooks
+        # test for retcode != 0
+        res = run_command(["ackrep", "-c", "ARMBC"])
+        self.assertEqual(res.returncode, 1)
+
+        # check error message for existance (and readability?)
+
+        expected_error_infos = ["ZeroDivisionError", "In [2]", "<cell line: 3>"]
         for info in expected_error_infos:
             self.assertIn(info, res.stdout)
 

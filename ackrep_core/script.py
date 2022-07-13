@@ -303,11 +303,15 @@ def check_all_entities(unittest=False):
 
         result = res.returncode
         if res.returncode == 0:
+            issues = ""
+
             # copy plot to collection directory
             if type(entity) == models.ProblemSolution:
                 tail = "_solution_data"
             elif type(entity) == models.SystemModel:
                 tail = "_system_model_data"
+            elif type(entity) == models.Notebook:
+                continue
             else:
                 raise TypeError(f"{key} is not of a checkable type")
             src = f"dummy:/code/{entity.base_path}/{tail}/plot.png"
@@ -317,7 +321,6 @@ def check_all_entities(unittest=False):
             # docker cp has to be used, see https://circleci.com/docs/2.0/building-docker-images#mounting-folders
             run_command(["docker", "cp", src, dest])
 
-            issues = ""
         else:
             issues = res.stdout
         date_string = date.strftime("%Y-%m-%d %H:%M:%S")
@@ -335,8 +338,6 @@ def check_all_entities(unittest=False):
         if res.returncode != 0:
             failed_entities.append(key)
         print("---")
-
-    # TODO: curl webhook or use webhook feature of circleci
 
     if sum(returncodes) == 0:
         print(bgreen("All checks successfull."))
