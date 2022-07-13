@@ -186,14 +186,31 @@ class EntityDetailView(View):
             core.logger.warning(f"Entity {key} not found in any CI result files.")
             c.result = -1
 
-        c.image_list = core.get_data_files(f"ackrep_plots/{key}", endswith_str=".png", create_media_links=True)
-        # if ci didnt provide image, check fallback image folder
-        if len(c.image_list) == 0:
-            core.logger.info("No image found, checking fallback repo.")
-            c.image_list = core.get_data_files(
-                f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True
+        ## system_model and solution specifics:
+        if isinstance(c.entity, (models.ProblemSolution, models.SystemModel)):
+            c.image_list = core.get_data_files(f"ackrep_plots/{key}", endswith_str=".png", create_media_links=True)
+            # if ci didnt provide image, check fallback image folder
+            if len(c.image_list) == 0:
+                core.logger.info("No image found, checking fallback repo.")
+                c.image_list = core.get_data_files(
+                    f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True
+                )
+                c.plot_disclaimer = True
+
+        ## notebook specifics:
+        if isinstance(c.entity, models.Notebook):
+            branch = "feature_notebook_entity"
+            entity_path = c.entity.base_path.split("ackrep_data/")[-1]
+            notebook_file_name = c.entity.notebook_file
+            nbviewer_url = (
+                "https://nbviewer.org/github/ackrep-org/ackrep_data/tree/"
+                + branch
+                + "/"
+                + entity_path
+                + "/"
+                + notebook_file_name
             )
-            c.plot_disclaimer = True
+            c.nbviewer_url = nbviewer_url
 
         c.show_debug = False
 

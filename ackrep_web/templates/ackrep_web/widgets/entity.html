@@ -115,6 +115,36 @@
             </div>
         {% endif %}
 
+    {% elif entity.type == "notebook"%}
+        <!--utc_entity_detial -->
+        <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
+        {% if c.build_url %}
+            <b>Last Build:</b> <a id="ci_build_link" title="checkout CI build" href={{c.logs.build_url}}>Checkout CI Build</a><br>
+        {% endif %}
+        <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
+        {% if c.last_time_passing %}
+            <div class="last_passing">
+                <i>Entity passed last:</i> {{c.last_time_passing}}<br>
+                <i>with ackrep_data commit:</i> {{c.logs.ackrep_data}}<br>
+                <i>with ackrep_core commit:</i> {{c.logs.ackrep_core}}<br>
+                <i>in environment:</i> {{c.logs.environment}}<br>
+                {% if c.logs.build_url %}
+                    <a id="ci_build_link" title="checkout CI build" href={{c.build_url}}>Checkout CI Build</a><br>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        {% if c.show_debug %}
+            <!--utc_debug -->
+            <b>Debug:</b>
+            <div class="debug_output">
+                <pre>{{c.issues}}</pre>
+            </div>
+        {% endif %}
+        {% if c.nbviewer_url %}
+            <b>Static Notebook:</b> <a id="nb_viewer" title="checkout static notebook" href={{c.nbviewer_url}}>Checkout nbviewer</a><br>
+        {% endif %}
+
 
     {% elif entity.type == "problem_specification" %}
         <b>Available solutions:</b>
