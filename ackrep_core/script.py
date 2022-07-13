@@ -306,11 +306,11 @@ def check_all_entities(unittest=False):
             issues = ""
 
             # copy plot to collection directory
-            if type(entity) == models.ProblemSolution:
+            if isinstance(entity, models.ProblemSolution):
                 tail = "_solution_data"
-            elif type(entity) == models.SystemModel:
+            elif isinstance(entity, models.SystemModel):
                 tail = "_system_model_data"
-            elif type(entity) == models.Notebook:
+            elif isinstance(entity, models.Notebook):
                 continue
             else:
                 raise TypeError(f"{key} is not of a checkable type")
@@ -359,19 +359,17 @@ def check(arg0: str, exitflag: bool = True):
 
     entity, key = get_entity_and_key(arg0)
 
-    assert (
-        isinstance(entity, models.ProblemSolution)
-        or isinstance(entity, models.SystemModel)
-        or isinstance(entity, models.Notebook)
+    assert isinstance(
+        entity, (models.ProblemSolution, models.SystemModel, models.Notebook)
     ), f"No support for entity with type {type(entity)}."
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
 
-    if isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel):
+    if isinstance(entity, (models.ProblemSolution, models.SystemModel)):
         res = core.check_generic(key=key)
     elif isinstance(entity, models.Notebook):
         path = os.path.join(core.root_path, entity.base_path, entity.notebook_file)
-        cmd = ["pytest", "--disable-warnings", "--nbmake", path]
+        cmd = ["pytest", "--disable-warnings", "--overwrite", "--nbmake", path]
         res = run_command(cmd, logger=core.logger, capture_output=False)
     else:
         raise NotImplementedError
@@ -424,10 +422,8 @@ def check_with_docker(arg0: str, exitflag: bool = True):
 
     entity, key = get_entity_and_key(arg0)
 
-    assert (
-        isinstance(entity, models.ProblemSolution)
-        or isinstance(entity, models.SystemModel)
-        or isinstance(entity, models.Notebook)
+    assert isinstance(
+        entity, (models.ProblemSolution, models.SystemModel, models.Notebook)
     ), f"No support for entity with type {type(entity)}."
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')

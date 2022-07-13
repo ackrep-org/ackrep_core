@@ -124,12 +124,12 @@ class EntityDetailView(View):
         c.entity = entity
         c.view_type = "detail"
         c.view_type_title = "Details for:"
-        if type(entity) == core.models.SystemModel:
+        if isinstance(entity, core.models.SystemModel):
             c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
         c.source_code_link = _create_source_code_link(entity)
         c.source_code_container = _get_source_code(entity)
 
-        if type(entity) in [core.models.SystemModel, core.models.ProblemSolution]:
+        if isinstance(entity, (core.models.SystemModel, core.models.ProblemSolution, core.models.Notebook)):
             env_key = entity.compatible_environment
             if env_key == "" or env_key is None:
                 env_key = settings.DEFAULT_ENVIRONMENT_KEY

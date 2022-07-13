@@ -566,17 +566,16 @@ def get_entity_context(key: str):
     entity = get_entity(key)
     resolve_keys(entity)
 
-    entity_type = type(entity)
-    assert entity_type in (models.SystemModel, models.ProblemSolution)
+    assert isinstance(entity, (models.SystemModel, models.ProblemSolution))
 
     # test entity type and get path to relevant file
-    if entity_type == models.ProblemSolution:
+    if isinstance(entity, models.ProblemSolution):
         python_file = entity.solution_file
         if python_file != "solution.py":
             msg = "Arbitrary filename will be supported in the future"
             raise NotImplementedError(msg)
 
-    elif entity_type == models.SystemModel:
+    elif isinstance(entity, models.SystemModel):
         python_file = entity.system_model_file
         if python_file != "system_model.py":
             msg = "Arbitrary filename will be supported in the future"
@@ -586,7 +585,7 @@ def get_entity_context(key: str):
 
     c = Container()  # this will be our easily accessible context dict for the template
 
-    if entity_type == models.ProblemSolution:
+    if isinstance(entity, models.ProblemSolution):
         c.solution_path = os.path.join(root_path, entity.base_path)
         assert len(entity.oc.solved_problem_list) >= 1
 
@@ -614,7 +613,7 @@ def get_entity_context(key: str):
             assert os.path.isdir(full_build_path)
             c.method_package_list.append(full_build_path)
 
-    elif entity_type == models.SystemModel:
+    elif isinstance(entity, models.SystemModel):
         c.system_model_path = os.path.join(root_path, entity.base_path)
     else:
         raise NotImplementedError
@@ -644,8 +643,8 @@ def create_execscript_from_template(entity: models.GenericEntity, c: Container, 
     Returns:
         path_like: path to execscript
     """
-    entity_type = type(entity)
-    assert entity_type in (models.SystemModel, models.ProblemSolution)
+    
+    assert isinstance(entity, (models.SystemModel, models.ProblemSolution))
 
     context = dict(c.item_list())
 
@@ -664,9 +663,9 @@ def create_execscript_from_template(entity: models.GenericEntity, c: Container, 
 
     logger.info(f"execscript-path: {scriptpath}")
 
-    if entity_type == models.ProblemSolution:
+    if isinstance(entity, models.ProblemSolution):
         render_template("templates/execscript.py.template", context, target_path=scriptpath)
-    elif entity_type == models.SystemModel:
+    elif isinstance(entity, models.SystemModel):
         render_template("templates/execscript_system_model.py.template", context, target_path=scriptpath)
     else:
         raise NotImplementedError
@@ -845,11 +844,8 @@ def check(key, try_to_use_local_image=True):
         CompletedProcess: result of check
     """
     entity = get_entity(key)
-    is_solution = isinstance(entity, models.ProblemSolution)
-    is_system_model = isinstance(entity, models.SystemModel)
-    is_notebook = isinstance(entity, models.Notebook)
-    assert (
-        is_solution or is_system_model or is_notebook
+    assert isinstance(
+        entity, (models.ProblemSolution, models.SystemModel, models.Notebook)
     ), f"key {key} is of neither solution, system model nor notebook. Unsure what to do."
 
     # get environment name
