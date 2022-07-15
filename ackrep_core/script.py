@@ -305,19 +305,26 @@ def check_all_entities(unittest=False):
         if res.returncode == 0:
             issues = ""
 
-            # copy plot to collection directory
+            # copy plot or notebook to collection directory
+            dest_dir_plots = os.path.join(core.root_path, "artifacts", "ackrep_plots")
+            os.makedirs(dest_dir_plots, exist_ok=True)
+
+            dest_dir_notebooks = os.path.join(core.root_path, "artifacts", "ackrep_notebooks")
+            os.makedirs(dest_dir_notebooks, exist_ok=True)
+
             if isinstance(entity, models.ProblemSolution):
-                tail = "_solution_data"
+                src = f"dummy:/code/{entity.base_path}/_solution_data/plot.png"
+                dest = os.path.join(dest_dir_plots, f"plot_{key}.png")
             elif isinstance(entity, models.SystemModel):
-                tail = "_system_model_data"
+                src = f"dummy:/code/{entity.base_path}/_system_model_data/plot.png"
+                dest = os.path.join(dest_dir_plots, f"plot_{key}.png")
             elif isinstance(entity, models.Notebook):
-                continue
+                html_file = entity.notebook_file.replace(".ipynb", ".html")
+                src = f"dummy:/code/{entity.base_path}/{html_file}"
+                dest = os.path.join(dest_dir_notebooks, f"notebook_{key}.png")
             else:
                 raise TypeError(f"{key} is not of a checkable type")
-            src = f"dummy:/code/{entity.base_path}/{tail}/plot.png"
-            dest_dir = os.path.join(core.root_path, "artifacts", "ackrep_plots")
-            os.makedirs(dest_dir, exist_ok=True)
-            dest = os.path.join(dest_dir, f"plot_{key}.png")
+
             # docker cp has to be used, see https://circleci.com/docs/2.0/building-docker-images#mounting-folders
             run_command(["docker", "cp", src, dest])
 
@@ -369,7 +376,7 @@ def check(arg0: str, exitflag: bool = True):
         res = core.check_generic(key=key)
     elif isinstance(entity, models.Notebook):
         path = os.path.join(core.root_path, entity.base_path, entity.notebook_file)
-        cmd = ["pytest", "--disable-warnings", "--overwrite", "--nbmake", path]
+        cmd = ["jupyter", "nbconvert", "--execute", "--to", "html", path]
         res = run_command(cmd, logger=core.logger, capture_output=False)
     else:
         raise NotImplementedError

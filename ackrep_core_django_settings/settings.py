@@ -100,6 +100,8 @@ MIDDLEWARE = [
     "ackrep_web.middleware.statuscodewriter.StatusCodeWriterMiddleware",
 ]
 
+X_FRAME_OPTIONS = "SAMEORIGIN"
+
 # "settings" is the name of the django-projects settings
 ROOT_URLCONF = "ackrep_core_django_settings.urls"
 WSGI_APPLICATION = "ackrep_core_django_settings.wsgi.application"

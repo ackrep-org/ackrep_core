@@ -279,3 +279,12 @@ input#hide:checked ~ span#content {
 .last_passing {
     padding-left: 1cm;
 }
+
+.notebook_html embed {
+    width:100%; 
+    height:500pt;
+}
+.notebook_html {
+    width:100%;
+    height: 500pt; 
+}

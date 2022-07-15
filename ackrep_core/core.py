@@ -643,7 +643,7 @@ def create_execscript_from_template(entity: models.GenericEntity, c: Container, 
     Returns:
         path_like: path to execscript
     """
-    
+
     assert isinstance(entity, (models.SystemModel, models.ProblemSolution))
 
     context = dict(c.item_list())
@@ -1125,6 +1125,10 @@ def download_and_store_artifacts(branch_name, web_request=None):
             dest = os.path.join(root_path, "ackrep_plots", name.split("_")[-1])
             os.makedirs(dest, exist_ok=True)
             shutil.copy(file_name, f"{dest}/plot.png")
+        elif ending == "html":
+            dest = os.path.join(root_path, "ackrep_notebooks", name.split("_")[-1])
+            os.makedirs(dest, exist_ok=True)
+            shutil.copy(file_name, f"{dest}/notebook.html")
         else:
             raise TypeError(f"File of unkknown type {ending} detected.")
 

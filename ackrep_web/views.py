@@ -211,6 +211,9 @@ class EntityDetailView(View):
                 + notebook_file_name
             )
             c.nbviewer_url = nbviewer_url
+            c.notebook_list = core.get_data_files(
+                f"ackrep_notebooks/{key}", endswith_str=".html", create_media_links=True
+            )
 
         c.show_debug = False
 
