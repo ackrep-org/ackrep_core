@@ -540,8 +540,9 @@ def create_pdf(key, output_path=None):
     return res
 
 
-def import_parameters():
+def import_parameters(key=None):
     """import parameters.py selected be given key and create related get function for system_model
+    if key is None, the caller frame is inpected to get its location (used by system_model.py (ackrep_data))
 
     Args:
         key: key of system_model
@@ -549,13 +550,14 @@ def import_parameters():
     Returns:
         module: parameters
     """
-    # get caller frame -> location of file
-    frame = inspect.currentframe()
-    prev_frame = frame.f_back
-    file_name = inspect.getframeinfo(prev_frame)[0]
-    path = os.path.split(file_name)[0]
-    yml_path = os.path.join(path, "metadata.yml")
-    key = core.get_metadata_from_file(yml_path)["key"]
+    if key == None:
+        # get caller frame -> location of file
+        frame = inspect.currentframe()
+        prev_frame = frame.f_back
+        file_name = inspect.getframeinfo(prev_frame)[0]
+        path = os.path.split(file_name)[0]
+        yml_path = os.path.join(path, "metadata.yml")
+        key = core.get_metadata_from_file(yml_path)["key"]
 
     sys.path.insert(0, root_path)
 
