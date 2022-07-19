@@ -423,7 +423,7 @@ class GenericModel:
         return value
 
 
-def save_plot_in_dir(path, plt):
+def save_plot_in_dir(path):
     """
     parameters: path of the file directory, plot
     """

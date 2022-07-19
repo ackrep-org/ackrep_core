@@ -288,9 +288,9 @@ def check_all_entities(unittest=False):
         entity_list = [core.get_entity("UXMFA"), core.get_entity("LRHZX")]
     else:
         entity_list = (
-            list(models.ProblemSolution.objects.all())
+            list(models.Notebook.objects.all())
+            + list(models.ProblemSolution.objects.all())
             + list(models.SystemModel.objects.all())
-            + list(models.Notebook.objects.all())
         )
         # for faster CI testing:
         # entity_list = [core.get_entity("UXMFA"), core.get_entity("CK7EX"), core.get_entity("CZKWU")]
