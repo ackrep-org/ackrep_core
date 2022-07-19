@@ -540,7 +540,7 @@ def create_pdf(key, output_path=None):
     return res
 
 
-def import_parameters(key):
+def import_parameters():
     """import parameters.py selected be given key and create related get function for system_model
 
     Args:
@@ -549,6 +549,14 @@ def import_parameters(key):
     Returns:
         module: parameters
     """
+    # get caller frame -> location of file
+    frame = inspect.currentframe()
+    prev_frame = frame.f_back
+    file_name = inspect.getframeinfo(prev_frame)[0]
+    path = os.path.split(file_name)[0]
+    yml_path = os.path.join(path, "metadata.yml")
+    key = core.get_metadata_from_file(yml_path)["key"]
+
     sys.path.insert(0, root_path)
 
     system_model_entity = core.model_utils.get_entity(key)
