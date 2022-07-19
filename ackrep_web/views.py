@@ -199,21 +199,9 @@ class EntityDetailView(View):
 
         ## notebook specifics:
         if isinstance(c.entity, models.Notebook):
-            branch = "feature_notebook_entity"
-            entity_path = c.entity.base_path.split("ackrep_data/")[-1]
-            notebook_file_name = c.entity.notebook_file
-            nbviewer_url = (
-                "https://nbviewer.org/github/ackrep-org/ackrep_data/tree/"
-                + branch
-                + "/"
-                + entity_path
-                + "/"
-                + notebook_file_name
-            )
-            c.nbviewer_url = nbviewer_url
-            c.notebook_list = core.get_data_files(
-                f"ackrep_notebooks/{key}", endswith_str=".html", create_media_links=True
-            )
+            nb = core.get_data_files(f"ackrep_notebooks/{key}", endswith_str=".html", create_media_links=True)
+            assert len(nb) == 1, "Multiple Notebooks per entity not supportet."
+            c.notebook = nb[0]
 
         c.show_debug = False
 

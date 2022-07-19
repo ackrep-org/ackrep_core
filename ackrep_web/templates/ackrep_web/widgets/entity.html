@@ -143,17 +143,13 @@
                 <pre>{{c.issues}}</pre>
             </div>
         {% endif %}
-        {% if c.nbviewer_url %}
-            <b>Static Notebook:</b> <a id="nb_viewer" title="checkout static notebook" href={{c.nbviewer_url}}>Checkout nbviewer</a><br>
-        {% endif %}
-        <br>
-        {% if c.notebook_list %}
-            {% for notebook in c.notebook_list %}  
-                <div class="notebook_html">
-                    <embed type="text/html" src={{notebook}} allowfullscreen>
-                </div>  
+        {% if c.notebook %}
+            <b>Static Notebook:</b> <a title="checkout fullscreen version" href={{c.notebook}}>Fullscreen Version</a>
+            <br>
+            <div class="notebook_html">
+                <embed type="text/html" src={{c.notebook}} allowfullscreen>
+            </div>  
                 
-            {% endfor %}
         {% endif %}
         
 
