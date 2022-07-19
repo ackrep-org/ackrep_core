@@ -321,7 +321,7 @@ def check_all_entities(unittest=False):
             elif isinstance(entity, models.Notebook):
                 html_file = entity.notebook_file.replace(".ipynb", ".html")
                 src = f"dummy:/code/{entity.base_path}/{html_file}"
-                dest = os.path.join(dest_dir_notebooks, f"notebook_{key}.png")
+                dest = os.path.join(dest_dir_notebooks, f"notebook_{key}.html")
             else:
                 raise TypeError(f"{key} is not of a checkable type")
 
@@ -347,7 +347,7 @@ def check_all_entities(unittest=False):
         print("---")
 
     if sum(returncodes) == 0:
-        print(bgreen("All checks successfull."))
+        print(bgreen(f"All {len(entity_list)} checks successfull."))
     else:
         print(bred(f"{len(failed_entities)}/{len(entity_list)} checks failed."))
         print("Failed entities:", failed_entities)

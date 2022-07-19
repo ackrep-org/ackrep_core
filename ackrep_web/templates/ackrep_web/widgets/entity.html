@@ -14,9 +14,11 @@
 {% if display == "full"%}
 <script type="text/javascript">
     window.onload = function(){
-        var valId=localStorage.getItem('status'); 
-        document.getElementById(valId).checked = true;
-        scrollTo(0, localStorage.getItem("scroll_y"))
+        var valId = localStorage.getItem('status'); 
+        if (document.getElementById(valId) != null) {
+            document.getElementById(valId).checked = true;
+            scrollTo(0, localStorage.getItem("scroll_y"));
+        }
     }
     window.onbeforeunload = function() {
         localStorage.setItem("scroll_y", scrollY)
