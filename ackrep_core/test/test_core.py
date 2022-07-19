@@ -52,7 +52,7 @@ ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
 # use `git log -1` to display the full hash
-default_repo_head_hash = "f41fc966e29688e77af4f1947535fa31843a1242"  # 2022-07-13 branch for_unittests
+default_repo_head_hash = "f4e28abffe9638baae88b9996f5e8576fd91f98f"  # 2022-07-19 branch for_unittests
 
 
 class TestCases1(DjangoTestCase):
