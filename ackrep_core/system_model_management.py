@@ -15,6 +15,7 @@ import sys
 import os
 import subprocess
 import matplotlib.pyplot as plt
+import inspect
 
 from . import core
 from .util import root_path, run_command
@@ -423,10 +424,14 @@ class GenericModel:
         return value
 
 
-def save_plot_in_dir(path):
+def save_plot_in_dir():
     """
-    parameters: path of the file directory, plot
+    inspect, where call is coming from, then save plot in corresponding directory
     """
+    caller_frame = inspect.currentframe().f_back
+    file_name = inspect.getframeinfo(caller_frame)[0]
+    path = os.path.split(file_name)[0]
+
     if "solution" in path:
         str_path = "_solution_data"
     elif "model" in path:
