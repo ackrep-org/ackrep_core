@@ -503,7 +503,7 @@ def create_pdf(key, output_path=None):
     tex_path = os.path.join(root_path, base_path, "_system_model_data")
     os.chdir(tex_path)
 
-    generate_notice_tex()
+    generate_notice_tex(key)
 
     if output_path is None:
         res = run_command(["pdflatex", "-halt-on-error", "documentation.tex"], logger=core.logger, capture_output=False)
@@ -512,10 +512,18 @@ def create_pdf(key, output_path=None):
         if not os.path.isdir(test_dir):
             os.mkdir(test_dir)
         res = run_command(
+            # ToDO: solve the following problem: 
+            # if the pdf is open in adobe acrobat the pdflatex cannot overwrite it and prompts for a new file name
+            # this is confusing 
+            # suggested solution: call pdflatex such that it exits without prompting and nonzero errorcode which is available `res`
+            # see if statement below 
             ["pdflatex", "-halt-on-error", "-output-directory", output_path, "documentation.tex"],
             logger=core.logger,
             capture_output=True,
         )
+        if res.returncode != 0: 
+            # ToDo: print useful errormessage here
+            pass
 
     # clean up auxiliary files
     import time
@@ -544,11 +552,12 @@ def create_pdf(key, output_path=None):
     return res
 
 
-def generate_notice_tex():
-    note_text = r'''This document was automatically generated based on the \textcolor{blue}{\href{https://ackrep.org/}{ACKREP project}}
-                \textcolor{cyan}{\href{https://github.com/ackrep-org/ackrep_data/tree/main/system_models}{system model}}. 
+def generate_notice_tex(key):
+    note_text = r'''This document was automatically generated based on the \href{https://ackrep.org/}{ACKREP} project
+                \href{https://github.com/ackrep-org/ackrep_data/tree/main/system_models}{system model with --key--}. 
                 The Automatic Control Knowledge Repository, short ACKREP, aims to facilitate knowledge transfer of control theory and control engineering. '''
 
+    note_text = note_text.replace("--key--", key)
     file_note = open("notice.tex", "w")
     file_note.write(note_text)
     file_note.close()
