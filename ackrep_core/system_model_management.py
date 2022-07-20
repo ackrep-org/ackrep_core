@@ -516,7 +516,7 @@ def create_pdf(key, output_path=None):
             # if the pdf is open in adobe acrobat the pdflatex cannot overwrite it and prompts for a new file name
             # this is confusing 
             # suggested solution: call pdflatex such that it exits without prompting and nonzero errorcode which is available `res`
-            # see if statement below 
+            # see if-statement below 
             ["pdflatex", "-halt-on-error", "-output-directory", output_path, "documentation.tex"],
             logger=core.logger,
             capture_output=True,
