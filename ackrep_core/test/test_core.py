@@ -435,12 +435,12 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(res, [problem_sol1])
 
     def test_get_related_problems(self):
-        system_model = core.model_utils.get_entity("UXMFA")
-        problem_spec = core.model_utils.get_entity("S2V8V")
+        system_model = core.model_utils.get_entity("BID9I")
+        problem_spec = core.model_utils.get_entity("H9FRP")
 
         res = system_model.related_problems_list()
 
-        self.assertEqual(res, [problem_spec])
+        self.assertIn(problem_spec ,res)
 
     def test_entity_tag_list(self):
         e = core.model_utils.all_entities()[0]
