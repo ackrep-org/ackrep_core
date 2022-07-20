@@ -440,7 +440,7 @@ class TestCases3(SimpleTestCase):
 
         res = system_model.related_problems_list()
 
-        self.assertIn(problem_spec ,res)
+        self.assertIn(problem_spec, res)
 
     def test_entity_tag_list(self):
         e = core.model_utils.all_entities()[0]

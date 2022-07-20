@@ -23,6 +23,7 @@ import shutil
 import hmac
 import json
 from git import Repo
+import pandas as pd
 
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -461,6 +462,132 @@ class DebugView(View):
         """
         core.logger.info(bleach.clean(repr(request.headers)).replace(",", ",\n"))
         core.logger.info(request.body)
+
+        return HttpResponse(res, content_type="text/html")
+
+
+class EntityOverView(View):
+    """display all results of all ci runs
+    entity name | key   | <buildnumbers>
+    lorenz      | UXMFA | F | S | S
+    """
+
+    def get(self, request):
+        table_dict = {}
+        build_urls = {}
+        entity_list = (
+            list(models.ProblemSolution.objects.all())
+            + list(models.SystemModel.objects.all())
+            + list(models.Notebook.objects.all())
+        )
+        for e in entity_list:
+            table_dict[e.key] = {}
+            table_dict[e.key]["Name"] = e.name
+
+        results_base_path = os.path.join(core.ci_results_path, "history")
+        # filter all ci_results yamls and sort them oldest to newest
+        filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir(results_base_path)))
+        # iterate all result files
+        for i, result_filename in enumerate(filename_list):
+            results_path = os.path.join(results_base_path, result_filename)
+            with open(results_path) as results_file:
+                results = yaml.load(results_file, Loader=yaml.FullLoader)
+
+            for key, value in results.items():
+                if len(key) == 5:
+                    bn = int(results["ci_logs"]["build_number"])
+                    build_urls[bn] = results["ci_logs"]["build_url"]
+                    # try except for old keys that are not currently in database
+                    # TODO decide whether to show these
+                    try:
+                        table_dict[key][bn] = int(value["result"])
+                    except KeyError:
+                        # pass
+                        table_dict[key] = {}
+                        table_dict[key][bn] = int(value["result"])
+
+        # show 0 or 1 instead of 0.0, 1.0
+        pd.options.display.float_format = "{:,.0f}".format
+        dataframe = pd.DataFrame.from_dict(table_dict, orient="index")
+
+        # deal with NAN in df
+        dataframe["Name"] = dataframe["Name"].replace(np.nan, "<i>depricated</i>")
+        dataframe = dataframe.fillna("")
+
+        # sort by build number
+        df = dataframe.iloc[:, 1:]
+        df_sorted = df.reindex(sorted(df.columns), axis=1)
+
+        # rebuild dataframe
+        df_left = dataframe.iloc[:, 0]
+        dataframe_sorted = pd.concat([df_left, df_sorted], axis=1)
+
+        # nice formatting and data pruning
+        dataframe_sorted = dataframe_sorted.replace([0, 1, 2], ["Pass", "Fail", "Inac"])
+
+        def highlight(cell_value):
+            color_0 = "background-color: hsl(120, 60%, 30%);"
+            color_1 = "background-color: hsl(0, 90%, 45%);"
+            color_2 = "background-color: hsl(34, 90%, 45%);"
+            default = ""
+
+            if cell_value == "Pass":
+                return color_0
+            elif cell_value == "Fail":
+                return color_1
+            elif cell_value == "Inac":
+                return color_2
+            return default
+
+        dataframe_sorted = dataframe_sorted.style.applymap(highlight)
+
+        # convert to html
+        table_string = dataframe_sorted.to_html()
+
+        # add build urls
+        for key in build_urls.keys():
+            link = f"""<a title="checkout CI build" href="{build_urls[key]}">{key}</a>"""
+            table_string = table_string.replace(str(key), link)
+
+        # rework headers
+        row = """
+            <thead>
+            <tr>
+                <th colspan="2">Entity</th>
+                <th colspan="20">Build</th>
+            </tr>"""
+        table_string = table_string.replace("<thead>", row)
+        table_string = table_string.replace("&nbsp;", "Key")
+
+        # styling, linebreaks
+        style = """
+        <style>
+            table {
+                border-bottom: 1px Solid Black;
+                border-right: 1px Solid Black;
+                border-collapse : collapse;
+            }
+            table td, table th {
+                border-left: 1px Solid Black;
+                border-top: 1px Solid Black;
+                border-bottom:none;
+                border-right:none;
+                max-width: 400px;
+                word-wrap: break-word;
+            }
+        </style>"""
+
+        # put it all together
+        res = f"""
+        <!DOCTYPE html>
+        {style}
+        <h1>Entity Overview</h1>
+        <br>
+        <b>What entity passed / failed at what time</b>
+        <br>
+
+        {table_string}
+        """
 
         return HttpResponse(res, content_type="text/html")
 
