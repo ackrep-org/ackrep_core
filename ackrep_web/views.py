@@ -475,13 +475,19 @@ class EntityOverView(View):
     def get(self, request):
         table_dict = {}
         build_urls = {}
-        entity_list = (
-            list(models.ProblemSolution.objects.all())
-            + list(models.SystemModel.objects.all())
-            + list(models.Notebook.objects.all())
-        )
+        # number of table columns on the left containing entity infos (key, name)
+        num_entity_cols = 2
+
+        entity_list_list = [
+            list(models.ProblemSolution.objects.all()),
+            list(models.SystemModel.objects.all()),
+            list(models.Notebook.objects.all()),
+        ]
+        entity_list = [x for xs in entity_list_list for x in xs]
+
         for e in entity_list:
             table_dict[e.key] = {}
+            table_dict[e.key]["Key"] = e.key
             table_dict[e.key]["Name"] = e.name
 
         results_base_path = os.path.join(core.ci_results_path, "history")
@@ -498,31 +504,33 @@ class EntityOverView(View):
                     bn = int(results["ci_logs"]["build_number"])
                     build_urls[bn] = results["ci_logs"]["build_url"]
                     # try except for old keys that are not currently in database
-                    # TODO decide whether to show these
                     try:
                         table_dict[key][bn] = int(value["result"])
                     except KeyError:
-                        # pass
-                        table_dict[key] = {}
-                        table_dict[key][bn] = int(value["result"])
+                        pass
 
         # show 0 or 1 instead of 0.0, 1.0
         pd.options.display.float_format = "{:,.0f}".format
         dataframe = pd.DataFrame.from_dict(table_dict, orient="index")
+        # add numerical index
+        dataframe = dataframe.set_index(np.arange(dataframe.shape[0]))
 
         # deal with NAN in df
-        dataframe["Name"] = dataframe["Name"].replace(np.nan, "<i>depricated</i>")
+        dataframe["Name"] = dataframe["Name"].replace(np.nan, "<i>not in database</i>")
         dataframe = dataframe.fillna("")
 
-        # sort by build number
-        df = dataframe.iloc[:, 1:]
-        df_sorted = df.reindex(sorted(df.columns), axis=1)
+        # add link to entity
+        for i, key in enumerate(dataframe["Key"]):
+            link = f"""<a href="/e/{key}" title="Checkout Entity">{key}</a>"""
+            dataframe["Key"][i] = link
 
-        # rebuild dataframe
-        df_left = dataframe.iloc[:, 0]
-        dataframe_sorted = pd.concat([df_left, df_sorted], axis=1)
+        # split df and sort builds part by build number
+        df_entity_part = dataframe.iloc[:, :num_entity_cols]
+        df_builds_part = dataframe.iloc[:, num_entity_cols:]
+        df_sorted = df_builds_part.reindex(sorted(df_builds_part.columns), axis=1)
+        dataframe_sorted = pd.concat([df_entity_part, df_sorted], axis=1)
 
-        # nice formatting and data pruning
+        # cell highlighting
         dataframe_sorted = dataframe_sorted.replace([0, 1, 2], ["Pass", "Fail", "Inac"])
 
         def highlight(cell_value):
@@ -550,14 +558,40 @@ class EntityOverView(View):
             table_string = table_string.replace(str(key), link)
 
         # rework headers
-        row = """
+        num_build_cols = dataframe.shape[1] - num_entity_cols
+        row = f"""
             <thead>
             <tr>
-                <th colspan="2">Entity</th>
-                <th colspan="20">Build</th>
+                <th colspan="{num_entity_cols + 1}">Entity</th>
+                <th colspan="{num_build_cols}">Build</th>
             </tr>"""
+        # Note entity_cols + 1 since index col is also displayed in table
         table_string = table_string.replace("<thead>", row)
-        table_string = table_string.replace("&nbsp;", "Key")
+
+        # add intermediate headers for entity types
+        def find_nth(haystack, needle, n):
+            start = haystack.find(needle)
+            while start >= 0 and n > 1:
+                start = haystack.find(needle, start + len(needle))
+                n -= 1
+            return start
+
+        for i in range(len(entity_list_list)):
+            if i == 0:
+                # header is inserted BEFORE the nth occurence of the string
+                # n = 3, since the two headers above are Entity | Build and Key | Name | <build number>
+                n = 3
+            else:
+                # n = 3 headers + len entities before + new rows inserted previously by this loop
+                n += len(entity_list_list[i - 1]) + 1
+            header = f"""
+            <tr>
+                <td colspan="{num_entity_cols+1}"><b>{entity_list_list[i][0].type.replace("_", " ")}s</b></th>
+                <td colspan="{num_build_cols}"></th>
+            </tr>
+            """
+            pos = find_nth(table_string, "<tr>", n)
+            table_string = table_string[:pos] + header + table_string[pos:]
 
         # styling, linebreaks
         style = """
@@ -566,6 +600,7 @@ class EntityOverView(View):
                 border-bottom: 1px Solid Black;
                 border-right: 1px Solid Black;
                 border-collapse : collapse;
+                padding: 5px;
             }
             table td, table th {
                 border-left: 1px Solid Black;
@@ -574,6 +609,7 @@ class EntityOverView(View):
                 border-right:none;
                 max-width: 400px;
                 word-wrap: break-word;
+                padding: 5px;
             }
         </style>"""
 
