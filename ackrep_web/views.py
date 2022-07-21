@@ -130,7 +130,11 @@ class EntityDetailView(View):
         c.source_code_link = _create_source_code_link(entity)
         c.source_code_container = _get_source_code(entity)
 
-        if isinstance(entity, (core.models.SystemModel, core.models.ProblemSolution, core.models.Notebook)):
+        c.is_executable_entity = isinstance(
+            entity, (core.models.SystemModel, core.models.ProblemSolution, core.models.Notebook)
+        )
+
+        if c.is_executable_entity:
             env_key = entity.compatible_environment
             if env_key == "" or env_key is None:
                 env_key = settings.DEFAULT_ENVIRONMENT_KEY
@@ -147,88 +151,97 @@ class EntityDetailView(View):
         # inherit cotext data from EntityDetailView like source code and pdf
         c = self.get_context_container(key)
 
-        exitflag = False
-        c.result = "pending"
-        results_base_path = os.path.join(core.ci_results_path, "history")
-        # filter all ci_results yamls and sort them newest to oldest
-        filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir(results_base_path)), reverse=True)
-        # iterate all result files
-        for i, result_filename in enumerate(filename_list):
-            results_path = os.path.join(results_base_path, result_filename)
-            with open(results_path) as results_file:
-                results = yaml.load(results_file, Loader=yaml.FullLoader)
-            # if key is in current file
-            if key in results.keys():
-                ci_result_entity = results[key]
-                # take result of first test encountered (most recent)
-                if c.result == "pending":
-                    c.ci_result_entity = ci_result_entity
-                    c.result = ci_result_entity["result"]
-                    c.build_url = results["ci_logs"]["build_url"]
-                # entity passed on latest test
-                if i == 0 and ci_result_entity["result"] == 0:
-                    exitflag = True
-                # entity passed on some old test:
-                elif i > 0 and ci_result_entity["result"] == 0:
-                    c.last_time_passing = ci_result_entity["date"]
-                    c.logs = core.Container()
-                    c.logs.ackrep_data = results["commit_logs"]["ackrep_data"]
-                    c.logs.ackrep_core = results["commit_logs"]["ackrep_core"]
-                    c.logs.build_url = results["ci_logs"]["build_url"]
-                    c.logs.environment = ci_result_entity["env_version"]
+        if c.is_executable_entity:
+            exitflag = False
+            c.result = "pending"
+            results_base_path = os.path.join(core.ci_results_path, "history")
+            # filter all ci_results yamls and sort them newest to oldest
+            filename_list = sorted(
+                filter(lambda item: "ci_results" in item, os.listdir(results_base_path)), reverse=True
+            )
+            # iterate all result files
+            for i, result_filename in enumerate(filename_list):
+                results_path = os.path.join(results_base_path, result_filename)
+                with open(results_path) as results_file:
+                    results = yaml.load(results_file, Loader=yaml.FullLoader)
+                # if key is in current file
+                if key in results.keys():
+                    ci_result_entity = results[key]
+                    # take result of first test encountered (most recent)
+                    if c.result == "pending":
+                        c.ci_result_entity = ci_result_entity
+                        c.result = ci_result_entity["result"]
+                        c.build_url = results["ci_logs"]["build_url"]
+                    # entity passed on latest test
+                    if i == 0 and ci_result_entity["result"] == 0:
+                        exitflag = True
+                    # entity passed on some old test:
+                    elif i > 0 and ci_result_entity["result"] == 0:
+                        c.last_time_passing = ci_result_entity["date"]
+                        c.logs = core.Container()
+                        c.logs.ackrep_data = results["commit_logs"]["ackrep_data"]
+                        c.logs.ackrep_core = results["commit_logs"]["ackrep_core"]
+                        c.logs.build_url = results["ci_logs"]["build_url"]
+                        c.logs.environment = ci_result_entity["env_version"]
 
-                    exitflag = True
+                        exitflag = True
+                else:
+                    core.logger.info(f"Entity {key} is not in {result_filename}.")
+                if exitflag:
+                    break
+
+            if c.result == "pending":
+                core.logger.warning(f"Entity {key} not found in any CI result files.")
+                c.result = -1
+
+            ## system_model and solution specifics:
+            if isinstance(c.entity, (models.ProblemSolution, models.SystemModel)):
+                c.image_list = core.get_data_files(f"ackrep_plots/{key}", endswith_str=".png", create_media_links=True)
+                # if ci didnt provide image, check fallback image folder
+                if len(c.image_list) == 0:
+                    core.logger.info("No image found, checking fallback repo.")
+                    c.image_list = core.get_data_files(
+                        f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True
+                    )
+                    c.fallback_disclaimer = True
+
+            ## notebook specifics:
+            if isinstance(c.entity, models.Notebook):
+                nb = core.get_data_files(f"ackrep_notebooks/{key}", endswith_str=".html", create_media_links=True)
+                if len(nb) == 0:
+                    core.logger.info("No notebook found, checking fallback repo.")
+                    nb = core.get_data_files(
+                        f"ackrep_fallback_binaries/{key}", endswith_str=".html", create_media_links=True
+                    )
+                    c.fallback_disclaimer = True
+                assert len(nb) == 1, "No notebook html found."
+                c.notebook = nb[0]
+
+            c.show_debug = False
+
+            if c.result == 0:
+                c.result_css_class = "success"
+                c.verbal_result = "Success."
+                c.test_date = c.ci_result_entity["date"]
+                c.diff_time_str = c.ci_result_entity["runtime"]
+            # no major error but numerical result was unexpected
+            elif c.result == 2:
+                c.result_css_class = "inaccurate"
+                c.verbal_result = "Inaccurate. (Different result than expected.)"
+                c.test_date = c.ci_result_entity["date"]
+                c.issues = c.ci_result_entity["issues"]
+                c.diff_time_str = c.ci_result_entity["runtime"]
+            # entity did not show in any result file
+            elif c.result == -1:
+                c.result_css_class = "unknown"
+                c.verbal_result = "Unknown. (Entity was not included in any CI Job.)"
             else:
-                core.logger.info(f"Entity {key} is not in {result_filename}.")
-            if exitflag:
-                break
-
-        if c.result == "pending":
-            core.logger.warning(f"Entity {key} not found in any CI result files.")
-            c.result = -1
-
-        ## system_model and solution specifics:
-        if isinstance(c.entity, (models.ProblemSolution, models.SystemModel)):
-            c.image_list = core.get_data_files(f"ackrep_plots/{key}", endswith_str=".png", create_media_links=True)
-            # if ci didnt provide image, check fallback image folder
-            if len(c.image_list) == 0:
-                core.logger.info("No image found, checking fallback repo.")
-                c.image_list = core.get_data_files(
-                    f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True
-                )
-                c.plot_disclaimer = True
-
-        ## notebook specifics:
-        if isinstance(c.entity, models.Notebook):
-            nb = core.get_data_files(f"ackrep_notebooks/{key}", endswith_str=".html", create_media_links=True)
-            assert len(nb) == 1, "Multiple Notebooks per entity not supportet."
-            c.notebook = nb[0]
-
-        c.show_debug = False
-
-        if c.result == 0:
-            c.result_css_class = "success"
-            c.verbal_result = "Success."
-            c.test_date = c.ci_result_entity["date"]
-            c.diff_time_str = c.ci_result_entity["runtime"]
-        # no major error but numerical result was unexpected
-        elif c.result == 2:
-            c.result_css_class = "inaccurate"
-            c.verbal_result = "Inaccurate. (Different result than expected.)"
-            c.test_date = c.ci_result_entity["date"]
-            c.issues = c.ci_result_entity["issues"]
-            c.diff_time_str = c.ci_result_entity["runtime"]
-        # entity did not show in any result file
-        elif c.result == -1:
-            c.result_css_class = "unknown"
-            c.verbal_result = "Unknown. (Entity was not included in any CI Job.)"
-        else:
-            c.result_css_class = "fail"
-            c.verbal_result = "Script Error."
-            c.show_debug = settings.DEBUG
-            c.test_date = c.ci_result_entity["date"]
-            c.issues = c.ci_result_entity["issues"]
-            c.diff_time_str = c.ci_result_entity["runtime"]
+                c.result_css_class = "fail"
+                c.verbal_result = "Script Error."
+                c.show_debug = settings.DEBUG
+                c.test_date = c.ci_result_entity["date"]
+                c.issues = c.ci_result_entity["issues"]
+                c.diff_time_str = c.ci_result_entity["runtime"]
 
         context = {"c": c}
 
@@ -610,6 +623,14 @@ class EntityOverView(View):
                 max-width: 400px;
                 word-wrap: break-word;
                 padding: 5px;
+                background-clip: padding-box; /* fixes issue with disappearing borders due to background color*/
+            }
+            th {
+              position: -webkit-sticky;
+              position: sticky;
+              top: 55;
+              z-index: 2;
+              background-color: #fff;
             }
         </style>"""
 
