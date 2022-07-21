@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html><head lang="en">
+
+    <!-- this template was orignially based on https://github.com/fsfw-dresden/ldap-dingens -->
+
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+    <link type="text/css" rel="stylesheet" href="{% static 'ackrep_web/bootstrap.css' %}">
+    <link type="text/css" rel="stylesheet" href="{% static 'ackrep_web/style.css' %}">
+
+    <link rel="icon" type="image/png"       href="{% static 'ackrep_web/img/favicon.png' %}">
+
+    {# assume that the http status code is available in the context_data (there is a middleware for this) #}
+    {{ http_status_code|json_script:"http_status_code" }}
+
+    <!-- utc_template_name={{template_name}}-->
+
+    <title>Automatic Control Knowledge Repository</title>
+</head>

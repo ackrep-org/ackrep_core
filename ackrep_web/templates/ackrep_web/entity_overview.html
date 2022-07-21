@@ -1,12 +1,15 @@
-{% extends "ackrep_web/base.html" %}
 
-{% block content %}
+<style>
+    div.pad {
+        padding-left: 1cm;
+        padding-right: 1cm;
+    }
+</style>
+<div class="pad">
+    {% include "ackrep_web/head.html"%}
+{% include "ackrep_web/header.html"%}
 
-<h3>Entity Overview</h3>
-Overview of passing and failing entities <br>
-table:
-<div>
-    <embed type="text/html" src={{table}} allowfullscreen> 
+{% include "ackrep_web/_temp/table.html"%}
+
+{% include "ackrep_web/footer.html"%}
 </div>
-
-{% endblock  %}

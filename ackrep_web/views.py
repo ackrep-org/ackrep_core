@@ -617,7 +617,7 @@ class EntityOverView(View):
         res = f"""
         <!DOCTYPE html>
         {style}
-        <h1>Entity Overview</h1>
+        <h2>Entity Overview</h2>
         <br>
         <b>What entity passed / failed at what time</b>
         <br>
@@ -625,7 +625,14 @@ class EntityOverView(View):
         {table_string}
         """
 
-        return HttpResponse(res, content_type="text/html")
+        base_path = os.path.join(core.root_path, "ackrep_core/ackrep_web/templates/ackrep_web/_temp")
+        os.makedirs(base_path, exist_ok=True)
+        path = os.path.join(base_path, "table.html")
+        with open(path, "w") as html_file:
+            html_file.write(res)
+
+        context = {}
+        return TemplateResponse(request, "ackrep_web/entity_overview.html", context)
 
 
 def _create_source_code_link(entity):
