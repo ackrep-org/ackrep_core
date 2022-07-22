@@ -489,7 +489,7 @@ class EntityOverView(View):
         table_dict = {}
         build_urls = {}
         # number of table columns on the left containing entity infos (key, name)
-        num_entity_cols = 2
+        NUM_ENTITY_COLS = 2
 
         entity_list_list = [
             list(models.ProblemSolution.objects.all()),
@@ -538,8 +538,8 @@ class EntityOverView(View):
             dataframe["Key"][i] = link
 
         # split df and sort builds part by build number
-        df_entity_part = dataframe.iloc[:, :num_entity_cols]
-        df_builds_part = dataframe.iloc[:, num_entity_cols:]
+        df_entity_part = dataframe.iloc[:, :NUM_ENTITY_COLS]
+        df_builds_part = dataframe.iloc[:, NUM_ENTITY_COLS:]
         df_sorted = df_builds_part.reindex(sorted(df_builds_part.columns), axis=1)
         dataframe_sorted = pd.concat([df_entity_part, df_sorted], axis=1)
 
@@ -571,39 +571,36 @@ class EntityOverView(View):
             table_string = table_string.replace(str(key), link)
 
         # rework headers
-        num_build_cols = dataframe.shape[1] - num_entity_cols
+        num_build_cols = dataframe.shape[1] - NUM_ENTITY_COLS
         row = f"""
             <thead>
             <tr>
-                <th colspan="{num_entity_cols + 1}">Entity</th>
+                <th colspan="{NUM_ENTITY_COLS + 1}">Entity</th>
                 <th colspan="{num_build_cols}">Build</th>
             </tr>"""
         # Note entity_cols + 1 since index col is also displayed in table
         table_string = table_string.replace("<thead>", row)
 
         # add intermediate headers for entity types
-        def find_nth(haystack, needle, n):
-            start = haystack.find(needle)
-            while start >= 0 and n > 1:
-                start = haystack.find(needle, start + len(needle))
-                n -= 1
-            return start
-
         for i in range(len(entity_list_list)):
             if i == 0:
-                # header is inserted BEFORE the nth occurence of the string
-                # n = 3, since the two headers above are Entity | Build and Key | Name | <build number>
+                """header is inserted BEFORE the nth occurence of the string (here <tr>).
+                n = 3, we want to start inserting at 3rd row
+                Entity       | Build
+                Key   | Name | <build numbers>
+                solutions ---------------
+                <key> | ..."""
                 n = 3
             else:
                 # n = 3 headers + len entities before + new rows inserted previously by this loop
                 n += len(entity_list_list[i - 1]) + 1
             header = f"""
             <tr>
-                <td colspan="{num_entity_cols+1}"><b>{entity_list_list[i][0].type.replace("_", " ")}s</b></th>
+                <td colspan="{NUM_ENTITY_COLS + 1}"><b>{entity_list_list[i][0].type.replace("_", " ")}s</b></th>
                 <td colspan="{num_build_cols}"></th>
             </tr>
             """
-            pos = find_nth(table_string, "<tr>", n)
+            pos = util.find_nth(table_string, "<tr>", n)
             table_string = table_string[:pos] + header + table_string[pos:]
 
         # styling, linebreaks
