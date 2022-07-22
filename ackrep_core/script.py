@@ -261,7 +261,7 @@ def check_all_entities(unittest=False):
     # save the commits of the current ci job
     current_data_repo = os.path.split(data_path)[-1]
     for repo_name in [current_data_repo, "ackrep_core"]:
-        repo = Repo(f"../{repo_name}")
+        repo = Repo(f"{root_path}/{repo_name}")
         commit = repo.commit("HEAD")
         commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(commit.committed_date))
         log_dict = {
@@ -722,6 +722,8 @@ def download_artifacts():
 
 
 def pull_and_show_envs():
+    """this function pulls the most recent environment version and prints out information about this version
+    it is primarily used inside the docker container to ensure image validity"""
     entities = list(models.EnvironmentSpecification.objects.all())
     print("\nEnvironment Infos:\n")
     for entity in entities:
@@ -733,6 +735,10 @@ def pull_and_show_envs():
         cmd = ["docker", "pull", f"ghcr.io/ackrep-org/{env_name}:latest"]
         pull = run_command(cmd, core.logger, capture_output=True)
         # get version info of image
+        if os.environ.get("CI") == "true":
+            dockerfile_path = f"../{dockerfile_name}"
+        else:
+            dockerfile_path = os.path.join(root_path, "ackrep_deployment/dockerfiles/ackrep_core", dockerfile_name)
         cmd = [
             "docker",
             "run",
@@ -740,7 +746,7 @@ def pull_and_show_envs():
             "tail",
             f"ghcr.io/ackrep-org/{env_name}:latest",
             "-1",
-            f"../{dockerfile_name}",
+            dockerfile_path,
         ]
         res = run_command(cmd, core.logger, capture_output=True)
         infos = res.stdout.split('org.opencontainers.image.description "')[-1].split("|")
@@ -752,7 +758,7 @@ def pull_and_show_envs():
         print()
     default_key = settings.DEFAULT_ENVIRONMENT_KEY
     default_name = core.get_entity(default_key).name
-    print(f"Default environment is {default_name} ({default_key})")
+    print(f"Default environment is {default_name} ({default_key})\n")
 
 
 def get_entity_and_key(arg0):

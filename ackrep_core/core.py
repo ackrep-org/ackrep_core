@@ -947,8 +947,8 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
         logger.info("running local image")
         image_name = env_name  # since docker-compose doesnt use prefix
 
-        assert os.path.isdir("../ackrep_deployment"), "docker-compose file not found"
-        cmd = ["docker-compose", "--file", "../ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
+        assert os.path.isdir(f"{root_path}/ackrep_deployment"), "docker-compose file not found"
+        cmd = ["docker-compose", "--file", f"{root_path}/ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
 
     # no local image -> use image from github
     # this is the default for everyone who doesnt build images locally
@@ -1113,9 +1113,9 @@ def download_and_store_artifacts(branch_name, web_request=None):
         if ending == "yaml":
             # dest = os.path.join(core.ci_results_path, "history")
             # shutil.copy(file_name, dest)
-            repo = Repo("../ackrep_ci_results")
+            repo = Repo(f"{root_path}/ackrep_ci_results")
             repo.remotes.origin.pull()
-            yaml_files = os.listdir("../ackrep_ci_results/history")
+            yaml_files = os.listdir(f"{root_path}/ackrep_ci_results/history")
             assert file_name in yaml_files, "Discrepany between ackrep_ci_results repo and downloaded artifacts!"
             if web_request is not None:
                 content = {"webhook body": json.loads(web_request.body.decode())}
