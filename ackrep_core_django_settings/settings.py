@@ -208,6 +208,8 @@ ACKREP_DATA_BRANCH = config("ACKREP_DATA_BRANCH")
 
 DEFAULT_ENVIRONMENT_KEY = "CDAMA"  # "YJBOX"
 
+ENTITY_TIMEOUT = 3 * 60  # s
+
 try:
     with open(os.path.join(BASE_DIR, "deployment_date.txt")) as txtfile:
         LAST_DEPLOYMENT = txtfile.read().strip()

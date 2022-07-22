@@ -964,8 +964,13 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
 
         logger.info("stopping old containers")
         # stop all running containers with env_name to ensure name uniqueness
-        stop_cmd = [f"docker stop $(docker ps --filter 'name={env_name}' -q)"]
-        res = run_command(stop_cmd, logger=logger, capture_output=True, shell=True)
+        find_cmd = ["docker", "ps", "--filter", f"name={env_name}", "-q"]
+        res = run_command(find_cmd, logger=logger, capture_output=True)
+        if len(res.stdout) > 0:
+            ids = res.stdout.split("\n")[:-1]
+            for i in ids:
+                stop_cmd = ["docker", "stop", i]
+                run_command(stop_cmd, logger=logger, capture_output=True)
 
         cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
         # * Note: even though we are running the container in the background (detached -d), we still have to

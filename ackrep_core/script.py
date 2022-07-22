@@ -10,6 +10,8 @@ from django.conf import settings
 import yaml
 from git import Repo
 import shutil
+import signal
+import subprocess
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -22,6 +24,9 @@ activate_ips_on_exception()
 from . import core
 from . import models
 from .util import *
+
+# timeout setup for entity check timeout, see https://stackoverflow.com/a/494273
+signal.signal(signal.SIGALRM, timeout_handler)
 
 
 def main():
@@ -372,14 +377,25 @@ def check(arg0: str, exitflag: bool = True):
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
 
-    if isinstance(entity, (models.ProblemSolution, models.SystemModel)):
-        res = core.check_generic(key=key)
-    elif isinstance(entity, models.Notebook):
-        path = os.path.join(core.root_path, entity.base_path, entity.notebook_file)
-        cmd = ["jupyter", "nbconvert", "--execute", "--to", "html", path]
-        res = run_command(cmd, logger=core.logger, capture_output=False)
-    else:
-        raise NotImplementedError
+    # set timeout
+    signal.alarm(settings.ENTITY_TIMEOUT)
+    try:
+        if isinstance(entity, (models.ProblemSolution, models.SystemModel)):
+            cmd = [f"core.check_generic(key={key}"]
+            res = core.check_generic(key=key)
+        elif isinstance(entity, models.Notebook):
+            path = os.path.join(core.root_path, entity.base_path, entity.notebook_file)
+            cmd = ["jupyter", "nbconvert", "--execute", "--to", "html", path]
+            res = run_command(cmd, logger=core.logger, capture_output=False)
+        else:
+            raise NotImplementedError
+    except TimeoutError as exc:
+        msg = f"Entity calculation reached timeout ({settings.ENTITY_TIMEOUT}s)."
+        core.logger.error(msg)
+        res = subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr=f"Entity check timed out.\n{exc}")
+
+    # cancel timeout
+    signal.alarm(0)
 
     env_version = get_environment_version(entity)
     if env_version != "Unknown":
@@ -683,7 +699,14 @@ def run_jupyter(key):
     msg = f"{key} is not an EnvironmentSpecification key."
     assert isinstance(entity, models.EnvironmentSpecification), msg
 
-    run_command([f"docker stop $(docker ps --filter name={entity.name} -q)"], shell=True)
+    # run_command([f"docker stop $(docker ps --filter name={entity.name} -q)"], shell=True)
+    find_cmd = ["docker", "ps", "--filter", f"name={entity.name}", "-q"]
+    res = run_command(find_cmd, capture_output=True)
+    if len(res.stdout) > 0:
+        ids = res.stdout.split("\n")[:-1]
+        for i in ids:
+            stop_cmd = ["docker", "stop", i]
+            run_command(stop_cmd, capture_output=True)
 
     print("\nRunning Jupyter Server in Docker Container. To Stop the Server, press Ctrl+C twice.")
     print("To access the Notebook, click one of the provided links below.\n")

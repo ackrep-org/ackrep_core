@@ -187,3 +187,7 @@ def find_nth(haystack, needle, n):
         start = haystack.find(needle, start + len(needle))
         n -= 1
     return start
+
+
+def timeout_handler(signum, frame):
+    raise TimeoutError(f"Process reached max time and was therefore canceled.")
