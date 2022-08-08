@@ -12,6 +12,7 @@ from git import Repo
 import shutil
 import signal
 import subprocess
+import numpy as np
 
 from ipydex import IPS, activate_ips_on_exception
 

@@ -472,8 +472,39 @@ def update_parameter_tex(key):
     for i in range(len(p_values)):
         p_values[i] = "$" + p_values[i] + "$"
 
-    # Create list, which contains the content of the table body
-    table_body_list = np.array([*parameters.start_columns_list, p_symbols, p_values, *parameters.end_columns_list])
+    # Define "Range" column
+    p_ranges = []
+    if hasattr(parameters, "pp_range_list"):
+        for r in parameters.pp_range_list:
+            # get interval boundaries
+            if isinstance(r, list):
+                ib = ["[", "]"]
+                p_ranges.append(f"${ib[0]}{r[0]}, {r[1]}{ib[1]}$")
+            elif isinstance(r, tuple):
+                ib = ["(", ")"]
+                p_ranges.append(f"${ib[0]}{r[0]}, {r[1]}{ib[1]}$")
+            elif isinstance(r, str) and len(r) == 1:
+                p_ranges.append("$\mathbb{" + r + "}$")
+            elif r is None:
+                # used for fixed parameters, such as g = 9.81
+                p_ranges.append("-")
+            else:
+                p_ranges.append("$\mathbb{R}$")
+            # replace inf
+            p_ranges[-1] = p_ranges[-1].replace("inf", "\infty")
+
+        # Create list, which contains the content of the table body
+        table_body_list = np.array(
+            [*parameters.start_columns_list, p_symbols, p_values, p_ranges, *parameters.end_columns_list]
+        )
+        if "Range" not in parameters.tabular_header:
+            parameters.tabular_header.extend("Range")
+
+    else:
+        # for backwards compatibility
+        # Create list, which contains the content of the table body
+        table_body_list = np.array([*parameters.start_columns_list, p_symbols, p_values, *parameters.end_columns_list])
+
     # Convert list of column entries to list of row entries
     table = table_body_list.transpose()
 
@@ -588,6 +619,24 @@ def import_parameters(key=None):
 
     parameters.get_default_parameters = get_default_parameters
     parameters.get_symbolic_parameters = get_symbolic_parameters
+
+    # check if parameters are inside suggested ranges
+    if hasattr(parameters, "pp_range_list"):
+        msg = "Dimension Mismatch between parameters and respective ranges."
+        assert len(parameters.pp_range_list) == len(parameters.get_default_parameters()), msg
+        for i, (p, v) in enumerate(pp_dict.items()):
+            warn = False
+            low, high = parameters.pp_range_list[i]
+            if isinstance(parameters.pp_range_list[i], list):
+                if not (low <= v and v <= high):
+                    warn = True
+            elif isinstance(parameters.pp_range_list[i], tuple):
+                if not (low < v and v < high):
+                    warn = True
+
+            if warn:
+                msg = f"Parameter {p} is outside of the suggested range {parameters.pp_range_list[i]}."
+                core.logger.warning(msg)
 
     return parameters
 
