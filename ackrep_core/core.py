@@ -452,7 +452,7 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
 
 def get_data_files(base_path, endswith_str=None, create_media_links=False):
     """
-    walk through <base_path>/_solution_data or <base_path>/_system_model_data depending on the base_path
+    walk through <base_path>/_data depending on the base_path
     and return the path of all matching files
 
     :param base_path: entity.base_path
@@ -460,10 +460,8 @@ def get_data_files(base_path, endswith_str=None, create_media_links=False):
     :param create_media_links:  if True, create symlinks in `settings.MEDIA_ROOT` to these files
     :return:
     """
-    if "system_models" in base_path:
-        startdir = os.path.join(root_path, base_path, "_system_model_data")
-    elif "problem_solutions" in base_path:
-        startdir = os.path.join(root_path, base_path, "_solution_data")
+    if "_data" in base_path:
+        startdir = os.path.join(root_path, base_path, "_data")
     else:
         startdir = os.path.join(root_path, base_path)
 
@@ -1093,49 +1091,24 @@ def get_port_mapping(port_dict):
 
 
 def download_and_store_artifacts(branch_name, web_request=None):
+    """download artifacts using the directory structure established in CI"""
     save_cwd = os.getcwd()
-    path = os.path.join(root_path, "tmp")
-    if os.path.isdir(path):
-        shutil.rmtree(path)
-    os.mkdir(path)
-    os.chdir(path)
+    os.chdir(root_path)
 
     circle_token = settings.SECRET_CIRCLECI_API_KEY
     cmd = [
         f"""curl -H 'Circle-Token: {circle_token}' \
     https://circleci.com/api/v1.1/project/github/ackrep-org/ackrep_data/latest/artifacts?branch={branch_name} \
     | grep -o 'https://[^"]*' \
-    | wget --verbose --header 'Circle-Token: {circle_token}' --input-file -"""
+    | wget --force-directories --no-host-directories --cut-dirs=6 --verbose --header 'Circle-Token: {circle_token}' \
+    --input-file -"""
     ]
-    # print(cmd)
+
     res = run_command(cmd, logger=logger, capture_output=True, shell=True)
     assert res.returncode == 0, "Unable to collect results from circleci."
 
-    files = os.listdir(".")
-    # sort the received files into the correct directories
-    for file_name in files:
-        name, ending = file_name.split(".")
-        if ending == "yaml":
-            # dest = os.path.join(core.ci_results_path, "history")
-            # shutil.copy(file_name, dest)
-            repo = Repo(f"{root_path}/ackrep_ci_results")
-            repo.remotes.origin.pull()
-            yaml_files = os.listdir(f"{root_path}/ackrep_ci_results/history")
-            assert file_name in yaml_files, "Discrepany between ackrep_ci_results repo and downloaded artifacts!"
-            if web_request is not None:
-                content = {"webhook body": json.loads(web_request.body.decode())}
-                with open(file_name, "a") as file:
-                    yaml.dump(content, file)
-        elif ending == "png":
-            dest = os.path.join(root_path, "ackrep_plots", name.split("_")[-1])
-            os.makedirs(dest, exist_ok=True)
-            shutil.copy(file_name, f"{dest}/plot.png")
-        elif ending == "html":
-            dest = os.path.join(root_path, "ackrep_notebooks", name.split("_")[-1])
-            os.makedirs(dest, exist_ok=True)
-            shutil.copy(file_name, f"{dest}/notebook.html")
-        else:
-            raise TypeError(f"File of unkknown type {ending} detected.")
+    repo = Repo(f"{root_path}/ackrep_ci_results")
+    repo.remotes.origin.pull()
 
     os.chdir(save_cwd)
 

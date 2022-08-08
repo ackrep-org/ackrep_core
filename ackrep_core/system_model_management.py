@@ -424,7 +424,7 @@ class GenericModel:
         return value
 
 
-def save_plot_in_dir():
+def save_plot_in_dir(name="plot.png"):
     """
     inspect, where call is coming from, then save plot in corresponding directory
     """
@@ -432,17 +432,10 @@ def save_plot_in_dir():
     file_name = inspect.getframeinfo(caller_frame)[0]
     path = os.path.split(file_name)[0]
 
-    if "solution" in path:
-        str_path = "_solution_data"
-    elif "model" in path:
-        str_path = "_system_model_data"
-    else:
-        raise NotImplementedError
-
-    plot_dir = os.path.join(path, str_path)
+    plot_dir = os.path.join(path, "_data")
     if not os.path.isdir(plot_dir):
         os.mkdir(plot_dir)
-    plt.savefig(os.path.join(plot_dir, "plot.png"), dpi=96 * 2)
+    plt.savefig(os.path.join(plot_dir, name), dpi=96 * 2)
 
 
 ### Parameter fetching and tex-ing ###
@@ -514,7 +507,7 @@ def update_parameter_tex(key):
     # Change Directory to the Folder of the Model.
     cwd = os.path.dirname(os.path.abspath(__file__))
     parent2_cwd = os.path.dirname(os.path.dirname(cwd))
-    path_base = os.path.join(root_path, parameters.base_path, "_system_model_data")
+    path_base = os.path.join(root_path, parameters.base_path, "_data")
     os.chdir(path_base)
     # Write tabular to Parameter File.
     file = open("parameters.tex", "w")
@@ -531,7 +524,7 @@ def create_pdf(key, output_path=None):
     """
     system_model_entity = core.model_utils.get_entity(key)
     base_path = system_model_entity.base_path
-    tex_path = os.path.join(root_path, base_path, "_system_model_data")
+    tex_path = os.path.join(root_path, base_path, "_data")
     os.chdir(tex_path)
     if output_path is None:
         res = run_command(["pdflatex", "-halt-on-error", "documentation.tex"], logger=core.logger, capture_output=True)
@@ -707,9 +700,7 @@ def create_system_model_list_pdf():
     body = []
     # iterate all models
     for sm in models.SystemModel.objects.all():
-        model_file_path = os.path.join(
-            core.data_path, os.pardir, sm.base_path, "_system_model_data", "documentation.tex"
-        )
+        model_file_path = os.path.join(core.data_path, os.pardir, sm.base_path, "_data", "documentation.tex")
         model_file = open(model_file_path, "r")
         lines = model_file.readlines()
         begin = None
@@ -730,9 +721,9 @@ def create_system_model_list_pdf():
                 lines[i] = (
                     "\\input{"
                     + str(
-                        os.path.join(
-                            core.data_path, os.pardir, sm.base_path, "_system_model_data", "parameters.tex"
-                        ).replace("\\", "/")
+                        os.path.join(core.data_path, os.pardir, sm.base_path, "_data", "parameters.tex").replace(
+                            "\\", "/"
+                        )
                     )
                     + "}\n"
                 )
@@ -771,9 +762,9 @@ def create_system_model_list_pdf():
 def _import_png_to_tex(system_model_entity):
     assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel"
     res = core.check_generic(system_model_entity.key)
-    png_path = os.path.join(
-        core.data_path, os.pardir, system_model_entity.base_path, "_system_model_data", "plot.png"
-    ).replace("\\", "/")
+    png_path = os.path.join(core.data_path, os.pardir, system_model_entity.base_path, "_data", "plot.png").replace(
+        "\\", "/"
+    )
 
     # ensure png actually exists
     if not os.path.exists(png_path):

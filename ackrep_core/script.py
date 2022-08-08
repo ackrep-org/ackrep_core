@@ -260,8 +260,8 @@ def check_all_entities(unittest=False):
     date = datetime.datetime.now()
     date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
     file_name = "ci_results__" + date_string + ".yaml"
-    file_path = os.path.join(core.root_path, "artifacts", "ackrep_ci_results", file_name)
-    os.makedirs(os.path.join(core.root_path, "artifacts", "ackrep_ci_results"), exist_ok=True)
+    file_path = os.path.join(core.root_path, "artifacts", "ackrep_ci_results", "history", file_name)
+    os.makedirs(os.path.join(core.root_path, "artifacts", "ackrep_ci_results", "history"), exist_ok=True)
 
     content = {"commit_logs": {}}
     # save the commits of the current ci job
@@ -299,7 +299,12 @@ def check_all_entities(unittest=False):
             + list(models.SystemModel.objects.all())
         )
         # for faster CI testing:
-        # entity_list = [core.get_entity("UXMFA"), core.get_entity("CK7EX"), core.get_entity("CZKWU")]
+        # entity_list = [
+        #     core.get_entity("UXMFA"),  # lorenz
+        #     core.get_entity("CK7EX"),  # four-bar
+        #     core.get_entity("CZKWU"),  # nonlinear_trajectory_electrical_resistance
+        #     core.get_entity("IG3GA"),  # linear transport
+        # ]
     for entity in entity_list:
         key = entity.key
 
@@ -318,16 +323,18 @@ def check_all_entities(unittest=False):
             dest_dir_notebooks = os.path.join(core.root_path, "artifacts", "ackrep_notebooks")
             os.makedirs(dest_dir_notebooks, exist_ok=True)
 
-            if isinstance(entity, models.ProblemSolution):
-                src = f"dummy:/code/{entity.base_path}/_solution_data/plot.png"
-                dest = os.path.join(dest_dir_plots, f"plot_{key}.png")
-            elif isinstance(entity, models.SystemModel):
-                src = f"dummy:/code/{entity.base_path}/_system_model_data/plot.png"
-                dest = os.path.join(dest_dir_plots, f"plot_{key}.png")
+            if isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel):
+                # copy entire folder since there could be multiple images with arbitrary names
+                src = f"dummy:/code/{entity.base_path}/_data"
+                # remove tex and pdf files to prevent them being copied
+                for file in os.listdir(src):
+                    if ".pdf" in file or ".tex" in file:
+                        os.remove(os.path.join(src, file))
+                dest = os.path.join(dest_dir_plots, key)
             elif isinstance(entity, models.Notebook):
                 html_file = entity.notebook_file.replace(".ipynb", ".html")
                 src = f"dummy:/code/{entity.base_path}/{html_file}"
-                dest = os.path.join(dest_dir_notebooks, f"notebook_{key}.html")
+                dest = os.path.join(dest_dir_notebooks, key, f"notebook.html")
             else:
                 raise TypeError(f"{key} is not of a checkable type")
 
