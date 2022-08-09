@@ -291,7 +291,7 @@ def check_all_entities(unittest=False):
     returncodes = []
     failed_entities = []
     if unittest:
-        entity_list = [core.get_entity("UXMFA"), core.get_entity("LRHZX")]
+        entity_list = [core.get_entity("UXMFA"), core.get_entity("LRHZX"), core.get_entity("7WIQH")]
     else:
         entity_list = (
             list(models.Notebook.objects.all())
@@ -319,26 +319,24 @@ def check_all_entities(unittest=False):
 
             # copy plot or notebook to collection directory
             dest_dir_plots = os.path.join(core.root_path, "artifacts", "ackrep_plots")
-            os.makedirs(dest_dir_plots, exist_ok=True)
-
             dest_dir_notebooks = os.path.join(core.root_path, "artifacts", "ackrep_notebooks")
-            os.makedirs(dest_dir_notebooks, exist_ok=True)
 
             if isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel):
                 # copy entire folder since there could be multiple images with arbitrary names
-                src = f"dummy:/code/{entity.base_path}/_data"
+                src = f"dummy:/code/{entity.base_path}/_data/."
                 dest_folder = os.path.join(dest_dir_plots, key)
                 dest = dest_folder
             elif isinstance(entity, models.Notebook):
-                html_file = entity.notebook_file.replace(".ipynb", ".html")
-                src = f"dummy:/code/{entity.base_path}/{html_file}"
+                html_file_name = entity.notebook_file.replace(".ipynb", ".html")
+                src = f"dummy:/code/{entity.base_path}/{html_file_name}"
                 dest_folder = os.path.join(dest_dir_notebooks, key)
-                dest = os.path.join(dest_folder, html_file)
+                dest = os.path.join(dest_folder, html_file_name)
             else:
                 raise TypeError(f"{key} is not of a checkable type")
 
+            os.makedirs(dest_folder, exist_ok=True)
             # docker cp has to be used, see https://circleci.com/docs/2.0/building-docker-images#mounting-folders
-            run_command(["docker", "cp", src, dest])
+            run_command(["docker", "cp", src, dest], logger=core.logger)
 
             # remove tex and pdf files to prevent them being copied
             for file in os.listdir(dest_folder):
