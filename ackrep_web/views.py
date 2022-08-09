@@ -490,6 +490,7 @@ class EntityOverView(View):
         build_urls = {}
         # number of table columns on the left containing entity infos (key, name)
         NUM_ENTITY_COLS = 2
+        NUM_DISPLAYED_RUNS = 20
 
         entity_list_list = [
             list(models.ProblemSolution.objects.all()),
@@ -507,7 +508,7 @@ class EntityOverView(View):
         # filter all ci_results yamls and sort them oldest to newest
         filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir(results_base_path)))
         # iterate all result files
-        for i, result_filename in enumerate(filename_list):
+        for i, result_filename in enumerate(filename_list[-NUM_DISPLAYED_RUNS:]):
             results_path = os.path.join(results_base_path, result_filename)
             with open(results_path) as results_file:
                 results = yaml.load(results_file, Loader=yaml.FullLoader)
