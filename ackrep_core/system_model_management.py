@@ -543,7 +543,7 @@ def create_pdf(key, output_path=None):
 
     time.sleep(5)
 
-    delete_list = ["gz", "aux", "fdb_latexmk", "fls", "log"]
+    delete_list = ["gz", "aux", "fdb_latexmk", "fls", "log", "out"]
 
     # no specified output directory
     if output_path is None:
@@ -565,7 +565,7 @@ def create_pdf(key, output_path=None):
 
 
 def import_parameters(key=None):
-    """import parameters.py selected be given key and create related get function for system_model
+    """import parameters.py selected by given key and create related get function for system_model
     if key is None, the caller frame is inpected to get its location (used by system_model.py (ackrep_data))
 
     Args:
@@ -762,28 +762,24 @@ def create_system_model_list_pdf():
 def _import_png_to_tex(system_model_entity):
     assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel"
     res = core.check_generic(system_model_entity.key)
-    png_path = os.path.join(core.data_path, os.pardir, system_model_entity.base_path, "_data", "plot.png").replace(
-        "\\", "/"
-    )
+    line = "\n\\section{Simulation}\n"
 
-    # ensure png actually exists
-    if not os.path.exists(png_path):
-        return "\n"
+    png_path = os.path.join(core.data_path, os.pardir, system_model_entity.base_path, "_data")
+    for file in os.listdir(png_path):
+        if ".png" in file:
+            path = os.path.join(png_path, file).replace("\\", "/")
 
-    line = (
-        "\n\\section{Simulation}\n"
-        + "\\begin{figure}[H]\n"
-        + "\\centering\n"
-        + "\\includegraphics[width=\\linewidth]{"
-        + png_path
-        + "}\n"
-        + "\\caption{Simulation of the "
-        + system_model_entity.name
-        + ".}\n"
-        + "\\label{fig:"
-        + system_model_entity.name
-        + "}\n"
-        + "\\end{figure}\n"
-    )
+            line = (
+                line
+                + "\\begin{figure}[H]\n"
+                + "\\centering\n"
+                + "\\includegraphics[width=\\linewidth]{"
+                + path
+                + "}\n"
+                + "\\caption{Simulation of the "
+                + system_model_entity.name
+                + ".}\n"
+                + "\\end{figure}\n"
+            )
 
     return line

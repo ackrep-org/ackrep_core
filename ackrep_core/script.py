@@ -27,7 +27,8 @@ from . import models
 from .util import *
 
 # timeout setup for entity check timeout, see https://stackoverflow.com/a/494273
-signal.signal(signal.SIGALRM, timeout_handler)
+if os.name != "nt":
+    signal.signal(signal.SIGALRM, timeout_handler)
 
 
 def main():
@@ -65,6 +66,9 @@ def main():
         help="create pdf of system model from tex file (system model entity is specified by metadata file or key)",
     )
     argparser.add_argument(
+        "-uap", "--update-all-pdfs", help="update all pdfs of all system models from tex files", action="store_true",
+    )
+    argparser.add_argument(
         "--create-system-model-list-pdf",
         help="create pdf of all known system models, stored in <project_dir>/local_outputs/",
         action="store_true",
@@ -95,9 +99,7 @@ def main():
         metavar="key",
     )
     argparser.add_argument(
-        "--jupyter",
-        help="start jupyter server in environment with given key",
-        metavar="key",
+        "--jupyter", help="start jupyter server in environment with given key", metavar="key",
     )
     argparser.add_argument(
         "-p",
@@ -191,6 +193,8 @@ def main():
     elif args.create_pdf:
         metadatapath = args.create_pdf
         create_pdf(metadatapath)
+    elif args.update_all_pdfs:
+        update_all_pdfs()
     elif args.create_system_model_list_pdf:
         create_system_model_list_pdf()
     elif args.metadata or args.md:
@@ -539,6 +543,43 @@ def create_pdf(arg0: str, exitflag: bool = True):
         exit(res.returncode)
     else:
         return res
+
+
+def update_all_pdfs():
+    """
+
+    :param arg0:        either an entity key or the path to the respective metadata.yml
+    :param exitflag:    determine whether the program should exit at the end of this function
+
+    :return:            container of subprocess.run (if exitflag == False)
+    """
+    failed_entities = []
+    entity_list = list(models.SystemModel.objects.all())
+    for e in entity_list:
+        print(bright(e))
+        try:
+            core.check_generic(e.key)
+        except:
+            print(bred("Could not check entity, plot may not be up to date."))
+
+        try:
+            system_model_management.update_parameter_tex(e.key)
+        except:
+            print("Parameter update Error, maybe entity doesnt have params?")
+        res = system_model_management.create_pdf(key=e.key)
+        if res.returncode == 0:
+            print(bgreen("Success."))
+        else:
+            print(bred("Fail."))
+            failed_entities.append(e.key)
+
+    if len(failed_entities) == 0:
+        print(bgreen(f"All {len(entity_list)} builds successfull."))
+    else:
+        print(bred(f"{len(failed_entities)}/{len(entity_list)} builds failed."))
+        print("Failed entities:", failed_entities)
+
+    exit(len(failed_entities))
 
 
 def create_system_model_list_pdf(exitflag: bool = True):
