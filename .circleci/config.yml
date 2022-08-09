@@ -17,6 +17,7 @@ jobs: # A basic unit of work in a run
           command: | 
             python -m venv venv
             . venv/bin/activate
+            pip install -U pip
             pip install -r requirements.txt
             pip install -e .
       - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
@@ -56,6 +57,8 @@ jobs: # A basic unit of work in a run
             docker create -v /code/ackrep_data_for_unittests --name dummy alpine:3.4 /bin/true
             echo Copy ackrep_data to dummy
             docker cp /home/circleci/ackrep_data_for_unittests dummy:/code
+            echo containers:
+            docker container ps
       - run:
           name: Test Core
           command: | 
@@ -66,8 +69,6 @@ jobs: # A basic unit of work in a run
             python manage.py test -v 2 --keepdb ackrep_core.test.test_core
       - run:
           name: Test Web
-          # for debugging:
-          # background: True
           command: |
             . venv/bin/activate
             python manage.py test -v 2 --keepdb ackrep_web.test.test_web
@@ -75,10 +76,19 @@ jobs: # A basic unit of work in a run
           name: Debug
           when: on_fail
           command: |
-            echo 1
+            echo containers:
+            docker container ps
+            echo artifacts folder:
             ls ../artifacts
-            echo 2
+            echo ci_results folder:
             ls ../artifacts/ackrep_ci_results
+            echo history folder:
+            ls ../artifacts/ackrep_ci_results/history
+            yaml=$(ls ../artifacts/ackrep_ci_results/history)
+            echo yaml:
+            cat ../artifacts/ackrep_ci_results/history/$yaml
+            echo plots folder:
+            ls ../artifacts/ackrep_plots
 
 workflows:
   version: 2 

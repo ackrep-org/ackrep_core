@@ -313,6 +313,7 @@ def check_all_entities(unittest=False):
         runtime = round(time.time() - start_time, 1)
 
         result = res.returncode
+        # collect the created data files (plots, htmls, ...) and place them in the artifact folder for later download
         if res.returncode == 0:
             issues = ""
 
@@ -326,20 +327,23 @@ def check_all_entities(unittest=False):
             if isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel):
                 # copy entire folder since there could be multiple images with arbitrary names
                 src = f"dummy:/code/{entity.base_path}/_data"
-                # remove tex and pdf files to prevent them being copied
-                for file in os.listdir(src):
-                    if ".pdf" in file or ".tex" in file:
-                        os.remove(os.path.join(src, file))
-                dest = os.path.join(dest_dir_plots, key)
+                dest_folder = os.path.join(dest_dir_plots, key)
+                dest = dest_folder
             elif isinstance(entity, models.Notebook):
                 html_file = entity.notebook_file.replace(".ipynb", ".html")
                 src = f"dummy:/code/{entity.base_path}/{html_file}"
-                dest = os.path.join(dest_dir_notebooks, key, f"notebook.html")
+                dest_folder = os.path.join(dest_dir_notebooks, key)
+                dest = os.path.join(dest_folder, html_file)
             else:
                 raise TypeError(f"{key} is not of a checkable type")
 
             # docker cp has to be used, see https://circleci.com/docs/2.0/building-docker-images#mounting-folders
             run_command(["docker", "cp", src, dest])
+
+            # remove tex and pdf files to prevent them being copied
+            for file in os.listdir(dest_folder):
+                if not (".png" in file or ".html" in file):
+                    os.remove(os.path.join(dest_folder, file))
 
         else:
             issues = res.stdout

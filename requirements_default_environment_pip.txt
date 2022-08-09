@@ -13,3 +13,4 @@ pyinduct
 ipympl
 ipywidgets
 nbmake
+pysindy

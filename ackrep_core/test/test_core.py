@@ -317,7 +317,7 @@ class TestCases3(SimpleTestCase):
         self.assertIn("SyntaxError", results["LRHZX"]["issues"])
 
         # test plots
-        plot_path = "../artifacts/ackrep_plots"
+        plot_path = "../artifacts/ackrep_plots/UXMFA"
         plots = os.listdir(plot_path)
         self.assertEqual(len(plots), 1)
         self.assertEqual("plot.png", plots[0])
