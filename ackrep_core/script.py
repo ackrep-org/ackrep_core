@@ -66,7 +66,10 @@ def main():
         help="create pdf of system model from tex file (system model entity is specified by metadata file or key)",
     )
     argparser.add_argument(
-        "-uap", "--update-all-pdfs", help="update all pdfs of all system models from tex files", action="store_true",
+        "-uap",
+        "--update-all-pdfs",
+        help="update all pdfs of all system models from tex files",
+        action="store_true",
     )
     argparser.add_argument(
         "--create-system-model-list-pdf",
@@ -99,7 +102,9 @@ def main():
         metavar="key",
     )
     argparser.add_argument(
-        "--jupyter", help="start jupyter server in environment with given key", metavar="key",
+        "--jupyter",
+        help="start jupyter server in environment with given key",
+        metavar="key",
     )
     argparser.add_argument(
         "-p",

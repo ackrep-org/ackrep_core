@@ -196,12 +196,16 @@ class EntityDetailView(View):
 
             ## system_model and solution specifics:
             if isinstance(c.entity, (models.ProblemSolution, models.SystemModel)):
-                c.image_list = core.get_data_files(f"ackrep_plots/{key}", endswith_str=".png", create_media_links=True)
+                c.image_list = sorted(
+                    core.get_data_files(f"ackrep_plots/{key}", endswith_str=".png", create_media_links=True)
+                )
                 # if ci didnt provide image, check fallback image folder
                 if len(c.image_list) == 0:
                     core.logger.info("No image found, checking fallback repo.")
-                    c.image_list = core.get_data_files(
-                        f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True
+                    c.image_list = sorted(
+                        core.get_data_files(
+                            f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True
+                        )
                     )
                     c.fallback_disclaimer = True
 
