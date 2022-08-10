@@ -1090,7 +1090,7 @@ def get_port_mapping(port_dict):
     return cmd_extension
 
 
-def download_and_store_artifacts(branch_name, web_request=None):
+def download_and_store_artifacts(branch_name):
     """download artifacts using the directory structure established in CI"""
     save_cwd = os.getcwd()
     os.chdir(root_path)
@@ -1103,11 +1103,16 @@ def download_and_store_artifacts(branch_name, web_request=None):
     | wget --force-directories --no-host-directories --cut-dirs=6 --verbose --header 'Circle-Token: {circle_token}' \
     --input-file -"""
     ]
+    # --force-directories       keeps directory structure
+    # --no-host-directories     omits directory with host url
+    # --cut-dirs=6              omits next 6 directories --> artifact dir
 
     res = run_command(cmd, logger=logger, capture_output=True, shell=True)
     assert res.returncode == 0, "Unable to collect results from circleci."
 
     repo = Repo(f"{root_path}/ackrep_ci_results")
+    repo.git.reset("--hard")
+    repo.git.clean("-xdf")
     repo.remotes.origin.pull()
 
     os.chdir(save_cwd)

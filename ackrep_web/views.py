@@ -334,7 +334,7 @@ class Webhook(View):
                 if branch_name == "feature_webhook":
                     IPS()
                 elif branch_name == settings.ACKREP_DATA_BRANCH:
-                    core.download_and_store_artifacts(branch_name, request)
+                    core.download_and_store_artifacts(branch_name)
                 else:
                     core.logger.critical(f"No action specified for branch name {branch_name}")
                     IPS()
