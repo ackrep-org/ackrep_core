@@ -16,6 +16,7 @@ import os
 import subprocess
 import matplotlib.pyplot as plt
 import inspect
+import copy
 
 from . import core
 from .util import root_path, run_command
@@ -526,6 +527,27 @@ def create_pdf(key, output_path=None):
     base_path = system_model_entity.base_path
     tex_path = os.path.join(root_path, base_path, "_data")
     os.chdir(tex_path)
+
+    assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel"
+    try:
+        res = core.check_generic(system_model_entity.key)
+    except:
+        print(f"{system_model_entity} was not checked, plot might not be included.")
+
+    # add plots, if existing
+    pngs = filter(lambda file: ".png" in file, os.listdir(tex_path))
+    if pngs:
+        with open(os.path.join(tex_path, "documentation.tex"), "r") as og_tex_file:
+            og_lines = og_tex_file.readlines()
+        lines = copy.copy(og_lines)
+
+        for i, v in enumerate(lines):
+            if "\\begin{thebibliography}" in v:
+                lines[i] = _import_png_to_tex(system_model_entity) + lines[i]
+
+        with open(os.path.join(tex_path, "documentation.tex"), "w") as tex_file:
+            tex_file.writelines(lines)
+
     if output_path is None:
         res = run_command(["pdflatex", "-halt-on-error", "documentation.tex"], logger=core.logger, capture_output=True)
     else:
@@ -542,6 +564,11 @@ def create_pdf(key, output_path=None):
     import time
 
     time.sleep(5)
+
+    # reset tex file, since plots are not in repo but tex file is
+    if pngs:
+        with open(os.path.join(tex_path, "documentation.tex"), "w") as tex_file:
+            tex_file.writelines(og_lines)
 
     delete_list = ["gz", "aux", "fdb_latexmk", "fls", "log", "out"]
 
@@ -700,6 +727,11 @@ def create_system_model_list_pdf():
     body = []
     # iterate all models
     for sm in models.SystemModel.objects.all():
+        try:
+            res = core.check_generic(sm.key)
+        except:
+            print(f"{sm} was not checked, plot might not be included.")
+
         model_file_path = os.path.join(core.data_path, os.pardir, sm.base_path, "_data", "documentation.tex")
         model_file = open(model_file_path, "r")
         lines = model_file.readlines()
@@ -760,8 +792,6 @@ def create_system_model_list_pdf():
 
 
 def _import_png_to_tex(system_model_entity):
-    assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel"
-    res = core.check_generic(system_model_entity.key)
     line = "\n\\section{Simulation}\n"
 
     png_path = os.path.join(core.data_path, os.pardir, system_model_entity.base_path, "_data")
