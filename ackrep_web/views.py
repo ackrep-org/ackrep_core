@@ -540,7 +540,7 @@ class EntityOverView(View):
         # add link to entity
         for i, key in enumerate(dataframe["Key"]):
             link = f"""<a href="/e/{key}" title="Checkout Entity">{key}</a>"""
-            dataframe["Key"][i] = link
+            dataframe.loc[i, "Key"] = link
 
         # split df and sort builds part by build number
         df_entity_part = dataframe.iloc[:, :NUM_ENTITY_COLS]
@@ -608,6 +608,9 @@ class EntityOverView(View):
             pos = util.find_nth(table_string, "<tr>", n)
             table_string = table_string[:pos] + header + table_string[pos:]
 
+        # TODO: improve sticky header: see
+        # TODO: https://stackoverflow.com/questions/54444642/sticky-header-table-with-mutiple-lines-in-the-thead
+        # TODO: for orientation
         # styling, linebreaks
         style = """
         <style>
@@ -627,12 +630,16 @@ class EntityOverView(View):
                 padding: 5px;
                 background-clip: padding-box; /* fixes issue with disappearing borders due to background color*/
             }
-            th {
-              position: -webkit-sticky;
-              position: sticky;
-              top: 55;
-              z-index: 2;
-              background-color: #fff;
+            table thead {
+                position: sticky; 
+                top: 54;
+                z-index: 2;
+            }
+            table  th,
+            table  tr td {
+                background-color: #FFF;
+                border: 1px solid black;
+                padding: 5px;
             }
         </style>"""
 
@@ -642,8 +649,8 @@ class EntityOverView(View):
         {style}
         <h2>Entity Overview</h2>
         <br>
-        <b>What entity passed / failed at what time</b>
-        <br>
+        <b>Overview of the last {NUM_DISPLAYED_RUNS} CI jobs.</b>
+        <br><br>
 
         {table_string}
         """
