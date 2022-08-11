@@ -140,6 +140,11 @@ def main():
         help="some commands use this flag to behave differently during unittests",
         action="store_true",
     )
+    argparser.add_argument(
+        "--fast",
+        help="some commands use this flag to behave speed up CI job",
+        action="store_true",
+    )
 
     args = argparser.parse_args()
 
@@ -179,7 +184,7 @@ def main():
         metadatapath = args.check_with_docker
         check_with_docker(metadatapath)
     elif args.check_all_entities:
-        check_all_entities(args.unittest)
+        check_all_entities(args.unittest, args.fast)
     elif args.download_artifacts:
         download_artifacts()
     elif args.pull_and_show_envs:
@@ -262,7 +267,7 @@ def create_new_entity():
     core.convert_dict_to_yaml(field_values, target_path=path)
 
 
-def check_all_entities(unittest=False):
+def check_all_entities(unittest=False, fast=False):
     """this function is called during CI.
     All (checkable) entities are checked and the results stored in a yaml file."""
     # setup ci_results folder
@@ -308,12 +313,13 @@ def check_all_entities(unittest=False):
             + list(models.SystemModel.objects.all())
         )
         # for faster CI testing:
-        # entity_list = [
-        #     core.get_entity("UXMFA"),  # lorenz
-        #     core.get_entity("CK7EX"),  # four-bar
-        #     core.get_entity("CZKWU"),  # nonlinear_trajectory_electrical_resistance
-        #     core.get_entity("IG3GA"),  # linear transport
-        # ]
+        if fast:
+            entity_list = [
+                core.get_entity("UXMFA"),  # lorenz
+                core.get_entity("CK7EX"),  # four-bar
+                core.get_entity("CZKWU"),  # nonlinear_trajectory_electrical_resistance
+                core.get_entity("IG3GA"),  # linear transport
+            ]
     for entity in entity_list:
         key = entity.key
 
