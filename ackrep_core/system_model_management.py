@@ -464,7 +464,7 @@ def update_parameter_tex(key):
     p_values = [sp.latex(p_sf) for p_sf in parameters.pp_sf]
     # set cells in math-mode
     for i in range(len(p_values)):
-        p_values[i] = "$" + p_values[i] + "$"
+        p_values[i] = "$" + str('{:.{p}g}'.format(float(p_values[i]), p=4))  + "$"
 
     # Define "Range" column
     p_ranges = []
@@ -492,7 +492,7 @@ def update_parameter_tex(key):
             [*parameters.start_columns_list, p_symbols, p_values, p_ranges, *parameters.end_columns_list]
         )
         if "Range" not in parameters.tabular_header:
-            parameters.tabular_header.extend("Range")
+            parameters.tabular_header.append("Range")
 
     else:
         # for backwards compatibility
@@ -646,11 +646,12 @@ def import_parameters(key=None):
         assert len(parameters.pp_range_list) == len(parameters.get_default_parameters()), msg
         for i, (p, v) in enumerate(pp_dict.items()):
             warn = False
-            low, high = parameters.pp_range_list[i]
             if isinstance(parameters.pp_range_list[i], list):
+                low, high = parameters.pp_range_list[i]
                 if not (low <= v and v <= high):
                     warn = True
             elif isinstance(parameters.pp_range_list[i], tuple):
+                low, high = parameters.pp_range_list[i]
                 if not (low < v and v < high):
                     warn = True
 
