@@ -1103,6 +1103,7 @@ def download_and_store_artifacts(branch_name):
     | wget --force-directories --no-host-directories --cut-dirs=6 --verbose --header 'Circle-Token: {circle_token}' \
     --input-file -"""
     ]
+    # 
     # --force-directories       keeps directory structure
     # --no-host-directories     omits directory with host url
     # --cut-dirs=6              omits next 6 directories --> artifact dir
@@ -1110,10 +1111,15 @@ def download_and_store_artifacts(branch_name):
     res = run_command(cmd, logger=logger, capture_output=True, shell=True)
     assert res.returncode == 0, "Unable to collect results from circleci."
 
+    # it is assumed, that the last CI reports on github and the manually downloaded one (artifact) are identical
     repo = Repo(f"{root_path}/ackrep_ci_results")
-    repo.git.reset("--hard")
-    repo.git.clean("-xdf")
+    # run_command(["git", "-C", "./ackrep_ci_results", "fetch"], capture_output=False)
+    # run_command(["git", "-C", "./ackrep_ci_results", "status"], capture_output=False)
+    # for file in repo.untracked_files:
+    #     os.remove(os.path.join(ci_results_path, file))
+    # run_command(["git", "-C", "./ackrep_ci_results", "status"], capture_output=False)
     repo.remotes.origin.pull()
+    # run_command(["git", "-C", "./ackrep_ci_results", "status"], capture_output=False)
 
     os.chdir(save_cwd)
 
@@ -1128,5 +1134,5 @@ docker run --rm -ti -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKR
 downloading artifacts from circle
 curl -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v1.1/project/github/ackrep-org/ackrep_data/latest/artifacts \
    | grep -o 'https://[^"]*' \
-   | wget --verbose --header "Circle-Token: $CIRCLE_TOKEN" --input-file -
+   | wget --force-directories --no-host-directories --cut-dirs=5 --verbose --header "Circle-Token: $CIRCLE_TOKEN" --input-file -
 """

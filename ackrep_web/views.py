@@ -300,17 +300,16 @@ class Webhook(View):
             else:
                 return d
 
-        path = os.path.join(core.root_path, "tmp")
+        path = os.path.join(core.ci_results_path, "history")
         try:
-            files = os.listdir(path)
-            for file_name in files:
-                name, ending = file_name.split(".")
-                if ending == "yaml":
-                    with open(os.path.join(path, file_name)) as file:
-                        results = yaml.load(file, Loader=yaml.FullLoader)
+            file_name = sorted(os.listdir(path), reverse=True)[0]
+            name, ending = file_name.split(".")
+            if ending == "yaml":
+                with open(os.path.join(path, file_name)) as file:
+                    results = yaml.load(file, Loader=yaml.FullLoader)
             content = recursive_table(results)
-        except FileNotFoundError:
-            content = "nothing in the temp folder"
+        except Exception as e:
+            content = str(e)
 
         style = "<style>table, th, td { border: 1px solid black;  border-collapse: collapse; padding: 5px}</style>"
         res = f"""

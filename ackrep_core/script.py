@@ -274,8 +274,8 @@ def check_all_entities(unittest=False, fast=False):
     date = datetime.datetime.now()
     date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
     file_name = "ci_results__" + date_string + ".yaml"
-    file_path = os.path.join(core.root_path, "artifacts", "ackrep_ci_results", "history", file_name)
-    os.makedirs(os.path.join(core.root_path, "artifacts", "ackrep_ci_results", "history"), exist_ok=True)
+    file_path = os.path.join(core.root_path, "artifacts", "ci_results", file_name)
+    os.makedirs(os.path.join(core.root_path, "artifacts", "ci_results"), exist_ok=True)
 
     content = {"commit_logs": {}}
     # save the commits of the current ci job
@@ -314,11 +314,14 @@ def check_all_entities(unittest=False, fast=False):
         )
         # for faster CI testing:
         if fast:
+            core.logger.warning(
+                "--- Using the fast version of check all entities, not all entities will be checked! --- "
+            )
             entity_list = [
-                core.get_entity("UXMFA"),  # lorenz
-                core.get_entity("CK7EX"),  # four-bar
-                core.get_entity("CZKWU"),  # nonlinear_trajectory_electrical_resistance
-                core.get_entity("IG3GA"),  # linear transport
+                core.get_entity("UXMFA"),  # sm lorenz
+                core.get_entity("7WIQH"),  # nb limit cycle van der pol
+                core.get_entity("CZKWU"),  # ps nonlinear_trajectory_electrical_resistance
+                core.get_entity("IG3GA"),  # sm linear transport (pde -> qt)
             ]
     for entity in entity_list:
         key = entity.key

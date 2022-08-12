@@ -304,7 +304,7 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(res.returncode, 1)
 
         # test results.yaml
-        yaml_path = os.path.join(core.root_path, "artifacts", "ackrep_ci_results", "history")
+        yaml_path = os.path.join(core.root_path, "artifacts", "ci_results")
         yamls = os.listdir(yaml_path)
         core.logger.info(yamls)
         self.assertEqual(len(yamls), 1)
