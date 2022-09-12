@@ -359,12 +359,12 @@ class ACKREP_OntologyManager(object):
         for tuples in erk_entitites:
             for e in tuples:
                 # entity is system model
-                if e.R4.R1 == "general system model":
+                try:
                     entity_key = e.get_relations("ct__R2950__has_corresponding_ackrep_key")[0].relation_tuple[2]
                     assert isinstance(entity_key, str)
                     entity = get_entity(entity_key)
                     ackrep_entities.append(entity)
-                else:
+                except KeyError:
                     onto_entites.append(e.R1)
         return ackrep_entities, onto_entites
 
