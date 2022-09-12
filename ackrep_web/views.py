@@ -24,6 +24,7 @@ import hmac
 import json
 from git import Repo
 import pandas as pd
+import pyerk as p
 
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -408,13 +409,12 @@ class SearchSparqlView(View):
         # PREFIX P: <{OM.iri}>
         example_query = twdd(
             f"""
-        # example query: select all possible tags
-
-        PREFIX P: <https://ackrep.org/draft/ocse-prototype01#>
-        SELECT ?entity
+        PREFIX : <{p.rdfstack.ERK_URI}>
+        PREFIX ocse: <erk:/ocse/0.2#>
+        SELECT ?s
         WHERE {{
-          ?entity rdf:type ?type.
-          ?type rdfs:subClassOf* P:OCSE_Entity.
+            ?s :R16 ocse:I7733.
+
         }}
         """
         )
@@ -471,7 +471,7 @@ class DebugView(View):
         res = f"""
         <!DOCTYPE html>
         <b>Debugging page</b><br>
-        
+
         <table>
         {line_str}
         </table>
@@ -630,7 +630,7 @@ class EntityOverView(View):
                 background-clip: padding-box; /* fixes issue with disappearing borders due to background color*/
             }
             table thead {
-                position: sticky; 
+                position: sticky;
                 top: 54;
                 z-index: 2;
             }

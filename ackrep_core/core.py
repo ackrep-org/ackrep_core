@@ -9,7 +9,7 @@ from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
-import json
+import pyerk as p
 from ackrep_core_django_settings import settings
 
 # settings might be accessed from other modules which import this one (core)
@@ -235,98 +235,107 @@ class ACKREP_OntologyManager(object):
         self.OM: ypo.OntologyManager = None
         self.ocse_entity_mapping = {}
 
-    def load_ontology(self, startdir, entity_list: List[models.GenericEntity]) -> None:
-        """
-        load the yml file of the ontology and create instances based on entity_list
-        :param startdir:
-        :param entity_list:    list of ackrep entities
-        :return:
-        """
+    def load_ontology(self, startdir=None, entity_list=None):
+        ERK_ROOT_DIR = p.aux.get_erk_root_dir()
+        TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+        mod1 = p.erkloader.load_mod_from_path(modpath=TEST_DATA_PATH, prefix="ct")
 
-        if isinstance(self.OM, ypo.OntologyManager):
-            # Nothing to do
-            return
+        p.ackrep_parser.parse_ackrep(data_path)
+        self.ds = p.core.ds
+        self.ds.rdfgraph = p.rdfstack.create_rdf_triples()
 
-        assert len(models.ProblemSpecification.objects.all()) > 0, "no ProblemSpecification found"
-        assert len(entity_list) > 0, "empty entity_list"
+    # def load_ontology_old(self, startdir, entity_list: List[models.GenericEntity]) -> None:
+    #     """
+    #     load the yml file of the ontology and create instances based on entity_list
+    #     :param startdir:
+    #     :param entity_list:    list of ackrep entities
+    #     :return:
+    #     """
 
-        path = os.path.join(startdir, "ontology", "ocse-prototype-01.owl.yml")
-        self.OM = ypo.OntologyManager(path, world=ypo.owl2.World())
+    #     if isinstance(self.OM, ypo.OntologyManager):
+    #         # Nothing to do
+    #         return
 
-        mapping = {}
-        for cls in self.OM.n.ACKREP_Entity.subclasses():
-            mapping[cls.name.replace("ACKREP_", "")] = cls
+    #     assert len(models.ProblemSpecification.objects.all()) > 0, "no ProblemSpecification found"
+    #     assert len(entity_list) > 0, "empty entity_list"
 
-        for e in entity_list:
-            cls = mapping.get(type(e).__name__)
-            if cls:
-                # instantiation of owlready classes has side effects -> instances are tracked
-                # noinspection PyUnusedLocal
-                instance = cls(has_entity_key=e.key, name=e.name)
+    #     path = os.path.join(startdir, "ontology", "ocse-prototype-01.owl.yml")
+    #     self.OM = ypo.OntologyManager(path, world=ypo.owl2.World())
 
-                tag_list = util.smart_parse(e.tag_list)
-                assert isinstance(tag_list, list), f"unexpexted type of e.tag_list: {type(tag_list)}"
-                for tag in tag_list:
-                    if tag.startswith("ocse:"):
-                        ocse_concept_name = tag.replace("ocse:", "")
+    #     mapping = {}
+    #     for cls in self.OM.n.ACKREP_Entity.subclasses():
+    #         mapping[cls.name.replace("ACKREP_", "")] = cls
 
-                        # see yamlpyowl doc (README) wrt proxy_individuals
-                        proxy_individual_name = f"i{ocse_concept_name}"
-                        res = self.OM.onto.search(iri=f"*{proxy_individual_name}")
-                        if not len(res) == 1:
-                            msg = f"Unknown tag: {tag}. Maybe a spelling error?"
-                            raise NameError(msg)
-                        proxy_individual = res[0]
-                        instance.has_ontology_based_tag.append(proxy_individual)
-                    # IPS(e.key == "M4PDA")
-            else:
-                logger.warning(f"unknown entity type: {e}")
+    #     for e in entity_list:
+    #         cls = mapping.get(type(e).__name__)
+    #         if cls:
+    #             # instantiation of owlready classes has side effects -> instances are tracked
+    #             # noinspection PyUnusedLocal
+    #             instance = cls(has_entity_key=e.key, name=e.name)
 
-        if len(list(self.OM.n.ACKREP_ProblemSolution.instances())) == 0:
-            msg = "Instances of ACKREP_ProblemSolution are missing. This is unexpected."
-            IPS()
-            raise ValueError(msg)
+    #             tag_list = util.smart_parse(e.tag_list)
+    #             assert isinstance(tag_list, list), f"unexpexted type of e.tag_list: {type(tag_list)}"
+    #             for tag in tag_list:
+    #                 if tag.startswith("ocse:"):
+    #                     ocse_concept_name = tag.replace("ocse:", "")
 
-        for ocse_entity in self.OM.n.OCSE_Entity.instances():
-            self.ocse_entity_mapping[ocse_entity.name] = ocse_entity
+    #                     # see yamlpyowl doc (README) wrt proxy_individuals
+    #                     proxy_individual_name = f"i{ocse_concept_name}"
+    #                     res = self.OM.onto.search(iri=f"*{proxy_individual_name}")
+    #                     if not len(res) == 1:
+    #                         msg = f"Unknown tag: {tag}. Maybe a spelling error?"
+    #                         raise NameError(msg)
+    #                     proxy_individual = res[0]
+    #                     instance.has_ontology_based_tag.append(proxy_individual)
+    #                 # IPS(e.key == "M4PDA")
+    #         else:
+    #             logger.warning(f"unknown entity type: {e}")
 
-        self.generate_bottom_up_tag_relations()
+    #     if len(list(self.OM.n.ACKREP_ProblemSolution.instances())) == 0:
+    #         msg = "Instances of ACKREP_ProblemSolution are missing. This is unexpected."
+    #         IPS()
+    #         raise ValueError(msg)
 
-    def generate_bottom_up_tag_relations(self) -> None:
-        """
-        Tags should be as specific as possible, e.g. if applicable `Linear_State_Space_System` is prefererred over
-        `State_Space_System`. However, as every Linear_State_Space_System also is a State_Space_System, a search for the
-        latter (more general tag) should also contain entities which are tagged with the former (more special tag).
+    #     for ocse_entity in self.OM.n.OCSE_Entity.instances():
+    #         self.ocse_entity_mapping[ocse_entity.name] = ocse_entity
 
-        This is achieved by this function which automatically adds tags of superclasses.
+    #     self.generate_bottom_up_tag_relations()
 
-        :return:    None
-        """
+    # def generate_bottom_up_tag_relations(self) -> None:
+    #     """
+    #     Tags should be as specific as possible, e.g. if applicable `Linear_State_Space_System` is prefererred over
+    #     `State_Space_System`. However, as every Linear_State_Space_System also is a State_Space_System, a search for the
+    #     latter (more general tag) should also contain entities which are tagged with the former (more special tag).
 
-        for ackrep_entity, ocse_entity in self.OM.n.has_ontology_based_tag.get_relations():
-            ocse_class = ocse_entity.is_a[0]
-            self._recursively_add_tags(ackrep_entity, ocse_class)
+    #     This is achieved by this function which automatically adds tags of superclasses.
 
-    def _recursively_add_tags(self, ackrep_entity: ypo.Thing, ocse_class: ypo.owl2.ThingClass) -> None:
+    #     :return:    None
+    #     """
 
-        final_class = self.OM.n.OCSE_Entity
-        if ocse_class == final_class:
-            return
+    #     for ackrep_entity, ocse_entity in self.OM.n.has_ontology_based_tag.get_relations():
+    #         ocse_class = ocse_entity.is_a[0]
+    #         self._recursively_add_tags(ackrep_entity, ocse_class)
 
-        parent_classes = ocse_class.is_a
-        assert len(parent_classes) == 1  # ensure asserted single inheritance (otherwise things get more complicated)
-        parent_class = parent_classes[0]
-        # this is faster then access via the ontology
-        proxy_individual_name = f"i{parent_class.name}"
-        proxy_individual = self.ocse_entity_mapping.get(proxy_individual_name)
+    # def _recursively_add_tags(self, ackrep_entity: ypo.Thing, ocse_class: ypo.owl2.ThingClass) -> None:
 
-        if proxy_individual is None:
-            msg = f"could not find {proxy_individual_name} in the ontology"
-            raise NameError(msg)
+    #     final_class = self.OM.n.OCSE_Entity
+    #     if ocse_class == final_class:
+    #         return
 
-        ackrep_entity.has_ontology_based_tag.append(proxy_individual)
+    #     parent_classes = ocse_class.is_a
+    #     assert len(parent_classes) == 1  # ensure asserted single inheritance (otherwise things get more complicated)
+    #     parent_class = parent_classes[0]
+    #     # this is faster then access via the ontology
+    #     proxy_individual_name = f"i{parent_class.name}"
+    #     proxy_individual = self.ocse_entity_mapping.get(proxy_individual_name)
 
-        self._recursively_add_tags(ackrep_entity, parent_class)
+    #     if proxy_individual is None:
+    #         msg = f"could not find {proxy_individual_name} in the ontology"
+    #         raise NameError(msg)
+
+    #     ackrep_entity.has_ontology_based_tag.append(proxy_individual)
+
+    #     self._recursively_add_tags(ackrep_entity, parent_class)
 
     def get_list_of_all_ontology_based_tags(self):
         qsrc = f"""PREFIX P: <{self.OM.iri}>
@@ -339,32 +348,52 @@ class ACKREP_OntologyManager(object):
         res = list(self.OM.make_query(qsrc))
         return res
 
-    def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> (list, list):
-        """
-
-        :param qsrc:    sparl source of the query
-        :param raw:     flag to return the complete result in onto_entites
-
-        :return:        2-tuple of lists: (ackrep_entities, onto_entites)
-                        (onto_entites contains everything which is not an ACKREP_Entity)
-        """
-
-        self.load_ontology(data_path, entity_list=model_utils.all_entities())
-
-        assert isinstance(self.OM, ypo.OntologyManager)
-        res = list(self.OM.make_query(qsrc))
-        if raw:
-            return [], res
+    def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> list:
+        self.load_ontology()
+        res = self.ds.rdfgraph.query(qsrc)
+        erk_entitites = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
 
         ackrep_entities = []
         onto_entites = []
-        for onto_nty in res:
-            ae, oe = self.wrap_onto_entity(onto_nty)
-            if ae is not None:
-                ackrep_entities.append(ae)
-            if oe is not None:
-                onto_entites.append(oe)
+
+        for tuples in erk_entitites:
+            for e in tuples:
+                # entity is system model
+                if e.R4.R1 == "general system model":
+                    entity_key = e.get_relations("ct__R2950__has_corresponding_ackrep_key")[0].relation_tuple[2]
+                    assert isinstance(entity_key, str)
+                    entity = get_entity(entity_key)
+                    ackrep_entities.append(entity)
+                else:
+                    onto_entites.append(e.R1)
         return ackrep_entities, onto_entites
+
+    # def run_sparql_query_and_translate_result_old(self, qsrc, raw=False) -> (list, list):
+    #     """
+
+    #     :param qsrc:    sparl source of the query
+    #     :param raw:     flag to return the complete result in onto_entites
+
+    #     :return:        2-tuple of lists: (ackrep_entities, onto_entites)
+    #                     (onto_entites contains everything which is not an ACKREP_Entity)
+    #     """
+
+    #     self.load_ontology(data_path, entity_list=model_utils.all_entities())
+
+    #     assert isinstance(self.OM, ypo.OntologyManager)
+    #     res = list(self.OM.make_query(qsrc))
+    #     if raw:
+    #         return [], res
+
+    #     ackrep_entities = []
+    #     onto_entites = []
+    #     for onto_nty in res:
+    #         ae, oe = self.wrap_onto_entity(onto_nty)
+    #         if ae is not None:
+    #             ackrep_entities.append(ae)
+    #         if oe is not None:
+    #             onto_entites.append(oe)
+    #     return ackrep_entities, onto_entites
 
     def wrap_onto_entity(self, onto_nty):
         """
