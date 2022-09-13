@@ -1,10 +1,18 @@
 import argparse
 import subprocess
 import pprint
+import time
+import datetime
 import questionary
 import platform
 from django.core import management
 from django.conf import settings
+import yaml
+from git import Repo
+import shutil
+import signal
+import subprocess
+import numpy as np
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -17,6 +25,10 @@ activate_ips_on_exception()
 from . import core
 from . import models
 from .util import *
+
+# timeout setup for entity check timeout, see https://stackoverflow.com/a/494273
+if os.name != "nt":
+    signal.signal(signal.SIGALRM, timeout_handler)
 
 
 def main():
@@ -38,11 +50,11 @@ def main():
         + "using correct environment specification (docker)",
     )
     argparser.add_argument(
-        "--check-all-solutions", help="check all solutions (may take some time)", action="store_true"
+        "--check-all-entities",
+        help="check all entities (solutions and models) (may take some time)",
+        action="store_true",
     )
-    argparser.add_argument(
-        "--check-all-system-models", help="check all system models (may take some time)", action="store_true"
-    )
+    argparser.add_argument("-da", "--download-artifacts", help="download artifacts from CI", action="store_true")
     argparser.add_argument(
         "--update-parameter-tex",
         metavar="metadatafile",
@@ -52,6 +64,12 @@ def main():
         "--create-pdf",
         metavar="metadatafile",
         help="create pdf of system model from tex file (system model entity is specified by metadata file or key)",
+    )
+    argparser.add_argument(
+        "-uap",
+        "--update-all-pdfs",
+        help="update all pdfs of all system models from tex files",
+        action="store_true",
     )
     argparser.add_argument(
         "--create-system-model-list-pdf",
@@ -70,10 +88,9 @@ def main():
     argparser.add_argument(
         "--bootstrap-test-db", help="delete database for unittests and recreate it (without data)", action="store_true"
     )
-    argparser.add_argument("--start-workers", help="start the celery workers", action="store_true")
     argparser.add_argument(
         "--prepare-script",
-        help="render the execscript and place it in the docker transfer folder (specified by path to metadata file or key)",
+        help="render the execscript and place it in the docker ackrep_data folder (specified by path to metadata file or key)",
         metavar="metadatafile",
     )
     argparser.add_argument(
@@ -83,6 +100,17 @@ def main():
         help="Start an interactive session with a docker container of an environment image of your choice."
         + "Environment key must be specified. Additional arguments ('a; b; c') for inside the env are optional.",
         metavar="key",
+    )
+    argparser.add_argument(
+        "--jupyter",
+        help="start jupyter server in environment with given key",
+        metavar="key",
+    )
+    argparser.add_argument(
+        "-p",
+        "--pull-and-show-envs",
+        help="pull env images and print infos (mainly used in CI run)",
+        action="store_true",
     )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
@@ -105,6 +133,17 @@ def main():
 
     argparser.add_argument(
         "--test-logging", help="print out some dummy messages for each logging category", action="store_true"
+    )
+    argparser.add_argument(
+        "--unittest",
+        "-ut",
+        help="some commands use this flag to behave differently during unittests",
+        action="store_true",
+    )
+    argparser.add_argument(
+        "--fast",
+        help="some commands use this flag to behave speed up CI job",
+        action="store_true",
     )
 
     args = argparser.parse_args()
@@ -144,10 +183,12 @@ def main():
     elif args.check_with_docker:
         metadatapath = args.check_with_docker
         check_with_docker(metadatapath)
-    elif args.check_all_solutions:
-        check_all_solutions()
-    elif args.check_all_system_models:
-        check_all_system_models()
+    elif args.check_all_entities:
+        check_all_entities(args.unittest, args.fast)
+    elif args.download_artifacts:
+        download_artifacts()
+    elif args.pull_and_show_envs:
+        pull_and_show_envs()
     elif args.get_metadata_abs_path_from_key:
         key = args.get_metadata_abs_path_from_key
         exitflag = not args.show_debug
@@ -162,6 +203,8 @@ def main():
     elif args.create_pdf:
         metadatapath = args.create_pdf
         create_pdf(metadatapath)
+    elif args.update_all_pdfs:
+        update_all_pdfs()
     elif args.create_system_model_list_pdf:
         create_system_model_list_pdf()
     elif args.metadata or args.md:
@@ -188,14 +231,15 @@ def main():
         core.send_log_messages()
     elif args.version:
         print("Version", release.__version__)
-    elif args.start_workers:
-        start_workers()
     elif args.prepare_script:
         metadatapath = args.prepare_script
         prepare_script(metadatapath)
     elif args.run_interactive_environment:
         args = args.run_interactive_environment
         run_interactive_environment(args)
+    elif args.jupyter:
+        key = args.jupyter
+        run_jupyter(key)
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -223,41 +267,123 @@ def create_new_entity():
     core.convert_dict_to_yaml(field_values, target_path=path)
 
 
-def check_all_solutions():
+def check_all_entities(unittest=False, fast=False):
+    """this function is called during CI.
+    All (checkable) entities are checked and the results stored in a yaml file."""
+    # setup ci_results folder
+    date = datetime.datetime.now()
+    date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
+    file_name = "ci_results__" + date_string + ".yaml"
+    file_path = os.path.join(core.root_path, "artifacts", "ci_results", file_name)
+    os.makedirs(os.path.join(core.root_path, "artifacts", "ci_results"), exist_ok=True)
+
+    content = {"commit_logs": {}}
+    # save the commits of the current ci job
+    current_data_repo = os.path.split(data_path)[-1]
+    for repo_name in [current_data_repo, "ackrep_core"]:
+        repo = Repo(f"{root_path}/{repo_name}")
+        commit = repo.commit("HEAD")
+        commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(commit.committed_date))
+        log_dict = {
+            "date": commit_date,
+            "branch": repo.active_branch.name,
+            "sha": commit.hexsha,
+            "message": commit.summary,
+            "author": commit.author.name,
+        }
+        content["commit_logs"][repo_name] = log_dict
+
+    content["ci_logs"] = {}
+    # log some info about the ci run (url)
+    if os.environ.get("CIRCLECI"):
+        content["ci_logs"]["build_url"] = os.environ.get("CIRCLE_BUILD_URL")
+        content["ci_logs"]["build_number"] = os.environ.get("CIRCLE_BUILD_NUM")
+
+    with open(file_path, "a") as file:
+        yaml.dump(content, file)
 
     returncodes = []
-    for ps in models.ProblemSolution.objects.all():
-        # res = check(ps.key, exitflag=False)
+    failed_entities = []
+    if unittest:
+        entity_list = [core.get_entity("UXMFA"), core.get_entity("LRHZX"), core.get_entity("7WIQH")]
+    else:
+        entity_list = (
+            list(models.Notebook.objects.all())
+            + list(models.ProblemSolution.objects.all())
+            + list(models.SystemModel.objects.all())
+        )
+        # for faster CI testing:
+        if fast:
+            core.logger.warning(
+                "--- Using the fast version of check all entities, not all entities will be checked! --- "
+            )
+            entity_list = [
+                core.get_entity("UXMFA"),  # sm lorenz
+                core.get_entity("7WIQH"),  # nb limit cycle van der pol
+                core.get_entity("CZKWU"),  # ps nonlinear_trajectory_electrical_resistance
+                core.get_entity("IG3GA"),  # sm linear transport (pde -> qt)
+            ]
+    for entity in entity_list:
+        key = entity.key
 
-        res = check_with_docker(ps.key, exitflag=False)
+        start_time = time.time()
+        res = check_with_docker(key, exitflag=False)
+        runtime = round(time.time() - start_time, 1)
+
+        result = res.returncode
+        # collect the created data files (plots, htmls, ...) and place them in the artifact folder for later download
+        if res.returncode == 0:
+            issues = ""
+
+            # copy plot or notebook to collection directory
+            dest_dir_plots = os.path.join(core.root_path, "artifacts", "ackrep_plots")
+            dest_dir_notebooks = os.path.join(core.root_path, "artifacts", "ackrep_notebooks")
+
+            if isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel):
+                # copy entire folder since there could be multiple images with arbitrary names
+                src = f"dummy:/code/{entity.base_path}/_data/."
+                dest_folder = os.path.join(dest_dir_plots, key)
+                dest = dest_folder
+            elif isinstance(entity, models.Notebook):
+                html_file_name = entity.notebook_file.replace(".ipynb", ".html")
+                src = f"dummy:/code/{entity.base_path}/{html_file_name}"
+                dest_folder = os.path.join(dest_dir_notebooks, key)
+                dest = os.path.join(dest_folder, html_file_name)
+            else:
+                raise TypeError(f"{key} is not of a checkable type")
+
+            os.makedirs(dest_folder, exist_ok=True)
+            # docker cp has to be used, see https://circleci.com/docs/2.0/building-docker-images#mounting-folders
+            run_command(["docker", "cp", src, dest], logger=core.logger)
+
+            # remove tex and pdf files to prevent them being copied
+            for file in os.listdir(dest_folder):
+                if not (".png" in file or ".html" in file):
+                    os.remove(os.path.join(dest_folder, file))
+
+        else:
+            issues = res.stdout
+        date_string = date.strftime("%Y-%m-%d %H:%M:%S")
+
+        content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date_string}}
+
+        if "Calculated with " in res.stdout:
+            version = res.stdout.split("Calculated with ")[-1].split("\n\n")[0]
+            content[key]["env_version"] = version
+
+        with open(file_path, "a") as file:
+            yaml.dump(content, file)
+
         returncodes.append(res.returncode)
+        if res.returncode != 0:
+            failed_entities.append(key)
         print("---")
 
-    if returncodes == 0:
-        print(bgreen("All checks successfull."))
+    if sum(returncodes) == 0:
+        print(bgreen(f"All {len(entity_list)} checks successfull."))
     else:
-        print(bred("Some check failed."))
-
-    exit(sum(returncodes))
-
-
-def check_all_system_models():
-
-    returncodes = []
-    for sm in models.SystemModel.objects.all():
-        # res = check(sm.key, exitflag=False)
-        if sm.key == "YHS5B":
-            print("skipping mmc!")
-            print("---")
-            continue
-        res = check_with_docker(sm.key, exitflag=False)
-        returncodes.append(res.returncode)
-        print("---")
-
-    if returncodes == 0:
-        print(bgreen("All checks successfull."))
-    else:
-        print(bred("Some check failed."))
+        print(bred(f"{len(failed_entities)}/{len(entity_list)} checks failed."))
+        print("Failed entities:", failed_entities)
 
     exit(sum(returncodes))
 
@@ -273,10 +399,35 @@ def check(arg0: str, exitflag: bool = True):
 
     entity, key = get_entity_and_key(arg0)
 
-    assert isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel)
+    assert isinstance(
+        entity, (models.ProblemSolution, models.SystemModel, models.Notebook)
+    ), f"No support for entity with type {type(entity)}."
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
-    res = core.check_generic(key=key)
+
+    # set timeout
+    signal.alarm(settings.ENTITY_TIMEOUT)
+    try:
+        if isinstance(entity, (models.ProblemSolution, models.SystemModel)):
+            cmd = [f"core.check_generic(key={key}"]
+            res = core.check_generic(key=key)
+        elif isinstance(entity, models.Notebook):
+            path = os.path.join(core.root_path, entity.base_path, entity.notebook_file)
+            cmd = ["jupyter", "nbconvert", "--execute", "--to", "html", path]
+            res = run_command(cmd, logger=core.logger, capture_output=False)
+        else:
+            raise NotImplementedError
+    except TimeoutError as exc:
+        msg = f"Entity calculation reached timeout ({settings.ENTITY_TIMEOUT}s)."
+        core.logger.error(msg)
+        res = subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr=f"Entity check timed out.\n{exc}")
+
+    # cancel timeout
+    signal.alarm(0)
+
+    env_version = get_environment_version(entity)
+    if env_version != "Unknown":
+        print(f"\nCalculated with {env_version}\n")
 
     if res.returncode == 0:
         print(bgreen("Success."))
@@ -291,6 +442,26 @@ def check(arg0: str, exitflag: bool = True):
         return res
 
 
+def get_environment_version(entity: models.GenericEntity):
+    try:
+        env_key = entity.compatible_environment
+        if env_key == "" or env_key is None:
+            env_key = settings.DEFAULT_ENVIRONMENT_KEY
+        env_name = core.get_entity(env_key).name
+        dockerfile_name = "Dockerfile_" + env_name
+        path = os.path.join(core.root_path, dockerfile_name)
+        with open(path, "r") as docker_file:
+            lines = docker_file.readlines()
+        if "LABEL" in lines[-1]:
+            version = lines[-1].split('org.opencontainers.image.description "')[-1].split(". |")[0]
+        else:
+            version = "Unknown"
+    except:
+        version = "Unknown"
+
+    return version
+
+
 def check_with_docker(arg0: str, exitflag: bool = True):
     """run the correct environment specification
 
@@ -302,12 +473,15 @@ def check_with_docker(arg0: str, exitflag: bool = True):
 
     entity, key = get_entity_and_key(arg0)
 
-    assert isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel)
+    assert isinstance(
+        entity, (models.ProblemSolution, models.SystemModel, models.Notebook)
+    ), f"No support for entity with type {type(entity)}."
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
     res = core.check(key=key)
 
     if res.returncode == 0:
+        print(res.stdout)
         print(bgreen("Success."))
     elif res.returncode == 2:
         print(yellow("Inaccurate."))
@@ -383,6 +557,43 @@ def create_pdf(arg0: str, exitflag: bool = True):
         exit(res.returncode)
     else:
         return res
+
+
+def update_all_pdfs():
+    """
+
+    :param arg0:        either an entity key or the path to the respective metadata.yml
+    :param exitflag:    determine whether the program should exit at the end of this function
+
+    :return:            container of subprocess.run (if exitflag == False)
+    """
+    failed_entities = []
+    entity_list = list(models.SystemModel.objects.all())
+    for e in entity_list:
+        print(bright(e))
+        try:
+            core.check_generic(e.key)
+        except:
+            print(bred("Could not check entity, plot may not be up to date."))
+
+        try:
+            system_model_management.update_parameter_tex(e.key)
+        except:
+            print("Parameter update Error, maybe entity doesnt have params?")
+        res = system_model_management.create_pdf(key=e.key)
+        if res.returncode == 0:
+            print(bgreen("Success."))
+        else:
+            print(bred("Fail."))
+            failed_entities.append(e.key)
+
+    if len(failed_entities) == 0:
+        print(bgreen(f"All {len(entity_list)} builds successfull."))
+    else:
+        print(bred(f"{len(failed_entities)}/{len(entity_list)} builds failed."))
+        print("Failed entities:", failed_entities)
+
+    exit(len(failed_entities))
 
 
 def create_system_model_list_pdf(exitflag: bool = True):
@@ -497,15 +708,8 @@ def bootstrap_db(db: str) -> None:
     os.chdir(old_workdir)
 
 
-def start_workers():
-    try:
-        res = subprocess.run(["celery", "-A", "ackrep_web", "worker", "--loglevel=INFO", "-c" "4"])
-    except KeyboardInterrupt:
-        exit(0)
-
-
 def prepare_script(arg0):
-    """prepare exexscript and place it in transfer folder
+    """prepare exexscript and place it in ackrep_data folder
 
     Args:
         arg0 (str): entity key or metadata path
@@ -513,14 +717,14 @@ def prepare_script(arg0):
     _, key = get_entity_and_key(arg0)
 
     entity, c = core.get_entity_context(key)
-    scriptpath = "/ackrep_transfer"
+    scriptpath = os.path.join(core.root_path, "ackrep_data")
     core.create_execscript_from_template(entity, c, scriptpath=scriptpath)
 
     print(bgreen("Success."))
 
 
 def run_interactive_environment(args):
-    """get imagename, create transfer direktory, change permissions, start container"""
+    """get imagename, start container"""
     if platform.system() != "Linux":
         msg = f"No support for {platform.system()}"
         raise NotImplementedError(msg)
@@ -528,40 +732,121 @@ def run_interactive_environment(args):
     entity, key = get_entity_and_key(args[0])
     msg = f"{key} is not an EnvironmentSpecification key."
     assert isinstance(entity, models.EnvironmentSpecification), msg
-    image_name = "ghcr.io/ackrep-org/" + entity.name
     print("\nRunning Interactive Docker Container. To Exit, press Ctrl+D.\n")
-    old_cwd = os.getcwd()
-    os.chdir(core.root_path)
-    transfer_folder_name = "ackrep_transfer"
-    os.makedirs(transfer_folder_name, exist_ok=True)
-    # TODO: dynamic gid
-    try:
-        os.chown("ackrep_transfer", -1, 999)
-    except PermissionError:
-        core.logger.warning("Unable to change permissions for transfer folder.")
-    # if host is windows, path still needs to have unix seps for inside container
-    vol_host_path = os.path.join(core.root_path, transfer_folder_name)
-    vol_container_path = "/code/" + transfer_folder_name
-    vol_mapping = f"{vol_host_path}:{vol_container_path}"
 
-    cmd = ["docker", "run", "-ti", "--rm"]
+    container_id = core.start_idle_container(entity.name, try_to_use_local_image=False)
 
-    cmd.extend(core.get_docker_env_vars())
-
-    cmd.extend(core.get_data_repo_host_address())
-
-    cmd.extend(["-v", vol_mapping, image_name])
+    core.logger.info(f"Ackrep command running in Container: {container_id}")
+    host_uid = core.get_host_uid()
+    cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
 
     if len(args) == 1:
-        cmd.extend(["/bin/bash", "-c", "cd ../; mc"])
+        cmd.extend(["/bin/bash"])
     else:
         c = " ".join(args[1:])
         cmd.extend(["/bin/bash", "-c", c])
 
     print(cmd)
-    res = subprocess.run(cmd)
+    res = run_command(cmd, capture_output=False)
+
+    print("Shutting down container...")
+    run_command(["docker", "stop", container_id], logger=core.logger, capture_output=True)
 
     return res.returncode
+
+
+def run_jupyter(key):
+    """run jupyter server out of docker environment container
+    jupyter notebook --notebook-dir=/code/ackrep_data --ip='*' --port=8888 --no-browser --allow-root
+    """
+
+    entity, key = get_entity_and_key(key)
+    msg = f"{key} is not an EnvironmentSpecification key."
+    assert isinstance(entity, models.EnvironmentSpecification), msg
+
+    # run_command([f"docker stop $(docker ps --filter name={entity.name} -q)"], shell=True)
+    find_cmd = ["docker", "ps", "--filter", f"name={entity.name}", "-q"]
+    res = run_command(find_cmd, capture_output=True)
+    if len(res.stdout) > 0:
+        ids = res.stdout.split("\n")[:-1]
+        for i in ids:
+            stop_cmd = ["docker", "stop", i]
+            run_command(stop_cmd, capture_output=True)
+
+    print("\nRunning Jupyter Server in Docker Container. To Stop the Server, press Ctrl+C twice.")
+    print("To access the Notebook, click one of the provided links below.\n")
+
+    port_dict = {8888: 8888}
+    container_id = core.start_idle_container(entity.name, try_to_use_local_image=True, port_dict=port_dict)
+
+    core.logger.info(f"Ackrep command running in Container: {container_id}")
+    host_uid = core.get_host_uid()
+    cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
+
+    cmd.extend(
+        [
+            "jupyter",
+            "notebook",
+            "--notebook-dir=/code/ackrep_data",
+            "--ip='*'",
+            "--port=8888",
+            "--no-browser",
+            "--allow-root",
+        ]
+    )
+
+    print(cmd)
+    res = run_command(cmd, capture_output=False)
+
+    print("Shutting down container...")
+    run_command(["docker", "stop", container_id], logger=core.logger, capture_output=True)
+
+    return res.returncode
+
+
+def download_artifacts():
+    core.download_and_store_artifacts(settings.ACKREP_DATA_BRANCH)
+    print(bgreen("Done."))
+
+
+def pull_and_show_envs():
+    """this function pulls the most recent environment version and prints out information about this version
+    it is primarily used inside the docker container to ensure image validity"""
+    entities = list(models.EnvironmentSpecification.objects.all())
+    print("\nEnvironment Infos:\n")
+    for entity in entities:
+        env_key = entity.key
+        env_name = entity.name
+
+        dockerfile_name = "Dockerfile_" + env_name
+        # pull most recent image
+        cmd = ["docker", "pull", f"ghcr.io/ackrep-org/{env_name}:latest"]
+        pull = run_command(cmd, core.logger, capture_output=True)
+        # get version info of image
+        if os.environ.get("CI") == "true":
+            dockerfile_path = f"../{dockerfile_name}"
+        else:
+            dockerfile_path = os.path.join(root_path, "ackrep_deployment/dockerfiles/ackrep_core", dockerfile_name)
+        cmd = [
+            "docker",
+            "run",
+            "--entrypoint",
+            "tail",
+            f"ghcr.io/ackrep-org/{env_name}:latest",
+            "-1",
+            dockerfile_path,
+        ]
+        res = run_command(cmd, core.logger, capture_output=True)
+        infos = res.stdout.split('org.opencontainers.image.description "')[-1].split("|")
+
+        print(f"{env_name} ({env_key}):")
+        row_template = "  {}"
+        for info in infos:
+            print(row_template.format(info))
+        print()
+    default_key = settings.DEFAULT_ENVIRONMENT_KEY
+    default_name = core.get_entity(default_key).name
+    print(f"Default environment is {default_name} ({default_key})\n")
 
 
 def get_entity_and_key(arg0):

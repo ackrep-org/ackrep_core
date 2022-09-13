@@ -1,7 +1,6 @@
 import os
 import sys
-import platform
-import subprocess
+import yaml
 
 from unittest import skipIf, skipUnless
 from django.test import TestCase as DjangoTestCase, SimpleTestCase
@@ -25,7 +24,7 @@ The order of classes in the file reflects the execution order, see also
 Possibilities to run (some of) the tests:
 
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core`
-`python manage.py test --keepdb --nocapture ackrep_core.test.test_core`
+`python manage.py test --keepdb -v 2 --nocapture ackrep_core.test.test_core`
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases1`
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases3.test_get_metadata_path_from_key`
 
@@ -46,8 +45,14 @@ os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core",
 # (comment out for debugging)
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
+# inform the core module which path it should consinder as results repo
+ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
+    core.root_path, "ackrep_ci_results_for_unittests"
+)
+os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
+
 # use `git log -1` to display the full hash
-default_repo_head_hash = "353225c64f2d74aa76685d1be4b05ed72088446b"  # 2022-06-07 branch for_unittests
+default_repo_head_hash = "63eee0f6f077e02c52df9412ac242471cae1088c"  # 2022-08-08 branch for_unittests
 
 
 class TestCases1(DjangoTestCase):
@@ -238,7 +243,7 @@ class TestCases3(SimpleTestCase):
         self.assertEquals(entity.oc.method_package_list[0].key, "UENQQ")
         self.assertTrue(entity.oc.predecessor_key is None)
 
-        default_env = core.model_utils.get_entity("YJBOX")
+        default_env = core.model_utils.get_entity(core.settings.DEFAULT_ENVIRONMENT_KEY)
         # TODO: this should be activated when ackrep_data is fixed
         if 0:
             self.assertTrue(isinstance(entity.oc.compatible_environment, core.models.EnvironmentSpecification))
@@ -279,6 +284,61 @@ class TestCases3(SimpleTestCase):
         # ensure repo is clean again
         # TODO: remove this if png is removed from repo
         reset_repo(ackrep_data_test_repo_path)
+
+    def test_check_notebook(self):
+
+        # run via commandline
+        os.chdir(ackrep_data_test_repo_path)
+
+        # this assumes the acrep script to be available in $PATH
+        res = run_command(["ackrep", "-cwd", "7WIQH"])
+        self.assertEqual(res.returncode, 0)
+
+        # ensure repo is clean again
+        reset_repo(ackrep_data_test_repo_path)
+
+    def test_check_all_entities(self):
+        # this test only works in ci, not locally, due to the way plots are copied (docker cp dummy -> artifacts)
+        res = run_command(["ackrep", "--check-all-entities", "-ut"])
+        core.logger.info(res)
+        self.assertEqual(res.returncode, 1)
+
+        # test results.yaml
+        yaml_path = os.path.join(core.root_path, "artifacts", "ci_results")
+        yamls = os.listdir(yaml_path)
+        core.logger.info(yamls)
+        self.assertEqual(len(yamls), 1)
+        with open(os.path.join(yaml_path, yamls[0])) as file:
+            results = yaml.load(file, Loader=yaml.FullLoader)
+        self.assertIn("ackrep_core", results["commit_logs"].keys())
+        self.assertIn("ackrep_data_for_unittests", results["commit_logs"].keys())
+        self.assertEqual(results["UXMFA"]["result"], 0)
+        self.assertEqual(results["LRHZX"]["result"], 1)
+        self.assertIn("SyntaxError", results["LRHZX"]["issues"])
+
+        # test plots
+        plot_path = "../artifacts/ackrep_plots/UXMFA"
+        plots = os.listdir(plot_path)
+        self.assertEqual(len(plots), 1)
+        self.assertEqual("plot.png", plots[0])
+
+    def test_check_with_docker(self):
+        # first: run directly
+        # when testing locally, also test local image
+        if os.environ.get("CI") != "true":
+            res = core.check("UXMFA")
+            if res.returncode != 0:
+                print(res.stdout)
+            self.assertEqual(res.returncode, 0)
+        # test remote image
+        res = core.check("UXMFA", try_to_use_local_image=False)
+        if res.returncode != 0:
+            print(res.stdout)
+        self.assertEqual(res.returncode, 0)
+
+        # second: run via commandline
+        res = run_command(["ackrep", "-cwd", "UXMFA"])
+        self.assertEqual(res.returncode, 0)
 
     def test_check_key(self):
         res = run_command(["ackrep", "--key"])
@@ -375,12 +435,12 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(res, [problem_sol1])
 
     def test_get_related_problems(self):
-        system_model = core.model_utils.get_entity("UXMFA")
-        problem_spec = core.model_utils.get_entity("S2V8V")
+        system_model = core.model_utils.get_entity("BID9I")
+        problem_spec = core.model_utils.get_entity("H9FRP")
 
         res = system_model.related_problems_list()
 
-        self.assertEqual(res, [problem_spec])
+        self.assertIn(problem_spec, res)
 
     def test_entity_tag_list(self):
         e = core.model_utils.all_entities()[0]
@@ -468,7 +528,7 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-c", "UXMFA"], supress_error_message=True)
+        res = run_command(["ackrep", "-c", "UXMFA"])
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
@@ -497,7 +557,7 @@ class TestCases3(SimpleTestCase):
         file.close()
 
         # test for retcode != 0
-        res = run_command(["ackrep", "-c", "UKJZI"], supress_error_message=True)
+        res = run_command(["ackrep", "-c", "UKJZI"])
         self.assertEqual(res.returncode, 1)
 
         # check error message for existance (and readability?)
@@ -509,12 +569,31 @@ class TestCases3(SimpleTestCase):
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)
 
+        ## test error messages of notebooks
+        # test for retcode != 0 (entity already broken)
+        res = run_command(["ackrep", "-cwd", "ARMBC"])
+        self.assertEqual(res.returncode, 1)
+
+        # check error message for existance (and readability?)
+
+        expected_error_infos = ["ZeroDivisionError", "In [2]", "<cell line: 3>"]
+        for info in expected_error_infos:
+            self.assertIn(info, res.stdout)
+
+        # reset unittest_repo
+        reset_repo(ackrep_data_test_repo_path)
+
     def test_run_interactive_environment(self):
-        cmd = ["ackrep", "--run-interactive-environment", "YJBOX", "ackrep -c UXMFA; cd ../; ls; cd ackrep_data; ls"]
-        res = run_command(cmd, capture_output=True)
-        core.logger.debug(res)
+        cmd = [
+            "ackrep",
+            "--run-interactive-environment",
+            core.settings.DEFAULT_ENVIRONMENT_KEY,
+            "ackrep -c UXMFA; \
+            cd ../; ls; cd ackrep_data_for_unittests; ls",
+        ]
+        res = run_command(cmd, logger=core.logger, capture_output=True)
         self.assertEqual(res.returncode, 0)
-        expected_directories = ["ackrep_transfer", "Success"]
+        expected_directories = ["system_models", "Success"]
         for info in expected_directories:
             self.assertIn(info, res.stdout)
 

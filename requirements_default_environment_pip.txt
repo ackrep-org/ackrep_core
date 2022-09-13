@@ -1,0 +1,16 @@
+# This file contains requirements which are only used by some SolutionMethods
+# they should be migrated to the environment specification
+# installable with pip
+numpy
+scipy
+matplotlib
+sympy
+ipydex
+symbtools
+control
+pyblocksim
+pyinduct
+ipympl
+ipywidgets
+nbmake
+pysindy

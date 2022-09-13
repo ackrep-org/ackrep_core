@@ -14,9 +14,12 @@ import abc
 import sys
 import os
 import subprocess
+import matplotlib.pyplot as plt
+import inspect
+import copy
 
 from . import core
-from .util import root_path
+from .util import root_path, run_command
 from . import models
 from ipydex import IPS
 
@@ -70,6 +73,7 @@ class GenericModel:
 
         pp : list[float] or dict{sympy.symbol:float}
             Parameters of the model.
+            if pp=None (default) then values from parameters.py are used
 
         Notes:
         =====
@@ -104,6 +108,8 @@ class GenericModel:
         self.pp_symb = None
         # Parameter dictionary with symbol:value entries
         self.pp_dict = None
+        # Parameter dictionary with str(symbol):value entries
+        self.pp_str_dict = None
         # Parameter Substitution List for sp.subs methods
         self.pp_subs_list = None
         # Input function
@@ -122,17 +128,20 @@ class GenericModel:
         self._create_symb_xx_xxuu()
         # Create parameter dict, subs_list and symbolic parameter vector
         self.set_parameters(pp)
+        # Create a dict like self.pp_dict but with strings as keys instead of symbols.
+        self._create_pp_str_dict()
         # Create Symbolic parameter vector and subs list
         self._create_symb_pp()
         # Create Substitution list
         self._create_subs_list()
+
         # choose input function
         if self.u_dim == 0:
             self.set_input_func(self.uu_autonomous_func())
         else:
             assert hasattr(
                 self, "uu_default_func"
-            ), f"Your system has an input dimension of {self.u_dim} but no methode 'uu_default_func'."
+            ), f"Your system has an input dimension of {self.u_dim} but no method 'uu_default_func'."
             self.set_input_func(self.uu_default_func())
             if u_func is not None:
                 self.set_input_func(u_func)
@@ -258,12 +267,12 @@ class GenericModel:
         """
         Create symbolic function of the model with the parameter values.
 
-        :params:(boolean) parameter to substitute
+        :params:(dict) parameter to substitute
         :return:(matrix) matrix with right hand side symbolic functions with parameters
         """
-        # transform symbolic function to numerical function
+        # create symbolic matrix
         rhs_symb = sp.Matrix(self.get_rhs_symbolic())
-        # Substitute Parameters with numerical Values
+        # substitute parameters with numerical values
         self._create_subs_list()
         rhs_symb_num_params = sp.Matrix(rhs_symb.subs(self.pp_subs_list))
 
@@ -402,6 +411,33 @@ class GenericModel:
         # Case: Should never happen.
         raise Exception("Critical Error: Check Source Code of set_parameters.")
 
+    def _create_pp_str_dict(self) -> None:
+        """
+        Create a dict like self.pp_dict but with strings as keys instead of symbols.
+        """
+        # in case of models without params
+        if self.pp_dict is None:
+            return
+        self.pp_str_dict = dict([(str(key), value) for key, value in self.pp_dict.items()])
+
+    def get_parameter_value(self, p_str):
+        value = self.pp_str_dict[p_str]
+        return value
+
+
+def save_plot_in_dir(name="plot.png"):
+    """
+    inspect, where call is coming from, then save plot in corresponding directory
+    """
+    caller_frame = inspect.currentframe().f_back
+    file_name = inspect.getframeinfo(caller_frame)[0]
+    path = os.path.split(file_name)[0]
+
+    plot_dir = os.path.join(path, "_data")
+    if not os.path.isdir(plot_dir):
+        os.mkdir(plot_dir)
+    plt.savefig(os.path.join(plot_dir, name), dpi=96 * 2)
+
 
 ### Parameter fetching and tex-ing ###
 
@@ -428,10 +464,41 @@ def update_parameter_tex(key):
     p_values = [sp.latex(p_sf) for p_sf in parameters.pp_sf]
     # set cells in math-mode
     for i in range(len(p_values)):
-        p_values[i] = "$" + p_values[i] + "$"
+        p_values[i] = "$" + str('{:.{p}g}'.format(float(p_values[i]), p=4))  + "$"
 
-    # Create list, which contains the content of the table body
-    table_body_list = np.array([*parameters.start_columns_list, p_symbols, p_values, *parameters.end_columns_list])
+    # Define "Range" column
+    p_ranges = []
+    if hasattr(parameters, "pp_range_list"):
+        for r in parameters.pp_range_list:
+            # get interval boundaries
+            if isinstance(r, list):
+                ib = ["[", "]"]
+                p_ranges.append(f"${ib[0]}{r[0]}, {r[1]}{ib[1]}$")
+            elif isinstance(r, tuple):
+                ib = ["(", ")"]
+                p_ranges.append(f"${ib[0]}{r[0]}, {r[1]}{ib[1]}$")
+            elif isinstance(r, str) and len(r) == 1:
+                p_ranges.append("$\mathbb{" + r + "}$")
+            elif r is None:
+                # used for fixed parameters, such as g = 9.81
+                p_ranges.append("-")
+            else:
+                p_ranges.append("$\mathbb{R}$")
+            # replace inf
+            p_ranges[-1] = p_ranges[-1].replace("inf", "\infty")
+
+        # Create list, which contains the content of the table body
+        table_body_list = np.array(
+            [*parameters.start_columns_list, p_symbols, p_values, p_ranges, *parameters.end_columns_list]
+        )
+        if "Range" not in parameters.tabular_header:
+            parameters.tabular_header.append("Range")
+
+    else:
+        # for backwards compatibility
+        # Create list, which contains the content of the table body
+        table_body_list = np.array([*parameters.start_columns_list, p_symbols, p_values, *parameters.end_columns_list])
+
     # Convert list of column entries to list of row entries
     table = table_body_list.transpose()
 
@@ -441,7 +508,7 @@ def update_parameter_tex(key):
     # Change Directory to the Folder of the Model.
     cwd = os.path.dirname(os.path.abspath(__file__))
     parent2_cwd = os.path.dirname(os.path.dirname(cwd))
-    path_base = os.path.join(root_path, parameters.base_path, "_system_model_data")
+    path_base = os.path.join(root_path, parameters.base_path, "_data")
     os.chdir(path_base)
     # Write tabular to Parameter File.
     file = open("parameters.tex", "w")
@@ -458,34 +525,52 @@ def create_pdf(key, output_path=None):
     """
     system_model_entity = core.model_utils.get_entity(key)
     base_path = system_model_entity.base_path
-    tex_path = os.path.join(root_path, base_path, "_system_model_data")
+    tex_path = os.path.join(root_path, base_path, "_data")
     os.chdir(tex_path)
+
+    assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel"
+    try:
+        res = core.check_generic(system_model_entity.key)
+    except:
+        print(f"{system_model_entity} was not checked, plot might not be included.")
+
+    # add plots, if existing
+    pngs = filter(lambda file: ".png" in file, os.listdir(tex_path))
+    if pngs:
+        with open(os.path.join(tex_path, "documentation.tex"), "r") as og_tex_file:
+            og_lines = og_tex_file.readlines()
+        lines = copy.copy(og_lines)
+
+        for i, v in enumerate(lines):
+            if "\\begin{thebibliography}" in v:
+                lines[i] = _import_png_to_tex(system_model_entity) + lines[i]
+
+        with open(os.path.join(tex_path, "documentation.tex"), "w") as tex_file:
+            tex_file.writelines(lines)
+
     if output_path is None:
-        res = subprocess.run(["pdflatex", "-halt-on-error", "documentation.tex"], capture_output=True)
+        res = run_command(["pdflatex", "-halt-on-error", "documentation.tex"], logger=core.logger, capture_output=True)
     else:
         test_dir = os.path.join(tex_path, output_path)
         if not os.path.isdir(test_dir):
             os.mkdir(test_dir)
-        res = subprocess.run(
-            ["pdflatex", "-halt-on-error", "-output-directory", output_path, "documentation.tex"], capture_output=True
+        res = run_command(
+            ["pdflatex", "-halt-on-error", "-output-directory", output_path, "documentation.tex"],
+            logger=core.logger,
+            capture_output=True,
         )
-    res.exited = res.returncode
-    res.stdout = res.stdout.decode("utf8")
-    res.stderr = res.stderr.decode("utf8")
-    if res.returncode != 0:
-        core.logger.error(f"Error when executing pdflatex.")
-        # some error messages live on stderr, some on stderr
-        if res.stdout:
-            core.logger.error(res.stdout)
-        if res.stderr:
-            core.logger.error(res.stderr)
 
     # clean up auxiliary files
     import time
 
     time.sleep(5)
 
-    delete_list = ["gz", "aux", "fdb_latexmk", "fls", "log"]
+    # reset tex file, since plots are not in repo but tex file is
+    if pngs:
+        with open(os.path.join(tex_path, "documentation.tex"), "w") as tex_file:
+            tex_file.writelines(og_lines)
+
+    delete_list = ["gz", "aux", "fdb_latexmk", "fls", "log", "out"]
 
     # no specified output directory
     if output_path is None:
@@ -506,8 +591,9 @@ def create_pdf(key, output_path=None):
     return res
 
 
-def import_parameters(key):
-    """import parameters.py selected be given key and create related get function for system_model
+def import_parameters(key=None):
+    """import parameters.py selected by given key and create related get function for system_model
+    if key is None, the caller frame is inpected to get its location (used by system_model.py (ackrep_data))
 
     Args:
         key: key of system_model
@@ -515,6 +601,15 @@ def import_parameters(key):
     Returns:
         module: parameters
     """
+    if key == None:
+        # get caller frame -> location of file
+        frame = inspect.currentframe()
+        prev_frame = frame.f_back
+        file_name = inspect.getframeinfo(prev_frame)[0]
+        path = os.path.split(file_name)[0]
+        yml_path = os.path.join(path, "metadata.yml")
+        key = core.get_metadata_from_file(yml_path)["key"]
+
     sys.path.insert(0, root_path)
 
     system_model_entity = core.model_utils.get_entity(key)
@@ -544,6 +639,25 @@ def import_parameters(key):
 
     parameters.get_default_parameters = get_default_parameters
     parameters.get_symbolic_parameters = get_symbolic_parameters
+
+    # check if parameters are inside suggested ranges
+    if hasattr(parameters, "pp_range_list"):
+        msg = "Dimension Mismatch between parameters and respective ranges."
+        assert len(parameters.pp_range_list) == len(parameters.get_default_parameters()), msg
+        for i, (p, v) in enumerate(pp_dict.items()):
+            warn = False
+            if isinstance(parameters.pp_range_list[i], list):
+                low, high = parameters.pp_range_list[i]
+                if not (low <= v and v <= high):
+                    warn = True
+            elif isinstance(parameters.pp_range_list[i], tuple):
+                low, high = parameters.pp_range_list[i]
+                if not (low < v and v < high):
+                    warn = True
+
+            if warn:
+                msg = f"Parameter {p} is outside of the suggested range {parameters.pp_range_list[i]}."
+                core.logger.warning(msg)
 
     return parameters
 
@@ -594,7 +708,7 @@ def check_system_parameters(parameters):
 
 def create_system_model_list_pdf():
     """create a pdf file of all know system models"""
-    res = subprocess.run(["pdflatex", "-version"], capture_output=False)
+    res = run_command(["pdflatex", "-version"], logger=core.logger, capture_output=False)
     assert res.returncode == 0, "Command 'pdflatex' not recognized. Check installation and availability in PATH."
 
     # put tex and pdf in root directory
@@ -614,9 +728,12 @@ def create_system_model_list_pdf():
     body = []
     # iterate all models
     for sm in models.SystemModel.objects.all():
-        model_file_path = os.path.join(
-            core.data_path, os.pardir, sm.base_path, "_system_model_data", "documentation.tex"
-        )
+        try:
+            res = core.check_generic(sm.key)
+        except:
+            print(f"{sm} was not checked, plot might not be included.")
+
+        model_file_path = os.path.join(core.data_path, os.pardir, sm.base_path, "_data", "documentation.tex")
         model_file = open(model_file_path, "r")
         lines = model_file.readlines()
         begin = None
@@ -637,9 +754,9 @@ def create_system_model_list_pdf():
                 lines[i] = (
                     "\\input{"
                     + str(
-                        os.path.join(
-                            core.data_path, os.pardir, sm.base_path, "_system_model_data", "parameters.tex"
-                        ).replace("\\", "/")
+                        os.path.join(core.data_path, os.pardir, sm.base_path, "_data", "parameters.tex").replace(
+                            "\\", "/"
+                        )
                     )
                     + "}\n"
                 )
@@ -670,46 +787,30 @@ def create_system_model_list_pdf():
     tex_file.write("\n\\end{document}")
     tex_file.close()
 
-    res = subprocess.run(["pdflatex", "-halt-on-error", tex_file_name], capture_output=True)
-    res.exited = res.returncode
-    res.stdout = res.stdout.decode("utf8")
-    res.stderr = res.stderr.decode("utf8")
-    if res.returncode != 0:
-        core.logger.error(f"Error when executing pdflatex.")
-        # some error messages live on stderr, some on stderr
-        if res.stdout:
-            core.logger.error(res.stdout)
-        if res.stderr:
-            core.logger.error(res.stderr)
+    res = run_command(["pdflatex", "-halt-on-error", tex_file_name], logger=core.logger, capture_output=True)
 
     return res
 
 
 def _import_png_to_tex(system_model_entity):
-    assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel"
-    res = core.check_generic(system_model_entity.key)
-    png_path = os.path.join(
-        core.data_path, os.pardir, system_model_entity.base_path, "_system_model_data", "plot.png"
-    ).replace("\\", "/")
+    line = "\n\\section{Simulation}\n"
 
-    # ensure png actually exists
-    if not os.path.exists(png_path):
-        return "\n"
+    png_path = os.path.join(core.data_path, os.pardir, system_model_entity.base_path, "_data")
+    for file in os.listdir(png_path):
+        if ".png" in file:
+            path = os.path.join(png_path, file).replace("\\", "/")
 
-    line = (
-        "\n\\section{Simulation}\n"
-        + "\\begin{figure}[H]\n"
-        + "\\centering\n"
-        + "\\includegraphics[width=\\linewidth]{"
-        + png_path
-        + "}\n"
-        + "\\caption{Simulation of the "
-        + system_model_entity.name
-        + ".}\n"
-        + "\\label{fig:"
-        + system_model_entity.name
-        + "}\n"
-        + "\\end{figure}\n"
-    )
+            line = (
+                line
+                + "\\begin{figure}[H]\n"
+                + "\\centering\n"
+                + "\\includegraphics[width=\\linewidth]{"
+                + path
+                + "}\n"
+                + "\\caption{Simulation of the "
+                + system_model_entity.name
+                + ".}\n"
+                + "\\end{figure}\n"
+            )
 
     return line

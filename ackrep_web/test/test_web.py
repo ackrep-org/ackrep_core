@@ -33,7 +33,7 @@ This module contains the tests for the web application module (not ackrep_core)
 
 
 python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_web.test.test_web:TestCases1
-python manage.py test --keepdb --nocapture ackrep_web.test.test_web:TestCases1
+python manage.py test --keepdb -v 2 --nocapture ackrep_web.test.test_web
 
 For more infos see doc/devdoc/README.md.
 """
@@ -50,6 +50,12 @@ os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core",
 # prevent cli commands to get stuck in unexpected IPython shell on error
 # (comment out for debugging)
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
+
+# inform the core module which path it should consinder as results repo
+ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
+    core.root_path, "ackrep_ci_results_for_unittests"
+)
+os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
 
 class TestCases1(DjangoTestCase):
@@ -88,10 +94,6 @@ class TestCases2(SimpleTestCase):
     def setUp(self):
         reset_repo(ackrep_data_test_repo_path)
         self.load_db()
-        cmd = "ackrep --start-workers"
-        self.worker = subprocess.Popen(f"nohup {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        # for debugging, use:
-        # self.worker = subprocess.Popen(f"nohup {cmd}", shell=True)
 
     def load_db(self):
         load_repo_to_db_for_ut(ackrep_data_test_repo_path)
@@ -102,64 +104,31 @@ class TestCases2(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, "utc_entity_full")
+        self.assertContains(response, "Success")
 
-    def test_check_solution(self):
-        url = reverse("check-solution", kwargs={"key": "UKJZI"})
+        url = reverse("entity-detail", kwargs={"key": "UXMFA"})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, "utc_entity_full")
-        self.assertContains(response, "utc_check_solution")
-
-        # wait for asynchronous result
-        while "utc_waiting" in response.content.decode("utf8"):
-            time.sleep(1)
-            response = self.client.get(url)
-
         self.assertContains(response, "Success")
 
         # skip test if done in CI, see https://ackrep-doc.readthedocs.io/en/latest/devdoc/design_considerations.html#ci
-        if os.environ.get("CI") != "true":
-            self.assertContains(response, "utc_img_url")
+        # if os.environ.get("CI") != "true":
+        #     self.assertContains(response, "utc_img_url")
 
-            regex = re.compile("utc_img_url:<(.*?)>")
-            img_url = regex.findall(response.content.decode("utf8"))
+        #     regex = re.compile("utc_img_url:<(.*?)>")
+        #     img_url = regex.findall(response.content.decode("utf8"))
 
-            response = self.client.get(img_url)
+        #     response = self.client.get(img_url)
 
-            # TODO test that this url returns a file
-
-    def test_check_system_model(self):
-        url = reverse("check-system-model", kwargs={"key": "UXMFA"})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        self.assertContains(response, "utc_entity_full")
-        self.assertContains(response, "utc_check_system_model")
-
-        # wait for asynchronous result
-        while "utc_waiting" in response.content.decode("utf8"):
-            time.sleep(1)
-            response = self.client.get(url)
-
-        self.assertContains(response, "Success")
-
-        # skip test if done in CI, see https://ackrep-doc.readthedocs.io/en/latest/devdoc/design_considerations.html#ci
-        if os.environ.get("CI") != "true":  #!
-            self.assertContains(response, "utc_img_url")
-
-            regex = re.compile("utc_img_url:<(.*?)>")
-            img_url = regex.findall(response.content.decode("utf8"))
-
-            response = self.client.get(img_url)
-
-            # TODO test that this url returns a file
+        #     # TODO test that this url returns a file
 
     @override_settings(DEBUG=True)
     def test_debug_message_printing(self):
 
         # broken lorenz system
-        url = reverse("check-system-model", kwargs={"key": "LRHZX"})
+        url = reverse("entity-detail", kwargs={"key": "LRHZX"})
 
         # prevent expected error logs from showing during test
         loglevel = core.logger.level
@@ -168,9 +137,6 @@ class TestCases2(SimpleTestCase):
         # first: check if debug message shows when it should
         settings.DEBUG = True
         response = self.client.get(url)
-        while "utc_waiting" in response.content.decode("utf8"):
-            time.sleep(1)
-            response = self.client.get(url)
 
         expected_error_infos = ["utc_debug", "SyntaxError", "parameters.py", "line"]
         for info in expected_error_infos:
@@ -180,9 +146,6 @@ class TestCases2(SimpleTestCase):
         # second: check if debug message shows when it shouldn't
         settings.DEBUG = False
         response = self.client.get(url)
-        while "utc_waiting" in response.content.decode("utf8"):
-            time.sleep(1)
-            response = self.client.get(url)
 
         expected_error_infos = ["utc_debug", "SyntaxError"]
         for info in expected_error_infos:
@@ -190,6 +153,13 @@ class TestCases2(SimpleTestCase):
         self.assertNotContains(response, "utc_output")
 
         core.logger.setLevel(loglevel)
+
+    def test_show_last_passing(self):
+        url = reverse("entity-detail", kwargs={"key": "LRHZX"})
+        response = self.client.get(url)
+        infos = ["Entity passed last:", "2022-06-24 00:00:00"]
+        for info in infos:
+            self.assertContains(response, info)
 
     def test_sparql_query(self):
 
@@ -207,10 +177,6 @@ class TestCases2(SimpleTestCase):
 
     def tearDown(self) -> None:
         reset_repo(ackrep_data_test_repo_path)
-        old_cwd = os.getcwd()
-        os.chdir(os.path.join(core.root_path, "ackrep_core"))
-        res = subprocess.run(["celery", "-A", "ackrep_web", "control", "shutdown"], text=True, capture_output=True)
-        os.chdir(old_cwd)
         return super().tearDown()
 
 

@@ -16,12 +16,13 @@ urlpatterns = [
     path("update-mr", views.UpdateMergeRequestView.as_view(), name="update-merge-request"),
     path("delete-mr", views.DeleteMergeRequestView.as_view(), name="delete-merge-request"),
     path("search-sparql", views.SearchSparqlView.as_view(), name="search-sparql"),
+    path("entity-overview", views.EntityOverView.as_view(), name="entity-overview"),
     re_path("mr/(?P<key>[A-Z0-9_]{5})", views.MergeRequestDetailView.as_view(), name="merge-request"),
     re_path("e/(?P<key>[A-Z0-9_]{5})", views.EntityDetailView.as_view(), name="entity-detail"),
-    re_path("check-solution/(?P<key>[A-Z0-9_]{5})", views.CheckView.as_view(), name="check-solution"),
-    re_path("check-system-model/(?P<key>[A-Z0-9_]{5})", views.CheckView.as_view(), name="check-system-model"),
     # placeholders
     path("imprint", views.LandingPageView.as_view(), name="imprint-page"),
     path("privacy", views.LandingPageView.as_view(), name="privacy-page"),
     path("contact", views.LandingPageView.as_view(), name="contact-page"),
+    path("debug", views.DebugView.as_view(), name="contact-page"),
+    path("webhook", views.Webhook.as_view(), name="webhook"),
 ]

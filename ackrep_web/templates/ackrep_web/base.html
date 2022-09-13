@@ -1,46 +1,14 @@
-{% load static %}
+{% include "ackrep_web/widgets/head.html"%}
 
-<!DOCTYPE html>
-<html><head lang="en">
-
-<!-- this template was orignially based on https://github.com/fsfw-dresden/ldap-dingens -->
-
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
-    <link type="text/css" rel="stylesheet" href="{% static 'ackrep_web/bootstrap.css' %}">
-    <link type="text/css" rel="stylesheet" href="{% static 'ackrep_web/style.css' %}">
-
-    <link rel="icon" type="image/png"       href="{% static 'ackrep_web/img/favicon.png' %}">
-
-    {# assume that the http status code is available in the context_data (there is a middleware for this) #}
-    {{ http_status_code|json_script:"http_status_code" }}
-
-    <!-- utc_template_name={{template_name}}-->
-
-    <title>Automatic Control Knowledge Repository</title>
-</head>
 <body>
 <script>0</script> <!--prevent flash of unstyled content-->
 <div class="container">
     <div class="row">
         <div class="col-md-8 col-md-offset-2">
-        <h1><a href="/">Automatic Control Knowledge Repository</a></h1>
 
-
-<span class="javascript_prompt" id="javascript_msg">
-    <b>You currently have javascript disabled. Some features will be unavailable. Please consider enabling javascript.</b>
-</span>
-<script type="text/javascript">
-    document.getElementById("javascript_msg").style.display = "none";
-</script>
-
-<div id="navbar">
-    <a href="/">Home</a>
-    <a href="{%url 'entity-list'%}">Entity List</a>
-    <a href="{%url 'merge-request-list'%}">Merge Request List</a>
-    <a href="{%url 'search-sparql'%}">Search</a>
-</div>
+<!-- include header-->
+{% include "ackrep_web/widgets/header.html"%}
+<!-- / include header-->
 
 
 <!-- block content-->
@@ -58,7 +26,7 @@
 <div class="row">
     <div class="col-md-8 col-md-offset-2">
 <!-- include footer-->
-       {% include "ackrep_web/footer.html"%}
+       {% include "ackrep_web/widgets/footer.html"%}
 <!-- / include footer-->
     </div>
 </div>

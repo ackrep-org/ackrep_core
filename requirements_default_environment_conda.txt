@@ -1,0 +1,5 @@
+# This file contains requirements which are only used by some SolutionMethods
+# installable only with conda forge
+slycot
+casadi
+assimulo

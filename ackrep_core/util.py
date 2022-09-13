@@ -1,7 +1,9 @@
+import logging
 from colorama import Style, Fore
 from django.utils import timezone
 import yaml
 import subprocess
+from git import Repo
 
 import os
 from ipydex import Container
@@ -25,6 +27,12 @@ data_path = os.environ.get("ACKREP_DATA_PATH")
 if not (data_path):
     # paths for (ackrep_data and its test-related clone)
     data_path = os.path.join(root_path, "ackrep_data")
+
+# this env-variable will be set e.g. by unit tests to make cli invocations from tests work
+ci_results_path = os.environ.get("ACKREP_CI_RESULTS_PATH")
+if not (ci_results_path):
+    # paths for (ackrep_data and its test-related clone)
+    ci_results_path = os.path.join(root_path, "ackrep_ci_results")
 
 
 class ResultContainer(Container):
@@ -57,6 +65,10 @@ class DuplicateKeyError(Exception):
 
 
 class QueryError(Exception):
+    pass
+
+
+class DockerError(Exception):
     pass
 
 
@@ -137,7 +149,7 @@ def strip_decode(obj) -> str:
     return utf8decode(obj)
 
 
-def run_command(arglist, supress_error_message=False, capture_output=True, **kwargs):
+def run_command(arglist, logger=None, capture_output=True, **kwargs):
     """
     Unified handling of calling commands.
     Automatically prints an error message if necessary.
@@ -146,7 +158,7 @@ def run_command(arglist, supress_error_message=False, capture_output=True, **kwa
     res.exited = res.returncode
     res.stdout = strip_decode(res.stdout)
     res.stderr = strip_decode(res.stderr)
-    if res.returncode != 0 and not supress_error_message:
+    if res.returncode != 0:
         msg = f"""
         The command `{' '.join(arglist)}` exited with returncode {res.returncode}.
 
@@ -154,6 +166,28 @@ def run_command(arglist, supress_error_message=False, capture_output=True, **kwa
 
         stderr: {res.stderr}
         """
-        print(msg)
+        if type(logger) == logging.Logger:
+            logger.error(msg)
 
     return res
+
+
+def git_push(repo_path: str, files_to_add, message: str):
+    repo = Repo(repo_path)
+    repo.git.add(files_to_add)
+    repo.index.commit(message)
+    origin = repo.remote(name="origin")
+    origin.push()
+
+
+def find_nth(haystack, needle, n):
+    """string search: find position of nth occurence of "needle" in "haystack" """
+    start = haystack.find(needle)
+    while start >= 0 and n > 1:
+        start = haystack.find(needle, start + len(needle))
+        n -= 1
+    return start
+
+
+def timeout_handler(signum, frame):
+    raise TimeoutError(f"Process reached max time and was therefore canceled.")

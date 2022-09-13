@@ -3,15 +3,14 @@ import yaml
 import os, sys
 import pathlib
 import time
-import subprocess
 import shutil
 import logging
 from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
-import sqlite3
-from ackrep_web.celery import app
+import json
+from ackrep_core_django_settings import settings
 
 # settings might be accessed from other modules which import this one (core)
 # noinspection PyUnresolvedReferences
@@ -38,10 +37,12 @@ from .util import (
     core_pkg_path,
     root_path,
     data_path,
+    ci_results_path,
     ObjectContainer,
     ResultContainer,
     InconsistentMetaDataError,
     DuplicateKeyError,
+    DockerError,
     run_command,
 )
 
@@ -451,7 +452,7 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
 
 def get_data_files(base_path, endswith_str=None, create_media_links=False):
     """
-    walk through <base_path>/_solution_data or <base_path>/_system_model_data depending on the base_path
+    walk through <base_path>/_data depending on the base_path
     and return the path of all matching files
 
     :param base_path: entity.base_path
@@ -459,12 +460,10 @@ def get_data_files(base_path, endswith_str=None, create_media_links=False):
     :param create_media_links:  if True, create symlinks in `settings.MEDIA_ROOT` to these files
     :return:
     """
-    if "system_models" in base_path:
-        startdir = os.path.join(root_path, base_path, "_system_model_data")
-    elif "problem_solutions" in base_path:
-        startdir = os.path.join(root_path, base_path, "_solution_data")
+    if "_data" in base_path:
+        startdir = os.path.join(root_path, base_path, "_data")
     else:
-        raise FileNotFoundError("invalid path!")
+        startdir = os.path.join(root_path, base_path)
 
     if not os.path.isdir(startdir):
         return []
@@ -565,17 +564,16 @@ def get_entity_context(key: str):
     entity = get_entity(key)
     resolve_keys(entity)
 
-    entity_type = type(entity)
-    assert entity_type in (models.SystemModel, models.ProblemSolution)
+    assert isinstance(entity, (models.SystemModel, models.ProblemSolution))
 
     # test entity type and get path to relevant file
-    if entity_type == models.ProblemSolution:
+    if isinstance(entity, models.ProblemSolution):
         python_file = entity.solution_file
         if python_file != "solution.py":
             msg = "Arbitrary filename will be supported in the future"
             raise NotImplementedError(msg)
 
-    elif entity_type == models.SystemModel:
+    elif isinstance(entity, models.SystemModel):
         python_file = entity.system_model_file
         if python_file != "system_model.py":
             msg = "Arbitrary filename will be supported in the future"
@@ -585,7 +583,7 @@ def get_entity_context(key: str):
 
     c = Container()  # this will be our easily accessible context dict for the template
 
-    if entity_type == models.ProblemSolution:
+    if isinstance(entity, models.ProblemSolution):
         c.solution_path = os.path.join(root_path, entity.base_path)
         assert len(entity.oc.solved_problem_list) >= 1
 
@@ -613,7 +611,7 @@ def get_entity_context(key: str):
             assert os.path.isdir(full_build_path)
             c.method_package_list.append(full_build_path)
 
-    elif entity_type == models.SystemModel:
+    elif isinstance(entity, models.SystemModel):
         c.system_model_path = os.path.join(root_path, entity.base_path)
     else:
         raise NotImplementedError
@@ -643,8 +641,8 @@ def create_execscript_from_template(entity: models.GenericEntity, c: Container, 
     Returns:
         path_like: path to execscript
     """
-    entity_type = type(entity)
-    assert entity_type in (models.SystemModel, models.ProblemSolution)
+
+    assert isinstance(entity, (models.SystemModel, models.ProblemSolution))
 
     context = dict(c.item_list())
 
@@ -663,9 +661,9 @@ def create_execscript_from_template(entity: models.GenericEntity, c: Container, 
 
     logger.info(f"execscript-path: {scriptpath}")
 
-    if entity_type == models.ProblemSolution:
+    if isinstance(entity, models.ProblemSolution):
         render_template("templates/execscript.py.template", context, target_path=scriptpath)
-    elif entity_type == models.SystemModel:
+    elif isinstance(entity, models.SystemModel):
         render_template("templates/execscript_system_model.py.template", context, target_path=scriptpath)
     else:
         raise NotImplementedError
@@ -684,19 +682,8 @@ def run_execscript(scriptpath):
     """
     logger.info(f"  ... running exec-script {scriptpath} ... ")
 
-    res = run_command(["python", scriptpath], supress_error_message=True, capture_output=True)
-    res.exited = res.returncode
-    if res.returncode == 2:
-        if res.stdout:
-            logger.warning(res.stdout)
-    elif res.returncode != 0:
-        logger.error(f"Error in execscript: {scriptpath}")
-        # some error messages live on stderr, some on stderr
-        if res.stdout:
-            logger.error(res.stdout)
-        if res.stderr:
-            logger.error(res.stderr)
-    else:
+    res = run_command(["python", scriptpath], logger=logger, capture_output=True)
+    if res.returncode == 0:
         # propagate output of execscript through multiple subprocesses
         print((res.stdout), file=sys.stdout)
 
@@ -823,8 +810,7 @@ def print_entity_info(key: str) -> None:
 AOM = ACKREP_OntologyManager()
 
 
-@app.task
-def check(key):
+def check(key, try_to_use_local_image=True):
     """General function to check system model or solution, calculated inside docker image.
     The image is chosen from the compatible environment of the given entity
     structogram:
@@ -846,6 +832,8 @@ def check(key):
 
     Args:
         key (str): entity key
+        try_to_use_local_image (bool, optional): prefer locally build images. Only relevant for devs. Defaults to True.
+
 
     Raises:
         NotImplementedError: if key is neither solution nor system_model
@@ -854,114 +842,180 @@ def check(key):
         CompletedProcess: result of check
     """
     entity = get_entity(key)
-    is_solution = isinstance(entity, models.ProblemSolution)
-    is_system_model = isinstance(entity, models.SystemModel)
-    assert is_solution or is_system_model, f"key {key} is of neither solution nor system model. Unsure what to do."
-
-    default_env_key = "YJBOX"
+    assert isinstance(
+        entity, (models.ProblemSolution, models.SystemModel, models.Notebook)
+    ), f"key {key} is of neither solution, system model nor notebook. Unsure what to do."
 
     # get environment name
     env_key = entity.compatible_environment
     if env_key == "" or env_key is None:
         logger.info("No environment specification found. Using default env.")
-        env_key = default_env_key
+        env_key = settings.DEFAULT_ENVIRONMENT_KEY
     env_name = get_entity(env_key).name
     logger.info(f"running with environment spec: {env_name}")
 
     # check if environment container is already running
-    cmd = ["docker", "ps", "--format", "{{.ID}}::{{.Names}}"]
-    res = subprocess.run(cmd, text=True, capture_output=True)
-    for container in res.stdout.split("\n"):
-        if env_name in container:
-            container_id = container.split("::")[0]
-            logger.info(f"Running Container found: {container}")
-            # check if environment container has the correct db loaded
-            # TODO: for now this checks the difference between regular and ut case
-            cmd = ["docker", "exec", container_id, "printenv", "ACKREP_DATA_PATH"]
-            res = subprocess.run(cmd, text=True, capture_output=True)
-            data_path_container = res.stdout.replace("\n", "").split("/")[-1]
-            assert data_path_container in ["ackrep_data", "ackrep_data_for_unittests"]
-            if data_path_container != data_path.split("/")[-1]:
-                logger.info("Running container has wrong db loaded. Shutting down.")
-                cmd = ["docker", "stop", container_id]
-                res = subprocess.run(cmd, text=True, capture_output=True)
-                assert res.returncode == 0
-                container_id = None
-            break
-        else:
-            container_id = None
+    container_id = look_for_running_container(env_name)
 
     # Container not yet running, start container, load db, wait
     # container is running detached, so the script can continue
     if container_id is None:
         logger.info(f"no container for {env_name} found, starting new one.")
-        # try to use local docker image (for development)
-        image_name = "ackrep_deployment_" + env_name
-        cmd = ["docker", "images", "-q", image_name]
-        res = run_command(cmd, supress_error_message=True, capture_output=True)
-        local_image_id = res.stdout.replace("\n", "")
-        logger.info(f"local image id: {local_image_id}")
-        if len(local_image_id) == 12:  # 12 characters image id + \n
-            logger.info("running local image")
-            image_name = env_name  # since docker-compose doesnt use prefix
-
-            assert os.path.isdir("../ackrep_deployment"), "docker-compose file not found"
-            cmd = ["docker-compose", "--file", "../ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
-
-        # no local image -> use image from github
-        else:
-            logger.info("running remote image")
-            image_name = "ghcr.io/ackrep-org/" + env_name
-            cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
-            # * Note: even though we are running the container in the background (detached -d), we still have to
-            # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).
-            # * Otherwise, the container would stop after running the entrypoint script (load db). This is noteworthy,
-            # * since -d and -ti seem to be contradictory.
-
-        # building the docker command
-
-        cmd.extend(get_docker_env_vars())
-
-        cmd.extend(get_data_repo_host_address())
-
-        cmd.extend([image_name, "bash"])
-
-        logger.info(f"docker command: {cmd}")
-        res = run_command(cmd, supress_error_message=True, capture_output=True)
-        if res.returncode != 0:
-            logger.error(f"{res.stdout} | {res.stderr}")
-            assert 1 == 0, "container was not started correctly"
-        else:
-            # running a container detached returns its id
-            container_id = res.stdout.replace("\n", "")
-
-        # wait for db to be loaded, since the container is running detached
-        start = time.time()
-        while True:
-            # Test with "definately existing" key UXMFA and not {key} to avoid potential issues with new keys
-            cmd = ["docker", "exec", container_id, "ackrep", "--show-entity-info", "UXMFA"]
-            res = run_command(cmd, supress_error_message=True, capture_output=True)
-            if res.returncode == 0:
-                break
-            else:
-                logger.info("waiting for db to be loaded...")
-                time.sleep(1)
-                if time.time() - start > 15:
-                    logger.error(
-                        f"Timeout: Cant find key UXMFA in database, \
-                        which probably did not load correctly. Aborting."
-                    )
-                    return res
-        logger.info(f"New env container started.")
+        container_id = start_idle_container(env_name, try_to_use_local_image)
 
     # run ackrep command in already running container
     logger.info(f"Ackrep command running in Container: {container_id}")
     host_uid = get_host_uid()
     cmd = ["docker", "exec", "--user", host_uid, container_id, "ackrep", "-c", key]
-    res = run_command(cmd, supress_error_message=True, capture_output=True)
-    if res.returncode != 0:
-        logger.error(f"{res.stdout} | {res.stderr}")
+    res = run_command(cmd, logger=logger, capture_output=True)
     return res
+
+
+def look_for_running_container(env_name):
+    """check if a container with the image in question if already running.
+    If so, check if the correct db is loaded inside (this is done implicitly by comparing env vars).
+    If a valid container is found, return this containers id.
+    Otherwise shut down invalid containers and return None.
+
+    Args:
+        env_name (str): name of environment (e.g. default_environment)
+
+    Returns:
+        str or None: container_id
+    """
+    container_id = None
+
+    # check if image is up to date with remote
+    image_name = f"ghcr.io/ackrep-org/{env_name}:latest"
+    cmd = ["docker", "pull", image_name]
+    pull = run_command(cmd, logger=logger, capture_output=True)
+    assert pull.returncode == 0, f"Unable to pull image from remote. Does '{image_name}' exist?"
+
+    up_to_date = "Image is up to date" in pull.stdout
+
+    if up_to_date:
+        logger.info("image was up to date")
+        cmd = ["docker", "ps", "--filter", f"name={env_name}", "--format", "{{.ID}}::{{.Names}}"]
+        active_containers = run_command(cmd, logger=logger, capture_output=True)
+        for container in active_containers.stdout.split("\n"):
+            # disregard last split item
+            if container != "":
+                container_id = container.split("::")[0]
+                logger.info(f"Running Container found: {container}")
+
+                # check if environment container has the correct db loaded by comparing env vars
+                cmd = ["docker", "exec", container_id, "printenv", "ACKREP_DATA_PATH"]
+                res = run_command(cmd, capture_output=True)
+                data_path_container = res.stdout.replace("\n", "").split("/")[-1]
+                logger.info(f"data_path inside container: {data_path_container}")
+
+                # no db or wrong db in container:
+                if data_path_container != data_path.split("/")[-1]:
+                    logger.info("Running container has wrong db loaded. Shutting down.")
+                    cmd = ["docker", "stop", container_id]
+                    res = run_command(cmd, logger=logger, capture_output=True)
+                    assert res.returncode == 0
+                    container_id = None
+                break
+    else:
+        logger.info("image was NOT up to date")
+    return container_id
+
+
+def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
+    """start container for given environment in background (detached). Use local image or pull image from remote.
+    set all necessary env vars. Then wait for db to be loaded inside container.
+    Note: this command does not execute ackrep commands, that is done by 'exec-ing' into the idle container.
+
+    Args:
+        env_name (str): name of environment (e.g. default_environment)
+        try_to_use_local_image (bool, optional): prefer locally build images. Only relevant for devs. Defaults to True.
+        port_dict (dict, optional): port dictionary {container_port:host_port} to publish data from inside container.
+
+    Returns:
+        str: container_id
+    """
+    # try to use local docker image (for development)
+    image_name = "ackrep_deployment_" + env_name
+    cmd = ["docker", "images", "-q", image_name]
+    res = run_command(cmd, logger=logger, capture_output=True)
+    local_image_id = res.stdout.replace("\n", "")
+    logger.info(f"local image id: {local_image_id}")
+    if len(local_image_id) == 12 and try_to_use_local_image:  # 12 characters image id + \n
+        logger.info("running local image")
+        image_name = env_name  # since docker-compose doesnt use prefix
+
+        assert os.path.isdir(f"{root_path}/ackrep_deployment"), "docker-compose file not found"
+        cmd = ["docker-compose", "--file", f"{root_path}/ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
+
+    # no local image -> use image from github
+    # this is the default for everyone who doesnt build images locally
+    else:
+        logger.info("running remote image")
+        image_name = "ghcr.io/ackrep-org/" + env_name + ":latest"
+
+        # ! pull image first to ensure latest version is available
+        logger.info("pulling docker image")
+        pull_cmd = ["docker", "pull", image_name]
+        res = run_command(pull_cmd, logger=logger, capture_output=True)
+        assert res.returncode == 0, f"Unable to pull image from remote. Does '{image_name}' exist?"
+
+        logger.info("stopping old containers")
+        # stop all running containers with env_name to ensure name uniqueness
+        find_cmd = ["docker", "ps", "--filter", f"name={env_name}", "-q"]
+        res = run_command(find_cmd, logger=logger, capture_output=True)
+        if len(res.stdout) > 0:
+            ids = res.stdout.split("\n")[:-1]
+            for i in ids:
+                stop_cmd = ["docker", "stop", i]
+                run_command(stop_cmd, logger=logger, capture_output=True)
+
+        cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
+        # * Note: even though we are running the container in the background (detached -d), we still have to
+        # * specify -ti (terminal, interactive) to keep the container running in idle (waiting for bash input).
+        # * Otherwise, the container would stop after running the entrypoint script (load db). This is noteworthy,
+        # * since -d and -ti seem to be contradictory.
+
+    # building the docker command
+    if port_dict is not None:
+        cmd.extend(get_port_mapping(port_dict))
+
+    cmd.extend(get_docker_env_vars())
+
+    cmd.extend(get_volume_mapping())
+
+    cmd.extend([image_name, "bash"])
+
+    logger.info(f"docker command: {cmd}")
+    res = run_command(cmd, logger=logger, capture_output=True)
+    if res.returncode != 0:
+        raise DockerError("container was not started correctly")
+    else:
+        # running a container detached returns its id
+        container_id = res.stdout.replace("\n", "")
+
+    # wait for db to be loaded, since the container is running detached
+    start = time.time()
+    while True:
+        logger.info("waiting for db to be loaded...")
+        # Test with "definately existing" key UXMFA and not {key} to avoid potential issues with new keys
+        cmd = ["docker", "exec", container_id, "ackrep", "--show-entity-info", "UXMFA"]
+        res = run_command(cmd, capture_output=True)
+        if res.returncode == 0:
+            break
+        else:
+            time.sleep(1)
+            if time.time() - start > 60:
+                logger.error(
+                    f"Timeout: Cant find key UXMFA in database, \
+                    which probably did not load correctly. Aborting."
+                )
+                raise TimeoutError(
+                    f"Timeout: Cant find key UXMFA in database, \
+                    which probably did not load correctly. Aborting."
+                )
+    logger.info(f"New env container started after {round(time.time() - start, 1)} seconds.")
+    return container_id
 
 
 def get_docker_env_vars():
@@ -1009,35 +1063,76 @@ def get_host_uid():
     return str(host_uid)
 
 
-def get_data_repo_host_address():
-    """data repo address on host via environment vaiable,
-    especially necessary when starting env container out of celery container
-    return array with flags and paths to extend docker cmd
-    """
+def get_volume_mapping():
+    """mount the appropriate data repo"""
 
     # nominal case
     if os.environ.get("CI") != "true":
-        host_address = os.environ.get("DATA_REPO_HOST_ADDRESS")
-        # env variable will be empty when running local server without docker
-        if host_address is None:
-            logger.info(f"env var DATA_REPO_HOST_ADDRESS is not set. Setting it to default {data_path}")
-            host_address = data_path
-        logger.info(f"data host address: {host_address}")
-        assert host_address is not None, "env var DATA_REPO_HOST_ADDRESS is not set."
-        target = os.path.split(host_address)[1]
-        assert "ackrep_data" in target, f"{target} is not a valid volume destination"
-        cmd_extension = ["-v", f"{host_address}:/code/{target}"]
+        logger.info(f"data path: {data_path}")
+        target = os.path.split(data_path)[1]
+        cmd_extension = ["-v", f"{data_path}:/code/{target}"]
     # circleci unittest case
     else:
         # volumes cant be mounted in cirlceci, this is the workaround,
         # see https://circleci.com/docs/2.0/building-docker-images/#mounting-folders
+        # dummy is created in .circleci/config.yaml
         cmd_extension = ["--volumes-from", "dummy"]
 
     return cmd_extension
 
 
+def get_port_mapping(port_dict):
+    """port_dict {container_port:host_port}"""
+    assert type(port_dict) == dict, f"Port dictionary {port_dict} is not a dict."
+    cmd_extension = []
+    for key, value in port_dict.items():
+        cmd_extension.extend(["-p", f"{key}:{value}"])
+    return cmd_extension
+
+
+def download_and_store_artifacts(branch_name):
+    """download artifacts using the directory structure established in CI"""
+    save_cwd = os.getcwd()
+    os.chdir(root_path)
+
+    circle_token = settings.SECRET_CIRCLECI_API_KEY
+    cmd = [
+        f"""curl -H 'Circle-Token: {circle_token}' \
+    https://circleci.com/api/v1.1/project/github/ackrep-org/ackrep_data/latest/artifacts?branch={branch_name} \
+    | grep -o 'https://[^"]*' \
+    | wget --force-directories --no-host-directories --cut-dirs=6 --verbose --header 'Circle-Token: {circle_token}' \
+    --input-file -"""
+    ]
+    # 
+    # --force-directories       keeps directory structure
+    # --no-host-directories     omits directory with host url
+    # --cut-dirs=6              omits next 6 directories --> artifact dir
+
+    res = run_command(cmd, logger=logger, capture_output=True, shell=True)
+    assert res.returncode == 0, "Unable to collect results from circleci."
+
+    # it is assumed, that the last CI reports on github and the manually downloaded one (artifact) are identical
+    repo = Repo(f"{root_path}/ackrep_ci_results")
+    # run_command(["git", "-C", "./ackrep_ci_results", "fetch"], capture_output=False)
+    # run_command(["git", "-C", "./ackrep_ci_results", "status"], capture_output=False)
+    # for file in repo.untracked_files:
+    #     os.remove(os.path.join(ci_results_path, file))
+    # run_command(["git", "-C", "./ackrep_ci_results", "status"], capture_output=False)
+    repo.remotes.origin.pull()
+    # run_command(["git", "-C", "./ackrep_ci_results", "status"], capture_output=False)
+
+    os.chdir(save_cwd)
+
+
 """ 
+Debug Commands:
+
 for debugging containers:
 docker-compose --file ../ackrep_deployment/docker-compose.yml run --rm -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data default_environment bash
 docker run --rm -ti -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data ghcr.io/ackrep-org/default_environment bash
+
+downloading artifacts from circle
+curl -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v1.1/project/github/ackrep-org/ackrep_data/latest/artifacts \
+   | grep -o 'https://[^"]*' \
+   | wget --force-directories --no-host-directories --cut-dirs=5 --verbose --header "Circle-Token: $CIRCLE_TOKEN" --input-file -
 """

@@ -304,6 +304,21 @@ class ProblemSolution(GenericEntity):
     )
 
 
+class Notebook(GenericEntity):
+    _type = "notebook"
+    estimated_runtime = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    compatible_environment = EntityKeyField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+    notebook_file = models.CharField(max_length=500, null=True, blank=True, default="notebook.ipynb")
+
+
 class ProblemClass(GenericEntity):
     _type = "problem_class"
 
@@ -337,19 +352,3 @@ class MethodPackage(GenericEntity):
         null=True,
         blank=True,
     )
-
-
-class ActiveJobs(BaseModel):
-    _type = "active_jobs"
-    id = models.AutoField(primary_key=True)
-    key = models.CharField(
-        max_length=5,
-        null=False,
-        blank=False,
-    )
-    celery_id = models.CharField(
-        max_length=100,
-        null=False,
-        blank=False,
-    )
-    start_time = models.FloatField()
