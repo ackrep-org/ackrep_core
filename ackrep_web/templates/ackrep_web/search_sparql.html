@@ -34,13 +34,13 @@
 <input type=radio id="show" name="group">
 /
 <label for="hide">
-    <span class="fake_button"> Hide</span> 
-</label>    
+    <span class="fake_button"> Hide</span>
+</label>
 <input type=radio id="hide" name="group">
 ]
 <span id="content">
     SPARQL queries can be read as a very simple sentence of subject, predicate (sometimes a auxiliary verb such as "has"
-     or "is" is implied), object. E.g. 
+     or "is" is implied), object. E.g.
     <code style="display:block; white-space:pre-wrap">
     SELECT ?book
     WHERE
@@ -48,11 +48,11 @@
         ?book has_author MarkTwain.
     }
     </code>
-    selects all books of the author Mark Twain existing in the database. Depending on where the subject, predicate or 
-    object is defined, different prefixes have to be prepended (e.g. "rdf:", "rdfs:" for 
-    <a href="https://www.w3.org/TR/rdf-sparql-query/#docNamespaces">general namespaces</a> and "P:" for the 
+    selects all books of the author Mark Twain existing in the database. Depending on where the subject, predicate or
+    object is defined, different prefixes have to be prepended (e.g. "rdf:", "rdfs:" for
+    <a href="https://www.w3.org/TR/rdf-sparql-query/#docNamespaces">general namespaces</a> and "P:" for the
     <a href="https://github.com/ackrep-org/ackrep_data/blob/main/ontology/ocse-prototype-01.owl.yml">ackrep-specific namespace</a>).
-    For a more detailed introduction to SPARQL Queries, see 
+    For a more detailed introduction to SPARQL Queries, see
     <a href="https://www.wikidata.org/wiki/Wikidata:SPARQL_tutorial#SPARQL_basics">Wikidata SPARQL tutorial</a>.
     <br><br>
     <b>Some examples of usefull queries in the ackrep context: </b>
@@ -100,15 +100,16 @@
 <h3>Resulting ACKREP Entities ({{ackrep_entities|length}}) </h3>
 {% if ackrep_entities %}
     {% for e in ackrep_entities %}
-        {% include "ackrep_web/widgets/entity.html" with entity=e c=c display="short" only %}
+        {{ e|first }}:
+        {% include "ackrep_web/widgets/entity.html" with entity=e|last c=c display="short" only %}
     {% endfor %}
 {% endif %}
 
 <h3>Resulting General Entities from the Ontology ({{onto_entities|length}})</h3>
 {% if onto_entities %}
     {% for e in onto_entities %}
-        <pre>{{ e }}</pre>
-
+        {{ e|first }}:
+        <pre>{{ e|last }}</pre>
     {% endfor %}
 {% endif %}
 

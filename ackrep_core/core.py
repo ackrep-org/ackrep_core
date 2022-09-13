@@ -355,17 +355,16 @@ class ACKREP_OntologyManager(object):
 
         ackrep_entities = []
         onto_entites = []
-
         for tuples in erk_entitites:
-            for e in tuples:
+            for i, e in enumerate(tuples):
                 # entity is system model
-                try:
-                    entity_key = e.get_relations("ct__R2950__has_corresponding_ackrep_key")[0].relation_tuple[2]
+                if re := e.get_relations("ct__R2950__has_corresponding_ackrep_key"):
+                    entity_key = re[0].relation_tuple[2]
                     assert isinstance(entity_key, str)
                     entity = get_entity(entity_key)
-                    ackrep_entities.append(entity)
-                except KeyError:
-                    onto_entites.append(e.R1)
+                    ackrep_entities.append(("?" + str(res.vars[i]), entity))
+                else:
+                    onto_entites.append(("?" + str(res.vars[i]), [e.short_key, e.R1]))
         return ackrep_entities, onto_entites
 
     # def run_sparql_query_and_translate_result_old(self, qsrc, raw=False) -> (list, list):
