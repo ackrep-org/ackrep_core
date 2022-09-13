@@ -454,6 +454,7 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
     """
     logger.debug("Searching '%s' and subdirectories for 'metadata.yml'..." % (os.path.abspath(startdir)))
     meta_data_files = list(get_files_by_pattern(startdir, lambda fn: fn == "metadata.yml"))
+    meta_data_files.sort(key=str.casefold)
     entity_list = []
     logger.debug("Found %d entity metadata files" % (len(meta_data_files)))
 
