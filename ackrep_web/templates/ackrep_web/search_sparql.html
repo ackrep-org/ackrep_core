@@ -59,39 +59,105 @@
     <br>
     Find the entity with a given key (e.g. UXMFA):
     <code style="display:block; white-space:pre-wrap">
-    PREFIX P: &lt;https://ackrep.org/draft/ocse-prototype01#&gt;
+    PREFIX : &lt;erk:/builtins#&gt;
+    PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
     SELECT ?entity
     WHERE {
-        ?entity P:has_entity_key "UXMFA".
+        ?entity ocse:R2950 "UXMFA".
     }
     </code>
+    or if the label is known, but the short key (R2950) isn't:
+    <code style="display:block; white-space:pre-wrap">
+    PREFIX : &lt;erk:/builtins#&gt;
+    PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+    SELECT ?entity
+    WHERE {
+        ?entity ?relation "UXMFA".
+        ?relation :R1 "has corresponding ackrep key".
+    }
+    </code>
+    <br>
+    Get all relations of all exising system models:
+    <code style="display:block; white-space:pre-wrap">
+        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        SELECT ?relation
+        WHERE {
+            ?entity ?relation ?o.
+            ?entity :R4 ocse:I7641.
+        }
+    </code>
+    Get all relations that have a system model as first argument:
+    <code style="display:block; white-space:pre-wrap">
+        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        SELECT ?relation
+        WHERE {
+            ?relation :R8 ocse:I7641.
+        }
+    </code>
+    Note the difference between the two preceding queries!
+    <br>
+    <br>
+    Get all pyerk items:
+    <code style="display:block; white-space:pre-wrap">
+        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        SELECT ?item
+        WHERE {
+            ?item (:R4|:R3)* :I1
+        }
+    </code>
+    <br>
+    <b>Some more useful and complex queries:</b><br>
+    Find all system models that are represented by a partial differential equation:
+    <code style="display:block; white-space:pre-wrap">
+        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        SELECT ?entity
+        WHERE {
+            ?entity :R4 ocse:I7641.
+            ?entity ocse:R2928 ?representation.
+            ?representation :R4 ocse:I8063.
+        }
+    </code>
+    <br>
+    Find all system models that have system order of 3 and are autonomous
+    <code style="display:block; white-space:pre-wrap">
+        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        SELECT ?entity
+        WHERE {
+            ?entity :R4 ocse:I7641.
+            ?entity ocse:R2928 ?r.
+            ?r ocse:R3898 3.
+            ?entity :R16 ocse:I5718.
+        }
+    </code>
+    <br>
+    <b>Note: Tags of problems and solutions are depricated and will soon be implemented in pyerk.</b>
     <br>
     Select all ackrep entities that use linear state feedback:
     <code style="display:block; white-space:pre-wrap">
-    PREFIX P: &lt;https://ackrep.org/draft/ocse-prototype01#&gt;
-    SELECT ?entity
-    WHERE {
-        ?entity P:has_ontology_based_tag P:iLinear_State_Feedback.
-    }
+        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        SELECT ?entity ?tag
+        WHERE {
+            ?entity ocse:R1070 ?tag.
+            ?tag :R1 "ocse:Linear_State_Feedback".
+        }
     </code>
     <br>
-    Select all problem solutions, that use closed loop control:
+    Select all entites, that have both of the tags "Convergence_To_Desired_Trajectory" and "Trajectory_Generation":
     <code style="display:block; white-space:pre-wrap">
-    PREFIX P: &lt;https://ackrep.org/draft/ocse-prototype01#&gt;
+    PREFIX : &lt;erk:/builtins#&gt;
+    PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
     SELECT ?entity
     WHERE {
-        ?entity rdf:type P:ACKREP_ProblemSolution.
-        ?entity P:has_ontology_based_tag P:iClosed_Loop_Control.
-    }
-    </code>
-    <br>
-    Select all entites, that have both tags "Convergence_To_Desired_Trajectory" and "Trajectory_Generation":
-    <code style="display:block; white-space:pre-wrap">
-    PREFIX P: &lt;https://ackrep.org/draft/ocse-prototype01#&gt;
-    SELECT ?entity
-    WHERE {
-        ?entity P:has_ontology_based_tag P:iConvergence_To_Desired_Trajectory.
-        ?entity P:has_ontology_based_tag P:iTrajectory_Generation.
+        ?entity ocse:R1070 ?tag1.
+        ?entity ocse:R1070 ?tag2.
+        ?tag1 :R1 "ocse:Convergence_To_Desired_Trajectory".
+        ?tag2 :R1 "ocse:Trajectory_Generation".
     }
     </code>
 </span>
@@ -106,11 +172,57 @@
 {% endif %}
 
 <h3>Resulting General Entities from the Ontology ({{onto_entities|length}})</h3>
-{% if onto_entities %}
-    {% for e in onto_entities %}
-        {{ e|first }}:
-        <pre>{{ e|last }}</pre>
-    {% endfor %}
+<style>
+span#c_show_all {
+    display:block;
+}
+input#show_all:checked ~ span#c_show_all {
+    display:block;
+}
+
+input#hide_dubpl:checked ~ span#c_show_all {
+    display:none;
+}
+span#c_hide_dubpl {
+    display:none;
+}
+input#show_all:checked ~ span#c_hide_dubpl {
+    display:none;
+}
+
+input#hide_dubpl:checked ~ span#c_hide_dubpl {
+    display:block;
+}
+</style>
+
+{% if onto_entities|length != onto_entities_no_dupl|length %}
+    [
+    <label for="show_all">
+        <span class="fake_button">Show all</span>
+    </label>
+    <input type=radio id="show_all" name="group2">
+    /
+    <label for="hide_dubpl">
+        <span class="fake_button"> Hide duplicates</span>
+    </label>
+    <input type=radio id="hide_dubpl" name="group2">
+    ]
 {% endif %}
+<span id="c_show_all">
+    {% if onto_entities %}
+        {% for e in onto_entities %}
+            {{ e|first }}:
+            <pre>{{ e|last }}</pre>
+        {% endfor %}
+    {% endif %}
+</span>
+<span id="c_hide_dubpl">
+    {% if onto_entities_no_dupl %}
+        {% for e in onto_entities_no_dupl %}
+            {{ e|first }}:
+            <pre>{{ e|last }}</pre>
+        {% endfor %}
+    {% endif %}
+</span>
 
 {% endblock  %}
