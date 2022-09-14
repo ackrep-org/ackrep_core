@@ -165,14 +165,13 @@ class TestCases2(SimpleTestCase):
 
         url = reverse("search-sparql")
         query = (
-            "query=%23+example+query%3A+select+all+possible+tags%0D%0A%0D%0APREFIX+P%3A+"
-            "<https%3A%2F%2Fackrep.org%2Fdraft%2Focse-prototype01%23>%0D%0A++++++++++++SELECT"
-            "+%3Fentity%0D%0A++++++++++++WHERE+{%0D%0A++++++++++++++%3Fentity+P%3Ahas_ontology_based_tag"
-            "+P%3AiTransfer_Function.%0D%0A++++++++++++}%0D%0A"
+            "query=PREFIX+%3A+<erk%3A%2Fbuiltins%23>%0D%0APREFIX+ocse%3A+<erk%3A%2Focse%2F0.2%23>%0D%0ASELECT"
+            "+%3Fs%0D%0AWHERE+{%0D%0A++++%3Fs+%3AR16+ocse%3AI7733.%0D%0A%0D%0A}%0D%0A"
         )
         response = self.client.get(f"{url}?{query}")
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "UXMFA")
         self.assertContains(response, "utc_template_name=ackrep_web/search_sparql.html")
 
     def tearDown(self) -> None:

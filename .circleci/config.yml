@@ -1,7 +1,7 @@
 jobs: # A basic unit of work in a run
   setup:
     # directory where steps are run
-    working_directory: ~/ackrep_core
+    working_directory: ~/ackrep/ackrep_core
     docker: # run the steps with Docker
       # CircleCI Python images available at: https://hub.docker.com/r/circleci/python/
       - image: cimg/python:3.8
@@ -23,6 +23,42 @@ jobs: # A basic unit of work in a run
           key: deps1--{{ checksum "requirements.txt" }}--
           paths:
             - "venv"
+      - run:
+          name: Load ERK Modules
+          command: |
+            . venv/bin/activate
+            echo Cloning pyerk
+            cd ../../
+            mkdir erk
+            cd erk
+            git clone https://github.com/ackrep-org/pyerk-core.git
+            cd pyerk-core
+            git checkout develop_julius
+            pip install -r requirements.txt
+            pip install -e .
+            echo Cloning erk-data
+            cd ../
+            mkdir erk-data
+            cd erk-data
+            git clone https://github.com/ackrep-org/erk-data-control-theory.git
+            mv erk-data-control-theory control-theory
+            cd control-theory
+            git checkout develop_julius
+      - run:
+          name: Check Tree
+          command: |
+            echo 1
+            cd ../../
+            ls
+            echo 2
+            cd ackrep
+            ls
+            echo 3
+            cd ../erk
+            ls
+            echo 4
+            cd erk-data
+            ls
       - run:
           name: Load Test Data
           command: |
