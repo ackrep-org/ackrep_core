@@ -9,7 +9,10 @@ from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
-import pyerk as p
+
+if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
+    # this env var is set in Dockerfile of env
+    import pyerk as p
 from ackrep_core_django_settings import settings
 
 # settings might be accessed from other modules which import this one (core)
@@ -435,7 +438,9 @@ def load_repo_to_db(startdir, check_consistency=True):
     global last_loaded_entities
     last_loaded_entities = entity_list
 
-    AOM.load_ontology(startdir, entity_list)
+    if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
+        # this env var is set in Dockerfile of env
+        AOM.load_ontology(startdir, entity_list)
 
     return entity_list
 
@@ -1060,8 +1065,8 @@ def get_docker_env_vars():
     # ut case
     if os.environ.get("ACKREP_DATABASE_PATH") is not None and os.environ.get("ACKREP_DATA_PATH") is not None:
         msg = (
-            f'env variables set: ACKREP_DATABASE_PATH={os.environ.get("ACKREP_DATABASE_PATH")}'
-            + 'ACKREP_DATA_PATH=os.environ.get("ACKREP_DATA_PATH")'
+            f'env variables set: ACKREP_DATABASE_PATH={os.environ.get("ACKREP_DATABASE_PATH")}\n'
+            + ' ACKREP_DATA_PATH=os.environ.get("ACKREP_DATA_PATH")'
         )
         logger.info(msg)
         database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
@@ -1111,6 +1116,8 @@ def get_volume_mapping():
         # see https://circleci.com/docs/2.0/building-docker-images/#mounting-folders
         # dummy is created in .circleci/config.yaml
         cmd_extension = ["--volumes-from", "dummy"]
+
+    cmd_extension.extend(["-v", "/etc/localtime:/etc/localtime"])
 
     return cmd_extension
 
@@ -1162,7 +1169,7 @@ def download_and_store_artifacts(branch_name):
 Debug Commands:
 
 for debugging containers:
-docker-compose --file ../ackrep_deployment/docker-compose.yml run --rm -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data default_environment bash
+docker-compose --file ../ackrep_deployment/docker-compose.yml run --rm -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data -e HOST_UID=1000 default_conda_environment bash
 docker run --rm -ti -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data ghcr.io/ackrep-org/default_environment bash
 
 downloading artifacts from circle

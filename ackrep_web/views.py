@@ -24,13 +24,16 @@ import hmac
 import json
 from git import Repo
 import pandas as pd
-import pyerk as p
 
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
+
+if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
+    # this env var is set in Dockerfile of env
+    import pyerk as p
 
 
 class LandingPageView(View):
@@ -426,7 +429,7 @@ class SearchSparqlView(View):
             context["err"] = f"The following error occurred: {str(e)}"
             ackrep_entities, onto_entities = [], []
 
-        onto_entities_no_dupl = hide_duplicate_spaql_res(onto_entities)
+        onto_entities_no_dupl = hide_duplicate_sparql_res(onto_entities)
 
         context["ackrep_entities"] = ackrep_entities
         context["onto_entities"] = onto_entities
@@ -435,12 +438,14 @@ class SearchSparqlView(View):
 
         return TemplateResponse(request, "ackrep_web/search_sparql.html", context)
 
-def hide_duplicate_spaql_res(res: list) -> list:
+
+def hide_duplicate_sparql_res(res: list) -> list:
     new_list = []
     for entry in res:
         if not entry in new_list:
             new_list.append(entry)
     return new_list
+
 
 class NotYetImplementedView(View):
     def get(self, request):

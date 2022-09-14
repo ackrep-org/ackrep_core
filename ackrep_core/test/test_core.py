@@ -14,6 +14,8 @@ from ackrep_core.util import run_command, utf8decode, strip_decode
 
 from ipydex import IPS  # only for debugging
 
+from distutils.spawn import find_executable
+
 """
 This module contains the tests of the core module (not ackrep_web).
 
@@ -127,64 +129,65 @@ class TestCases2(DjangoTestCase):
     def setUp(self):
         core.load_repo_to_db(ackrep_data_test_repo_path)
 
-    def test_ontology(self):
+    # TODO: this belongs in pyerk now
+    # def test_ontology(self):
 
-        # check the ontology manager
-        OM = core.AOM.OM
-        self.assertFalse(OM is None)
-        self.assertTrue(len(list(OM.n.ACKREP_ProblemSpecification.instances())) > 0)
+    #     # check the ontology manager
+    #     OM = core.AOM.OM
+    #     self.assertFalse(OM is None)
+    #     self.assertTrue(len(list(OM.n.ACKREP_ProblemSpecification.instances())) > 0)
 
-        qsrc = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_entity_key "4ZZ9J".}}'
-        res = OM.make_query(qsrc)
-        self.assertEqual(len(res), 1)
-        ps_double_integrator_transition = res.pop()
+    #     qsrc = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_entity_key "4ZZ9J".}}'
+    #     res = OM.make_query(qsrc)
+    #     self.assertEqual(len(res), 1)
+    #     ps_double_integrator_transition = res.pop()
 
-        qsrc = f"PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_ontology_based_tag P:iLinear_State_Space_System.}}"
-        res = OM.make_query(qsrc)
-        self.assertTrue(ps_double_integrator_transition in res)
+    #     qsrc = f"PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_ontology_based_tag P:iLinear_State_Space_System.}}"
+    #     res = OM.make_query(qsrc)
+    #     self.assertTrue(ps_double_integrator_transition in res)
 
-        # get list of all possible tags (instances of OCSE_Entity and its subclasses)
-        qsrc = f"""PREFIX P: <{OM.iri}>
-            SELECT ?entity
-            WHERE {{
-              ?entity rdf:type ?type.
-              ?type rdfs:subClassOf* P:OCSE_Entity.
-            }}
-        """
-        res = OM.make_query(qsrc)
-        self.assertTrue(len(res) > 40)
+    #     # get list of all possible tags (instances of OCSE_Entity and its subclasses)
+    #     qsrc = f"""PREFIX P: <{OM.iri}>
+    #         SELECT ?entity
+    #         WHERE {{
+    #           ?entity rdf:type ?type.
+    #           ?type rdfs:subClassOf* P:OCSE_Entity.
+    #         }}
+    #     """
+    #     res = OM.make_query(qsrc)
+    #     self.assertTrue(len(res) > 40)
 
-        res2 = core.AOM.get_list_of_all_ontology_based_tags()
+    #     res2 = core.AOM.get_list_of_all_ontology_based_tags()
 
-        qsrc = f"""PREFIX P: <{OM.iri}>
-            SELECT ?entity
-            WHERE {{
-              ?entity P:has_entity_key "J73Y9".
-            }}
-        """
-        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
-        self.assertEqual(oe, [])
-        self.assertTrue(isinstance(ae[0], core.models.ProblemSpecification))
+    #     qsrc = f"""PREFIX P: <{OM.iri}>
+    #         SELECT ?entity
+    #         WHERE {{
+    #           ?entity P:has_entity_key "J73Y9".
+    #         }}
+    #     """
+    #     ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
+    #     self.assertEqual(oe, [])
+    #     self.assertTrue(isinstance(ae[0], core.models.ProblemSpecification))
 
-        qsrc = f"""PREFIX P: <{OM.iri}>
-            SELECT ?entity
-            WHERE {{
-              ?entity P:has_ontology_based_tag P:iTransfer_Function.
-            }}
-        """
-        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
-        self.assertTrue(len(ae) > 0)
+    #     qsrc = f"""PREFIX P: <{OM.iri}>
+    #         SELECT ?entity
+    #         WHERE {{
+    #           ?entity P:has_ontology_based_tag P:iTransfer_Function.
+    #         }}
+    #     """
+    #     ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
+    #     self.assertTrue(len(ae) > 0)
 
-        qsrc = f"""
-        PREFIX P: <https://ackrep.org/draft/ocse-prototype01#>
-        SELECT ?entity
-        WHERE {{
-          ?entity P:has_entity_key "M4PDA".
-        }}
-        """
-        ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
-        self.assertTrue(len(ae) == 1)
-        # IPS(print_tb=-1)
+    #     qsrc = f"""
+    #     PREFIX P: <https://ackrep.org/draft/ocse-prototype01#>
+    #     SELECT ?entity
+    #     WHERE {{
+    #       ?entity P:has_entity_key "M4PDA".
+    #     }}
+    #     """
+    #     ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
+    #     self.assertTrue(len(ae) == 1)
+    #     # IPS(print_tb=-1)
 
     def test_import_repo(self):
 
@@ -297,6 +300,7 @@ class TestCases3(SimpleTestCase):
         # ensure repo is clean again
         reset_repo(ackrep_data_test_repo_path)
 
+    @skipUnless(os.environ.get("CI") == "true", "only run test in CI (due to complicated image copying)")
     def test_check_all_entities(self):
         # this test only works in ci, not locally, due to the way plots are copied (docker cp dummy -> artifacts)
         res = run_command(["ackrep", "--check-all-entities", "-ut"])
@@ -456,6 +460,7 @@ class TestCases3(SimpleTestCase):
         lines = res.stdout.strip().split(os.linesep)
         self.assertGreaterEqual(len(lines), 4)
 
+    @skipUnless(find_executable("latex"), "skip test if latex not installed")
     def test_update_parameter_tex(self):
         # call directly
         res = system_model_management.update_parameter_tex("UXMFA")
@@ -470,7 +475,7 @@ class TestCases3(SimpleTestCase):
         # reset unittest_repo (for this test seems only necessary on Windows)
         reset_repo(ackrep_data_test_repo_path)
 
-    @skipIf(os.environ.get("SKIP_TEST_CREATE_PDF") == "True", "skipping test on CI due to lack of pdflatex")
+    @skipUnless(find_executable("latex"), "skip test if latex not installed")
     def test_create_pdf(self):
         # TODO: test this somehow with CI
 
