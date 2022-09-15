@@ -406,7 +406,8 @@ def check(arg0: str, exitflag: bool = True):
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
 
     # set timeout
-    signal.alarm(settings.ENTITY_TIMEOUT)
+    if not os.name == "nt":
+        signal.alarm(settings.ENTITY_TIMEOUT)
     try:
         if isinstance(entity, (models.ProblemSolution, models.SystemModel)):
             cmd = [f"core.check_generic(key={key}"]
@@ -423,7 +424,8 @@ def check(arg0: str, exitflag: bool = True):
         res = subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr=f"Entity check timed out.\n{exc}")
 
     # cancel timeout
-    signal.alarm(0)
+    if not os.name == "nt":
+        signal.alarm(0)
 
     env_version = get_environment_version(entity)
     if env_version != "Unknown":

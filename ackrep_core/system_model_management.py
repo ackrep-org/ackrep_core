@@ -17,6 +17,7 @@ import subprocess
 import matplotlib.pyplot as plt
 import inspect
 import copy
+from ackrep_core_django_settings import settings
 
 from . import core
 from .util import root_path, run_command
@@ -728,6 +729,7 @@ def create_system_model_list_pdf():
     body = []
     # iterate all models
     for sm in models.SystemModel.objects.all():
+        core.logger.info(sm.key)
         try:
             res = core.check_generic(sm.key)
         except:
@@ -749,7 +751,7 @@ def create_system_model_list_pdf():
             if "\\part*{Model Documentation of the:}" in v:
                 lines[i] = "\n"
             if "Add Model Name" in v:
-                lines[i] = "\\part{" + sm.name + "}\n" + "ACKREP-Key: " + sm.key
+                lines[i] = "\\part{" + sm.name + "}\n" + "ACKREP-Key: " + "\\href{" + settings.BASE_URL_FOR_PDF + "e/" + sm.key + "}{" + sm.key + "}"
             if "\\input{parameters.tex}" in v:
                 lines[i] = (
                     "\\input{"
@@ -760,6 +762,10 @@ def create_system_model_list_pdf():
                     )
                     + "}\n"
                 )
+            if "\\includegraphics" in v:
+                graphics_name = v.split("{")[1].split("}")[0]
+                new_path = str(os.path.join(core.data_path, os.pardir, sm.base_path, "_data", graphics_name).replace("\\", "/"))
+                lines[i] = lines[i].replace(graphics_name, new_path)
             if "\\begin{thebibliography}" in v:
                 lines[i] = _import_png_to_tex(sm) + lines[i]
 
@@ -780,13 +786,15 @@ def create_system_model_list_pdf():
 
     # reset section counter with each model
     header.insert(len(header) - 1, "\\usepackage{chngcntr}\n\\counterwithin*{section}{part}\n")
+    header.insert(len(header) - 1, "\\usepackage{hyperref}\n")
+    header.insert(len(header) - 1, "\\usepackage{tocloft}\n")
 
     tex_file.writelines(header)
     tex_file.write("\n\\title{Model Documentation}\n\\maketitle\n\\newpage\n")
     tex_file.writelines(body)
     tex_file.write("\n\\end{document}")
     tex_file.close()
-
+    core.logger.warning("This will get stuck if the pdf is already opened by Adobe.")
     res = run_command(["pdflatex", "-halt-on-error", tex_file_name], logger=core.logger, capture_output=True)
 
     return res

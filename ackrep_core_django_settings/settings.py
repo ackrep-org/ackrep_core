@@ -215,3 +215,5 @@ try:
         LAST_DEPLOYMENT = txtfile.read().strip()
 except FileNotFoundError:
     LAST_DEPLOYMENT = "<not available>"
+
+BASE_URL_FOR_PDF = "http://127.0.0.1:8000/"
