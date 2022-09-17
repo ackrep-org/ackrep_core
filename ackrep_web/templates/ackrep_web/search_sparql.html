@@ -126,12 +126,12 @@
     <code style="display:block; white-space:pre-wrap">
         PREFIX : &lt;erk:/builtins#&gt;
         PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
-        SELECT ?entity
-        WHERE {
-            ?entity :R4 ocse:I7641.
-            ?entity ocse:R2928 ?r.
-            ?r ocse:R3898 3.
-            ?entity :R16 ocse:I5718.
+        SELECT ?model
+        WHERE
+        {
+            ?model   ocse:R9125   0.
+            ?model   ocse:R2928   ?repr.
+            ?repr    ocse:R2112   3.
         }
     </code>
     <br>
