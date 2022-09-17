@@ -18,7 +18,7 @@ from ipydex import IPS  # only for debugging
 
 """
 This module uses the django model engine to specify models.
-However, they are used also outside the web application, i.e. for the command line application.  
+However, they are used also outside the web application, i.e. for the command line application.
 """
 
 # The following is necessary to let us use django functionality without accessing via manage.py
@@ -230,6 +230,7 @@ class SystemModel(GenericEntity):
         null=True,
         blank=True,
     )
+    erk_data = models.CharField(max_length=100000, blank=True)
     system_model_file = models.CharField(max_length=500, null=True, blank=True, default="system_model.py")
     simulation_file = models.CharField(max_length=500, null=True, blank=True, default="simulation.py")
 
