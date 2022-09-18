@@ -352,7 +352,8 @@ class ACKREP_OntologyManager(object):
         return res
 
     def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> list:
-        self.load_ontology()
+        if len(p.core.ds.mod_path_mapping.a.keys()) == 0:
+            self.load_ontology()
         res = self.ds.rdfgraph.query(qsrc)
         erk_entitites = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
 
