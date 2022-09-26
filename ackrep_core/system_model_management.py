@@ -751,7 +751,19 @@ def create_system_model_list_pdf():
             if "\\part*{Model Documentation of the:}" in v:
                 lines[i] = "\n"
             if "Add Model Name" in v:
-                lines[i] = "\\part{" + sm.name + "}\n" + "ACKREP-Key: " + "\\href{" + settings.BASE_URL_FOR_PDF + "e/" + sm.key + "}{" + sm.key + "}"
+                lines[i] = (
+                    "\\part{"
+                    + sm.name
+                    + "}\n"
+                    + "ACKREP-Key: "
+                    + "\\href{"
+                    + settings.BASE_URL_FOR_PDF
+                    + "e/"
+                    + sm.key
+                    + "}{"
+                    + sm.key
+                    + "}"
+                )
             if "\\input{parameters.tex}" in v:
                 lines[i] = (
                     "\\input{"
@@ -764,7 +776,9 @@ def create_system_model_list_pdf():
                 )
             if "\\includegraphics" in v:
                 graphics_name = v.split("{")[1].split("}")[0]
-                new_path = str(os.path.join(core.data_path, os.pardir, sm.base_path, "_data", graphics_name).replace("\\", "/"))
+                new_path = str(
+                    os.path.join(core.data_path, os.pardir, sm.base_path, "_data", graphics_name).replace("\\", "/")
+                )
                 lines[i] = lines[i].replace(graphics_name, new_path)
             if "\\begin{thebibliography}" in v:
                 lines[i] = _import_png_to_tex(sm) + lines[i]

@@ -401,14 +401,12 @@ class ACKREP_OntologyManager(object):
 
                 label = description.replace("_", " ")
 
-                msg = f"Entity label '{entity.R1}' for entity '{e}'" + \
-                    f"and given label '{label}' do not match!"
+                msg = f"Entity label '{entity.R1}' for entity '{e}' and given label '{label}' do not match!"
                 assert entity.R1 == label, msg
 
             new_query = re.sub(r"__[\w]+", "", query)
         else:
             new_query = query
-
 
         return new_query
 
