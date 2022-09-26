@@ -2,7 +2,7 @@
 <b>Result:</b> <span class="result {{c.result_css_class}}">{{c.verbal_result}}</span><br>
 
 {% if c.build_url %}
-    <b>Last Build:</b> <a id="ci_build_link" title="checkout CI build" href={{c.logs.build_url}}>Checkout CI Build</a><br>
+    <b>Last Build:</b> <a id="ci_build_link" title="checkout CI build" href={{c.build_url}}>Checkout CI Build</a><br>
 {% endif %}
 
 <b>Runtime:</b> {{c.diff_time_str}} (estimated: {{entity.estimated_runtime}})<br>
@@ -14,7 +14,7 @@
         <i>with ackrep_core commit:</i> {{c.logs.ackrep_core}}<br>
         <i>in environment:</i> {{c.logs.environment}}<br>
         {% if c.logs.build_url %}
-            <a id="ci_build_link" title="checkout CI build" href={{c.build_url}}>Checkout CI Build</a><br>
+            <a id="ci_build_link" title="checkout CI build" href={{c.logs.build_url}}>Checkout CI Build</a><br>
         {% endif %}
     </div>
 {% endif %}
@@ -42,6 +42,6 @@
     <br>
     <div class="notebook_html">
         <embed type="text/html" src={{c.notebook}}>
-    </div>  
-        
+    </div>
+
 {% endif %}
