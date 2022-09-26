@@ -11,8 +11,8 @@ import yaml
 from git import Repo
 import shutil
 import signal
-import subprocess
 import numpy as np
+import os
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -20,7 +20,8 @@ from ackrep_core import system_model_management
 
 from ackrep_core import release
 
-activate_ips_on_exception()
+if os.environ.get("CI") != "true":
+    activate_ips_on_exception()
 
 from . import core
 from . import models

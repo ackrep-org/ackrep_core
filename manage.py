@@ -5,7 +5,8 @@ import argparse
 
 from ipydex import IPS, activate_ips_on_exception
 
-activate_ips_on_exception()
+if os.environ.get("CI") != "true":
+    activate_ips_on_exception()
 
 if __name__ == "__main__":
 

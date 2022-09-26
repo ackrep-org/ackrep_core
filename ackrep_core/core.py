@@ -243,8 +243,7 @@ class ACKREP_OntologyManager(object):
         ERK_ROOT_DIR = p.aux.get_erk_root_dir()
         TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
         mod1 = p.erkloader.load_mod_from_path(modpath=TEST_DATA_PATH, prefix="ct")
-
-        p.ackrep_parser.load_ackrep_entities(data_path)
+        p.ackrep_parser.load_ackrep_entities(startdir)
         self.ds = p.core.ds
         self.ds.rdfgraph = p.rdfstack.create_rdf_triples()
 

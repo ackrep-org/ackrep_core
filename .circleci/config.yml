@@ -33,7 +33,7 @@ jobs: # A basic unit of work in a run
             cd erk
             git clone https://github.com/ackrep-org/pyerk-core.git
             cd pyerk-core
-            git checkout develop_julius
+            git checkout develop
             pip install -r requirements.txt
             pip install -e .
             echo Cloning erk-data
@@ -43,22 +43,7 @@ jobs: # A basic unit of work in a run
             git clone https://github.com/ackrep-org/erk-data-control-theory.git
             mv erk-data-control-theory control-theory
             cd control-theory
-            git checkout develop_julius
-      - run:
-          name: Check Tree
-          command: |
-            echo 1
-            cd ../../
-            ls
-            echo 2
-            cd ackrep
-            ls
-            echo 3
-            cd ../erk
-            ls
-            echo 4
-            cd erk-data
-            ls
+            git checkout develop
       - run:
           name: Load Test Data
           command: |
@@ -91,7 +76,7 @@ jobs: # A basic unit of work in a run
             echo Create dummy container
             docker create -v /code/ackrep_data_for_unittests --name dummy alpine:3.4 /bin/true
             echo Copy ackrep_data to dummy
-            docker cp /home/circleci/ackrep_data_for_unittests dummy:/code
+            docker cp /home/circleci/ackrep/ackrep_data_for_unittests dummy:/code
             echo containers:
             docker container ps
       - run:
