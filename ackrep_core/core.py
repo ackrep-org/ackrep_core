@@ -9,6 +9,7 @@ from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
 from git import Repo
+import re
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
@@ -354,6 +355,7 @@ class ACKREP_OntologyManager(object):
     def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> list:
         if len(p.core.ds.mod_path_mapping.a.keys()) == 0:
             self.load_ontology()
+        qsrc = self.preprocess_query(qsrc)
         res = self.ds.rdfgraph.query(qsrc)
         erk_entitites = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
 
@@ -375,6 +377,40 @@ class ACKREP_OntologyManager(object):
                         entity = e
                     onto_entites.append(("?" + str(res.vars[i]), entity))
         return ackrep_entities, onto_entites
+
+    def preprocess_query(self, query):
+        if "__" in query:
+            prefixes = re.findall(r"[\w]*:[ ]*<.*?>", query)
+            prefix_dict = {}
+            for prefix in prefixes:
+                parts = prefix.split(" ")
+                key = parts[0]
+                value = parts[-1].replace("<", "").replace(">", "")
+                prefix_dict[key] = value
+            print(prefix_dict)
+
+            entities = re.findall(r"[\w]*:[\w]+__[\w]+", query)
+            for e in entities:
+                # check sanity
+                prefix, rest = e.split(":")
+                prefix = prefix + ":"
+                erk_key, description = rest.split("__")
+
+                entity_uri = prefix_dict.get(prefix) + erk_key
+                entity = self.ds.get_entity_by_uri(entity_uri)
+
+                label = description.replace("_", " ")
+
+                msg = f"Entity label '{entity.R1}' for entity '{e}'" + \
+                    f"and given label '{label}' do not match!"
+                assert entity.R1 == label, msg
+
+            new_query = re.sub(r"__[\w]+", "", query)
+        else:
+            new_query = query
+
+
+        return new_query
 
     # def run_sparql_query_and_translate_result_old(self, qsrc, raw=False) -> (list, list):
     #     """
