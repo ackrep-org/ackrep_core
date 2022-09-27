@@ -113,6 +113,12 @@ def main():
         help="pull env images and print infos (mainly used in CI run)",
         action="store_true",
     )
+    argparser.add_argument(
+        "-ufb",
+        "--update-fallback-binaries",
+        help="update files in fallback repo",
+        action="store_true",
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -241,6 +247,8 @@ def main():
     elif args.jupyter:
         key = args.jupyter
         run_jupyter(key)
+    elif args.update_fallback_binaries:
+        update_fallback_binaries()
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -872,3 +880,20 @@ def get_entity_and_key(arg0):
         key = meta_data["key"]
         entity = core.get_entity(key)
     return entity, key
+
+
+def update_fallback_binaries():
+    fallback_bin_location = os.path.join(root_path, "ackrep_fallback_binaries")
+
+    entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
+
+    for entity in entity_list:
+        key = entity.key
+        base_path = entity.base_path
+        plot_dir = os.path.join(root_path, base_path, "_data", "plot.png")
+        if os.path.isfile(plot_dir):
+            os.makedirs(os.path.join(fallback_bin_location, key), exist_ok=True)
+            target_dir = os.path.join(fallback_bin_location, key, "plot.png")
+            shutil.copy(plot_dir, target_dir)
+        else:
+            core.logger.info(f"{entity} plot was not found.")
