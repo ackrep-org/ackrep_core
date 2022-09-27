@@ -174,6 +174,20 @@ class TestCases2(SimpleTestCase):
         self.assertContains(response, "UXMFA")
         self.assertContains(response, "utc_template_name=ackrep_web/search_sparql.html")
 
+    def test_sparql_query2(self):
+        # test preprocessing of query
+        url = reverse("search-sparql")
+        query = (
+            "query=PREFIX+%3A+%3Cerk%3A%2Fbuiltins%23%3E%0D%0APREFIX+ocse%3A+%3Cerk%3A%2Focse%2F0.2%23%3E%0D%0ASELECT"
+            "+%3Fs%0D%0AWHERE+%7B%0D%0A++++%3Fs+%3AR16__has_property+ocse%3AI7733__time_invariance."
+            "%0D%0A%0D%0A%7D%0D%0A"
+        )
+        response = self.client.get(f"{url}?{query}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "UXMFA")
+        self.assertContains(response, "utc_template_name=ackrep_web/search_sparql.html")
+
     def tearDown(self) -> None:
         reset_repo(ackrep_data_test_repo_path)
         return super().tearDown()
