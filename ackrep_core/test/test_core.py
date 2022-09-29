@@ -15,6 +15,7 @@ from ackrep_core.util import run_command, utf8decode, strip_decode
 from ipydex import IPS  # only for debugging
 
 from distutils.spawn import find_executable
+import pyerk as p
 
 """
 This module contains the tests of the core module (not ackrep_web).
@@ -52,6 +53,9 @@ ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
     core.root_path, "ackrep_ci_results_for_unittests"
 )
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
+
+pyerk_ocse_path = os.path.join(p.aux.get_erk_root_dir(), "erk-data", "control-theory", "control_theory1.py")
+pyerk_ocse_name = "ocse/0.2"
 
 # use `git log -1` to display the full hash
 default_repo_head_hash = "834aaad12256118d475de9eebfdaefb7746a28bc"  # 2022-09-13 branch for_unittests
@@ -127,67 +131,13 @@ class TestCases2(DjangoTestCase):
     """
 
     def setUp(self):
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
         core.load_repo_to_db(ackrep_data_test_repo_path)
 
-    # TODO: this belongs in pyerk now
-    # def test_ontology(self):
-
-    #     # check the ontology manager
-    #     OM = core.AOM.OM
-    #     self.assertFalse(OM is None)
-    #     self.assertTrue(len(list(OM.n.ACKREP_ProblemSpecification.instances())) > 0)
-
-    #     qsrc = f'PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_entity_key "4ZZ9J".}}'
-    #     res = OM.make_query(qsrc)
-    #     self.assertEqual(len(res), 1)
-    #     ps_double_integrator_transition = res.pop()
-
-    #     qsrc = f"PREFIX P: <{OM.iri}> SELECT ?x WHERE {{ ?x P:has_ontology_based_tag P:iLinear_State_Space_System.}}"
-    #     res = OM.make_query(qsrc)
-    #     self.assertTrue(ps_double_integrator_transition in res)
-
-    #     # get list of all possible tags (instances of OCSE_Entity and its subclasses)
-    #     qsrc = f"""PREFIX P: <{OM.iri}>
-    #         SELECT ?entity
-    #         WHERE {{
-    #           ?entity rdf:type ?type.
-    #           ?type rdfs:subClassOf* P:OCSE_Entity.
-    #         }}
-    #     """
-    #     res = OM.make_query(qsrc)
-    #     self.assertTrue(len(res) > 40)
-
-    #     res2 = core.AOM.get_list_of_all_ontology_based_tags()
-
-    #     qsrc = f"""PREFIX P: <{OM.iri}>
-    #         SELECT ?entity
-    #         WHERE {{
-    #           ?entity P:has_entity_key "J73Y9".
-    #         }}
-    #     """
-    #     ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
-    #     self.assertEqual(oe, [])
-    #     self.assertTrue(isinstance(ae[0], core.models.ProblemSpecification))
-
-    #     qsrc = f"""PREFIX P: <{OM.iri}>
-    #         SELECT ?entity
-    #         WHERE {{
-    #           ?entity P:has_ontology_based_tag P:iTransfer_Function.
-    #         }}
-    #     """
-    #     ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
-    #     self.assertTrue(len(ae) > 0)
-
-    #     qsrc = f"""
-    #     PREFIX P: <https://ackrep.org/draft/ocse-prototype01#>
-    #     SELECT ?entity
-    #     WHERE {{
-    #       ?entity P:has_entity_key "M4PDA".
-    #     }}
-    #     """
-    #     ae, oe = core.AOM.run_sparql_query_and_translate_result(qsrc)
-    #     self.assertTrue(len(ae) == 1)
-    #     # IPS(print_tb=-1)
+    def tearDown(self) -> None:
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
 
     def test_import_repo(self):
 
@@ -222,13 +172,16 @@ class TestCases3(SimpleTestCase):
     databases = "__all__"
 
     def setUp(self):
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
         load_repo_to_db_for_ut(ackrep_data_test_repo_path)
 
     def tearDown(self):
         # optionally check if repo is clean
-        pass
         repo = Repo(ackrep_data_test_repo_path)
         assert not repo.is_dirty()
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
 
     def test_resolve_keys(self):
         entity = core.model_utils.get_entity("UKJZI")
@@ -602,6 +555,79 @@ class TestCases3(SimpleTestCase):
         for info in expected_directories:
             self.assertIn(info, res.stdout)
 
+    def test_ackrep_parser1(self):
+        # unload modules, since they would already be loaded due to load_repo_to_db
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
+        mod1 = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
+        p1 = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
+        res = core.ackrep_parser.load_ackrep_entities(p1)
+        self.assertEqual(res, 0)
+
+    def test_ackrep_parser2(self):
+        # unload modules, since they would already be loaded due to load_repo_to_db
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
+
+        n_items1 = len(p.ds.items)
+        mod1 = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
+        n_items2 = len(p.ds.items)
+        self.assertGreater(n_items2, n_items1)
+
+        p1 = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
+        res = core.ackrep_parser.load_ackrep_entities(p1)
+        self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2"], "ct")
+        n_items3 = len(p.ds.items)
+        self.assertGreater(n_items3, n_items2)
+
+        self.assertEqual(core.ackrep_parser.ensure_ackrep_load_success(strict=False), 1)
+
+        with self.assertRaises(p.aux.ModuleAlreadyLoadedError):
+            core.ackrep_parser.load_ackrep_entities(p1)
+
+        p.unload_mod(core.ackrep_parser.__URI__)
+        self.assertEqual(core.ackrep_parser.ensure_ackrep_load_success(strict=False), 0)
+
+        # after unloading it should work again
+        core.ackrep_parser.load_ackrep_entities_if_necessary(p1, strict=False)
+        self.assertEqual(core.ackrep_parser.ensure_ackrep_load_success(strict=False), 1)
+
+    def test_ackrep_parser3(self):
+        # unload modules, since they would already be loaded due to load_repo_to_db
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
+
+        mod1 = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
+
+        n_items1 = len(p.ds.items)
+        items1 = set(p.ds.items.keys())
+        core.ackrep_parser.load_ackrep_entities()
+        n_items2 = len(p.ds.items)
+        items2 = set(p.ds.items.keys())
+
+        self.assertGreater(n_items2 - n_items1, 30)
+
+        # unload ACKREP entities
+        p.unload_mod(core.ackrep_parser.__URI__)
+        n_items3 = len(p.ds.items)
+        items3 = set(p.ds.items.keys())
+        self.assertEqual(n_items1, n_items3)
+        self.assertEqual(items3.difference(items1), set())
+
+        # load again ACKREP entities
+        core.ackrep_parser.load_ackrep_entities_if_necessary()
+        core.ackrep_parser.ensure_ackrep_load_success(strict=True)
+        n_items4 = len(p.ds.items)
+        items4 = set(p.ds.items.keys())
+        self.assertEqual(n_items2, n_items4)
+        self.assertEqual(items4.difference(items2), set())
+
+        # omit loading again ACKREP entities
+        core.ackrep_parser.load_ackrep_entities_if_necessary()
+        n_items5 = len(p.ds.items)
+        items5 = set(p.ds.items.keys())
+        self.assertEqual(n_items2, n_items5)
+        self.assertEqual(items5.difference(items2), set())
 
 class TestCases4(DjangoTestCase):
     """
@@ -615,6 +641,10 @@ class TestCases4(DjangoTestCase):
 
     def setUp(self):
         core.load_repo_to_db(ackrep_data_test_repo_path)
+
+    def tearDown(self) -> None:
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
 
     def test_import_parameters(self, key="UXMFA"):
         # test with correct data

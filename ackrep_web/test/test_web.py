@@ -10,6 +10,7 @@ import os
 from ackrep_core_django_settings import settings
 import time
 import subprocess
+import pyerk as p
 
 try:
     # noinspection PyPackageRequirements
@@ -96,6 +97,8 @@ class TestCases2(SimpleTestCase):
         self.load_db()
 
     def load_db(self):
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
         load_repo_to_db_for_ut(ackrep_data_test_repo_path)
 
     def test_entity_detail(self):

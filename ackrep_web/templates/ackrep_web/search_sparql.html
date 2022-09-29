@@ -63,17 +63,7 @@
     PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
     SELECT ?entity
     WHERE {
-        ?entity ocse:R2950 "UXMFA".
-    }
-    </code>
-    or if the label is known, but the short key (R2950) isn't:
-    <code style="display:block; white-space:pre-wrap">
-    PREFIX : &lt;erk:/builtins#&gt;
-    PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
-    SELECT ?entity
-    WHERE {
-        ?entity ?relation "UXMFA".
-        ?relation :R1 "has corresponding ackrep key".
+        ?entity ocse:R2950__has_corresponding_ackrep_key "UXMFA".
     }
     </code>
     <br>
@@ -84,7 +74,7 @@
         SELECT ?relation
         WHERE {
             ?entity ?relation ?o.
-            ?entity :R4 ocse:I7641.
+            ?entity :R4__is_instance_of ocse:I7641__general_system_model.
         }
     </code>
     Get all relations that have a system model as first argument:
@@ -93,7 +83,7 @@
         PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
         SELECT ?relation
         WHERE {
-            ?relation :R8 ocse:I7641.
+            ?relation :R8__has_domain_of_argument_1 ocse:I7641__general_system_model.
         }
     </code>
     Note the difference between the two preceding queries!
@@ -105,7 +95,7 @@
         PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
         SELECT ?item
         WHERE {
-            ?item (:R4|:R3)* :I1
+            ?item (:R4__is_instance_of|:R3__is_subclass_of)* :I1__general_item
         }
     </code>
     <br>
@@ -116,9 +106,9 @@
         PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
         SELECT ?entity
         WHERE {
-            ?entity :R4 ocse:I7641.
-            ?entity ocse:R2928 ?representation.
-            ?representation :R4 ocse:I8063.
+            ?entity :R4__is_instance_of ocse:I7641__general_system_model.
+            ?entity ocse:R2928__has_model_representation ?representation.
+            ?representation :R4__is_instance_of ocse:I8063__partial_differential_equation.
         }
     </code>
     <br>
@@ -129,9 +119,9 @@
         SELECT ?model
         WHERE
         {
-            ?model   ocse:R9125   0.
-            ?model   ocse:R2928   ?repr.
-            ?repr    ocse:R2112   3.
+            ?model   ocse:R9125__has_input_dimension        0.
+            ?model   ocse:R2928__has_model_representation   ?repr.
+            ?repr    ocse:R2112__has_state_dimension        3.
         }
     </code>
     <br>
@@ -143,8 +133,8 @@
         PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
         SELECT ?entity ?tag
         WHERE {
-            ?entity ocse:R1070 ?tag.
-            ?tag :R1 "ocse:Linear_State_Feedback".
+            ?entity ocse:R1070__has_old_tag ?tag.
+            ?tag :R1__has_label "ocse:Linear_State_Feedback".
         }
     </code>
     <br>
@@ -154,10 +144,10 @@
     PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
     SELECT ?entity
     WHERE {
-        ?entity ocse:R1070 ?tag1.
-        ?entity ocse:R1070 ?tag2.
-        ?tag1 :R1 "ocse:Convergence_To_Desired_Trajectory".
-        ?tag2 :R1 "ocse:Trajectory_Generation".
+        ?entity ocse:R1070__has_old_tag ?tag1.
+        ?entity ocse:R1070__has_old_tag ?tag2.
+        ?tag1 :R1__has_label "ocse:Convergence_To_Desired_Trajectory".
+        ?tag2 :R1__has_label "ocse:Trajectory_Generation".
     }
     </code>
 </span>

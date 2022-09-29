@@ -31,6 +31,7 @@ from ipydex import IPS, activate_ips_on_exception  # for debugging only
 
 from . import models
 from . import model_utils
+from . import ackrep_parser
 
 # noinspection PyUnresolvedReferences
 from .model_utils import get_entity_dict_from_db, get_entity_types, resolve_keys, get_entity
@@ -243,7 +244,7 @@ class ACKREP_OntologyManager(object):
         ERK_ROOT_DIR = p.aux.get_erk_root_dir()
         TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
         mod1 = p.erkloader.load_mod_from_path(modpath=TEST_DATA_PATH, prefix="ct")
-        p.ackrep_parser.load_ackrep_entities(startdir)
+        ackrep_parser.load_ackrep_entities(startdir)
         self.ds = p.core.ds
         self.ds.rdfgraph = p.rdfstack.create_rdf_triples()
 
@@ -259,8 +260,8 @@ class ACKREP_OntologyManager(object):
         return res
 
     def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> list:
-        self.load_ontology()
-        qsrc = self.preprocess_query(qsrc)
+        self.ds = p.core.ds
+        qsrc = self.ds.preprocess_query(qsrc)
         res = self.ds.rdfgraph.query(qsrc)
         erk_entitites = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
 
@@ -282,38 +283,6 @@ class ACKREP_OntologyManager(object):
                         entity = e
                     onto_entites.append(("?" + str(res.vars[i]), entity))
         return ackrep_entities, onto_entites
-
-    def preprocess_query(self, query):
-        if "__" in query:
-            prefixes = re.findall(r"[\w]*:[ ]*<.*?>", query)
-            prefix_dict = {}
-            for prefix in prefixes:
-                parts = prefix.split(" ")
-                key = parts[0]
-                value = parts[-1].replace("<", "").replace(">", "")
-                prefix_dict[key] = value
-            print(prefix_dict)
-
-            entities = re.findall(r"[\w]*:[\w]+__[\w]+", query)
-            for e in entities:
-                # check sanity
-                prefix, rest = e.split(":")
-                prefix = prefix + ":"
-                erk_key, description = rest.split("__")
-
-                entity_uri = prefix_dict.get(prefix) + erk_key
-                entity = self.ds.get_entity_by_uri(entity_uri)
-
-                label = description.replace("_", " ")
-
-                msg = f"Entity label '{entity.R1}' for entity '{e}' and given label '{label}' do not match!"
-                assert entity.R1 == label, msg
-
-            new_query = re.sub(r"__[\w]+", "", query)
-        else:
-            new_query = query
-
-        return new_query
 
     def wrap_onto_entity(self, onto_nty):
         """
