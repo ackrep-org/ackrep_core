@@ -216,4 +216,4 @@ try:
 except FileNotFoundError:
     LAST_DEPLOYMENT = "<not available>"
 
-BASE_URL_FOR_PDF = "http://127.0.0.1:8000/"
+BASE_URL_FOR_PDF = "https://testing2.ackrep.org/"

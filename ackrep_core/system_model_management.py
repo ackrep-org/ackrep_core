@@ -791,6 +791,7 @@ def create_system_model_list_pdf():
 
     tex_file.writelines(header)
     tex_file.write("\n\\title{Model Documentation}\n\\maketitle\n\\newpage\n")
+    tex_file.write("\n\\title{Model Documentation}\n\\setcounter{tocdepth}{0}\n\\tableofcontents\n")
     tex_file.writelines(body)
     tex_file.write("\n\\end{document}")
     tex_file.close()
