@@ -416,7 +416,7 @@ class SearchSparqlView(View):
         PREFIX ocse: <erk:/ocse/0.2#>
         SELECT ?s
         WHERE {{
-            ?s :R16 ocse:I7733.
+            ?s :R16__has_property ocse:I7733__time_invariance.
 
         }}
         """

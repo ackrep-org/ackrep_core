@@ -25,6 +25,7 @@ if os.environ.get("CI") != "true":
 
 from . import core
 from . import models
+from . import automatic_model_creation
 from .util import *
 
 # timeout setup for entity check timeout, see https://stackoverflow.com/a/494273
@@ -117,6 +118,12 @@ def main():
         "-ufb",
         "--update-fallback-binaries",
         help="update files in fallback repo",
+        action="store_true",
+    )
+    argparser.add_argument(
+        "-ccm",
+        "--create-compleib-models",
+        help="automatically create models of compleib using template ",
         action="store_true",
     )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
@@ -249,6 +256,8 @@ def main():
         run_jupyter(key)
     elif args.update_fallback_binaries:
         update_fallback_binaries()
+    elif args.create_compleib_models:
+        create_compleib_models()
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -897,3 +906,6 @@ def update_fallback_binaries():
             shutil.copy(plot_dir, target_dir)
         else:
             core.logger.info(f"{entity} plot was not found.")
+
+def create_compleib_models():
+    automatic_model_creation.create_compleib_models_from_template()
