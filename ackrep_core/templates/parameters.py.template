@@ -1,0 +1,83 @@
+
+import sys
+import os
+import numpy as np
+import sympy as sp
+
+import tabulate as tab
+
+
+#link to documentation with examples: https://ackrep-doc.readthedocs.io/en/latest/devdoc/contributing_data.html
+
+
+# set model name
+model_name = {{context.model_name}}
+
+
+# ---------- create symbolic parameters
+A = sp.MatrixSymbol('A', {{context.nx}}, {{context.nx}})
+B = sp.MatrixSymbol('B', {{context.nx}}, {{context.nu}})
+B1 = sp.MatrixSymbol('B1', {{context.nx}}, {{context.nw}})
+C = sp.MatrixSymbol('C', {{context.ny}}, {{context.nx}})
+D21 = sp.MatrixSymbol('D21', {{context.ny}}, {{context.nw}})
+
+pp_symb = [A, B, B1, C, D21]
+
+
+# ---------- create auxiliary symbolic parameters 
+
+# set numerical values of auxiliary parameters
+# trailing "_nv" stands for "numerical value"
+A_nv = {{context.A}}
+B_nv = {{context.B}}
+B1_nv = {{context.B1}}
+C_nv = {{context.C}}
+D21_nv = {{context.D21}}
+
+
+# ---------- create symbolic parameter functions
+# parameter values can be constant/fixed values OR set in relation to other parameters (for example: a = 2*b)  
+
+
+# list of symbolic parameter functions
+# tailing "_sf" stands for "symbolic parameter function"
+pp_sf = [A_nv, B_nv, B1_nv, C_nv, D21_nv]
+
+
+#  ---------- list for substitution
+# -- entries are tuples like: (independent symbolic parameter, numerical value)
+pp_subs_list = []
+
+
+# OPTONAL: Dictionary which defines how certain variables shall be written
+# in the table - key: Symbolic Variable, Value: LaTeX Representation/Code
+# useful for example for complex variables: {Z: r"\underline{Z}"}
+latex_names = {}
+
+
+# ---------- Define LaTeX table
+
+# Define table header 
+# DON'T CHANGE FOLLOWING ENTRIES: "Symbol", "Value"
+tabular_header = ["Symbol", "Value"]
+
+# Define column text alignments
+col_alignment = ["center", "left"]
+
+
+# Define Entries of all columns before the Symbol-Column
+# --- Entries need to be latex code
+col_1 = [] 
+
+# contains all lists of the columns before the "Symbol" Column
+# --- Empty list, if there are no columns before the "Symbol" Column
+start_columns_list = []
+
+
+# Define Entries of the columns after the Value-Column
+# --- Entries need to be latex code
+col_4 = []
+
+# contains all lists of columns after the FIX ENTRIES
+# --- Empty list, if there are no columns after the "Value" column
+end_columns_list = []

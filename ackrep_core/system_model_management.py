@@ -628,8 +628,12 @@ def import_parameters(key=None):
 
     parameters.parameter_check = check_system_parameters(parameters)
     assert parameters.parameter_check == 0, "Parameter file of system model is missing mandatory attributes!"
-
-    pp_nv = list(sp.Matrix(parameters.pp_sf).subs(parameters.pp_subs_list))
+    try:
+        # nominal case
+        pp_nv = list(sp.Matrix(parameters.pp_sf).subs(parameters.pp_subs_list))
+    except ValueError:
+        # special handling if parameter is alredy a matrix -> sp.Matrix(sp.Matrix) raises ValueError
+        pp_nv = list(parameters.pp_sf)
     pp_dict = {parameters.pp_symb[i]: pp_nv[i] for i in range(len(parameters.pp_symb))}
 
     def get_default_parameters():
