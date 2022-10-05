@@ -1,0 +1,20 @@
+#link to documentation with examples: https://ackrep-doc.readthedocs.io/en/latest/devdoc/contributing_data.html
+
+key: {{context.key}}
+predecessor_key: ''
+type: system_model
+name: {{context.model_name}}
+short_description: ''
+version: 0.1.0
+tag_list:
+    - ''
+creator: ''
+editor_list:
+    - ''
+creation_date: ''
+external_references: ''
+notes: ''
+estimated_runtime: ''
+compatible_environment: ""
+system_model_file: system_model.py
+simulation_file: simulation.py
