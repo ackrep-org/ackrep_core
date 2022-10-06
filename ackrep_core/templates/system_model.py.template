@@ -24,15 +24,12 @@ class Model(GenericModel):
 
         :return: None
         """
-        
-        # ---------start of edit section--------------------------------------
+
         # Define number of inputs -- MODEL DEPENDENT
         self.u_dim = {{context.nu}}
 
         # Set "sys_dim" to constant value, if system dimension is constant 
         self.sys_dim = {{context.nx}}
-
-        # ---------end of edit section----------------------------------------
 
         # check existence of params file
         self.has_params = True
@@ -40,7 +37,6 @@ class Model(GenericModel):
         
 
     # ----------- SET DEFAULT INPUT FUNCTION ---------- # 
-    # --------------- Only for non-autonomous Systems
     def uu_default_func(self):
         """
         define input function
@@ -48,7 +44,6 @@ class Model(GenericModel):
         :return:(function with 2 args - t, xx_nv) default input function 
         """ 
         
-        # ---------start of edit section--------------------------------------
         def uu_rhs(t, xx_nv):
             """
             sequence of numerical input values
@@ -58,9 +53,7 @@ class Model(GenericModel):
             :return:(list) numeric inputs 
             """ 
             u = np.zeros(self.u_dim)
-            u[0] = sp.sin(t)
             return u
-        # ---------end of edit section----------------------------------------
 
         return uu_rhs
 
@@ -76,17 +69,15 @@ class Model(GenericModel):
         if self.dxx_dt_symb is not None:
             return self.dxx_dt_symb
 
-
-        # ---------start of edit section--------------------------------------
-        x = self.xx_symb   # state components
-        A, B, B1, _, _ = self.pp_symb   # parameters
+        x = self.xx_symb  
+        A, B, B1, C1, C, D11, D12, D21 = self.pp_symb   # parameters
         w = np.zeros({{context.nw}}) # noise
         u = self.uu_symb   # inputs
 
         # define symbolic rhs functions
         self.dxx_dt_symb = np.matmul(A,x) + np.matmul(B1,w) + np.matmul(B,u)
         
-        # ---------end of edit section----------------------------------------
+
 
 
         return self.dxx_dt_symb

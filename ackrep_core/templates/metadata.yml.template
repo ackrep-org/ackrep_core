@@ -1,20 +1,44 @@
+# {{warning}}
+
 #link to documentation with examples: https://ackrep-doc.readthedocs.io/en/latest/devdoc/contributing_data.html
 
 key: {{context.key}}
 predecessor_key: ''
 type: system_model
 name: {{context.model_name}}
-short_description: ''
+short_description: {{context.description}}
 version: 0.1.0
 tag_list:
     - ''
-creator: ''
+erk_data:
+    R9125["has input dimension"]: {{context.nu}}
+    R8978["has output dimension"]: {{context.nz}}
+    R2928["has model representation"]:
+        I6850["state space model representation"]:
+            R2112["has state dimension"]: {{context.nx}}
+            R3898["has system order"]: 1 # todo: this should be redundant
+            R16["has property"]:
+                - I1898["lti"]
+                - I8978["time continuity"]
+    {% if context.property|length > 0 %}
+    R16["has property"]:
+        {% for p in context.property %}
+        - {{p}}
+        {% endfor %}
+    {% endif %}
+    {% if context.not_property|length > 0 %}
+    R61["does not have property"]:
+        {% for p in context.not_property %}
+        - {{p}}
+        {% endfor %}
+    {% endif %}
+creator: {{context.creator}}
 editor_list:
-    - ''
-creation_date: ''
+    - {{context.editor}}
+creation_date: {{context.creation_date}}
 external_references: ''
 notes: ''
-estimated_runtime: ''
+estimated_runtime: 10s
 compatible_environment: ""
 system_model_file: system_model.py
 simulation_file: simulation.py

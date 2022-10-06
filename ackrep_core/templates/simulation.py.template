@@ -28,16 +28,11 @@ def simulate():
 
     rhs = model.get_rhs_func()
 
-    # ---------start of edit section--------------------------------------
     # initial state values
-    xx0 = np.zeros(model.sys_dim)
+    xx0 = np.ones(model.sys_dim)
 
     t_end = 10
     tt = np.linspace(0, t_end, 10000)
-
-    # define inputfunction
-    # uu = model.uu_default_func(tt, tt)
-    # simulation_data.uu = uu
 
     simulation_data = solve_ivp(rhs, (0, t_end), xx0, t_eval=tt)
 
@@ -65,12 +60,10 @@ def save_plot(simulation_data):
     :param simulation_data: simulation_data of system_model
     :return: None
     """
-    # ---------start of edit section--------------------------------------
-    # plot of your data
+
     for i in range(simulation_data.output.shape[0]):
         plt.plot(simulation_data.t, simulation_data.output[i], label=f"$y_{i}$")
 
-    # ---------end of edit section----------------------------------------
     plt.legend()
     plt.tight_layout()
 
@@ -84,12 +77,7 @@ def evaluate_simulation(simulation_data):
     :param simulation_data: simulation_data of system_model
     :return:
     """
-    # ---------start of edit section--------------------------------------
-    # fill in final states of simulation to check your model
-    # simulation_data.y[i][-1]
-    expected_final_state = np.zeros({{context.nx}})
-
-    # ---------end of edit section----------------------------------------
+    expected_final_state = {{context.final_state}}
 
     rc = ResultContainer(score=1.0)
     simulated_final_state = simulation_data.y[:, -1]

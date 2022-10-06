@@ -123,8 +123,12 @@ def main():
     argparser.add_argument(
         "-ccm",
         "--create-compleib-models",
-        help="automatically create models of compleib using template ",
+        help="automatically create models of compleib from template ",
         action="store_true",
+    )
+    argparser.add_argument(
+        "--only",
+        metavar="handle",
     )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
@@ -257,7 +261,7 @@ def main():
     elif args.update_fallback_binaries:
         update_fallback_binaries()
     elif args.create_compleib_models:
-        create_compleib_models()
+        create_compleib_models(args.only)
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -907,5 +911,6 @@ def update_fallback_binaries():
         else:
             core.logger.info(f"{entity} plot was not found.")
 
-def create_compleib_models():
-    automatic_model_creation.create_compleib_models_from_template()
+
+def create_compleib_models(arg0):
+    automatic_model_creation.create_compleib_models_from_template(arg0)

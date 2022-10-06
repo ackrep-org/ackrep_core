@@ -19,10 +19,13 @@ model_name = {{context.model_name}}
 A = sp.MatrixSymbol('A', {{context.nx}}, {{context.nx}})
 B = sp.MatrixSymbol('B', {{context.nx}}, {{context.nu}})
 B1 = sp.MatrixSymbol('B1', {{context.nx}}, {{context.nw}})
+C1 = sp.MatrixSymbol('C1', {{context.nz}}, {{context.nx}})
 C = sp.MatrixSymbol('C', {{context.ny}}, {{context.nx}})
+D11 = sp.MatrixSymbol('D11', {{context.nz}}, {{context.nw}})
+D12 = sp.MatrixSymbol('D12', {{context.nz}}, {{context.nu}})
 D21 = sp.MatrixSymbol('D21', {{context.ny}}, {{context.nw}})
 
-pp_symb = [A, B, B1, C, D21]
+pp_symb = [A, B, B1, C1, C, D11, D12, D21]
 
 
 # ---------- create auxiliary symbolic parameters 
@@ -32,7 +35,10 @@ pp_symb = [A, B, B1, C, D21]
 A_nv = {{context.A}}
 B_nv = {{context.B}}
 B1_nv = {{context.B1}}
+C1_nv = {{context.C1}}
 C_nv = {{context.C}}
+D11_nv = {{context.D11}}
+D12_nv = {{context.D12}}
 D21_nv = {{context.D21}}
 
 
@@ -42,7 +48,7 @@ D21_nv = {{context.D21}}
 
 # list of symbolic parameter functions
 # tailing "_sf" stands for "symbolic parameter function"
-pp_sf = [A_nv, B_nv, B1_nv, C_nv, D21_nv]
+pp_sf = [A_nv, B_nv, B1_nv, C1_nv, C_nv, D11_nv, D12_nv, D21_nv]
 
 
 #  ---------- list for substitution

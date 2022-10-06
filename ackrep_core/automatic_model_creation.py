@@ -7,19 +7,25 @@ import matplotlib.pyplot as plt
 import matlab.engine
 import sympy as sp
 import re
-from util import run_command
+from util import *
+import copy
+import time
 
-def create_compleib_models_from_template():
 
-    lib_folder = os.path.join(core.data_path, "system_models", "_COMPleib_models")
+def create_compleib_models_from_template(target=None):
+    lib_folder = os.path.join(core.data_path, "system_models", "compleib_models", "src")
     lib_path = os.path.join(lib_folder, "COMPleib.m")
+    td = {"t1": {}, "t2": {}, "t3": {}, "t4": {}, "t5": {}, "t6": {}, "t7": {}, "t8": {}}
+    ts = time.time()
 
     eng = matlab.engine.start_matlab()
     eng.cd(lib_folder)
-
+    t1 = time.time()
+    td["t1"]["t"] = t1 - ts
+    td["t1"]["n"] = "matlab startup"
     with open(lib_path, "r") as lib_file:
         _content = lib_file.read()
-    
+
     split_str = "%------------------------------"
 
     # homogenize divider
@@ -28,27 +34,41 @@ def create_compleib_models_from_template():
 
     parts = content.split(split_str)
 
+    t2 = time.time()
+    td["t2"]["t"] = t2 - t1
+    td["t2"]["n"] = "read .m and split"
+
     stat_dict = {"n_models": 0, "n_names": 0, "n_sources": 0}
     model_dict = {}
     model_counter = 0
     for part in parts:
         # select all comment blocks, code is handled by matlab engine
         if part[0:2] == "\n%":
-            # flags = {}
+            model_counter += 1
+            # get model identifier (AC1)
+            handle_pattern = re.compile(r"(?<=\()[\w]+(?=\))")
+            handles = re.findall(handle_pattern, part)
+            handle = handles[0]  # first one is model handle
+
+            if target:
+                assert isinstance(target, str), f"name {target} must be string"
+                if target != handle:
+                    continue
+
+            context = {}
+            context["property"] = []
+            context["not_property"] = []
+
+            model_dict[handle] = {}
+            model_dict[handle]["N"] = model_counter
+            model_dict[handle]["description"] = context["description"] = cleanup_str(part)
+            stat_dict["n_models"] += 1
+
             # get rid of comments inside the comment block
             ehemals_pattern = re.compile(r"\%+ehemals[ ]*\([\w]+\)")
             part = re.sub(ehemals_pattern, "", part)
             note_pattern = re.compile(r"Note:.+", re.DOTALL)
             part = re.sub(note_pattern, "", part)
-
-            # get model identifier (AC1)
-            handle_pattern = re.compile(r"(?<=\()[\w]+(?=\))")
-            handles = re.findall(handle_pattern, part)
-            handle = handles[0]  # first one is model handle
-            model_dict[handle] = {}
-            model_dict[handle]["N"] = model_counter
-            model_dict[handle]["description"] = cleanup_str(part)
-            stat_dict["n_models"] += 1
 
             recursion_failed = False
 
@@ -74,7 +94,7 @@ def create_compleib_models_from_template():
             if indicator >= 1:
                 # find the earliest possible start of the source
                 # source could start with title '"..."', author 'M. [M.] Mustermann' or 'see Leibfritz, Volkwein:'
-                start_positions = np.ones(3)*np.inf
+                start_positions = np.ones(3) * np.inf
                 for i, pattern in enumerate([title_pattern, author_pattern, leibfritz_pattern]):
                     s = [match.start(0) for match in re.finditer(pattern, part)]
                     if s:
@@ -94,9 +114,9 @@ def create_compleib_models_from_template():
                 ref_list = re.findall(handle_pattern, part.split(f"({handle})", 1)[-1])
                 if ref_list:
                     assert len(ref_list) == 1
+                    model_name = model_dict[ref_list[0]]["name"]
                     try:
                         source = model_dict[ref_list[0]]["source"]
-                        model_name = model_dict[ref_list[0]]["name"]
                     except KeyError:
                         # reference also doesnt have a source
                         recursion_failed = True
@@ -120,7 +140,7 @@ def create_compleib_models_from_template():
                 if not recursion_failed:
                     core.logger.warning(f"no Source found for {handle}")
                     # IPS()
- 
+
             model_dict[handle]["name"] = model_name
             if model_name == handle:
                 core.logger.warning(f"no model name found for {handle}")
@@ -128,57 +148,164 @@ def create_compleib_models_from_template():
             else:
                 stat_dict["n_names"] += 1
 
-            model_counter += 1
-            def p():
-                print(handle)
-                print(model_name)
-                print(source)
+            t3 = time.time()
+            td["t3"]["t"] = t3 - t2
+            td["t3"]["n"] = "parse .m"
 
+            [A, B1, B, C1, C, D11, D12, D21, nx, nw, nu, nz, ny] = data = convert_to_numpy(
+                eng.COMPleib(handle, nargout=13)
+            )
+            # ensure homogeneous datatypes
+            for i, d in enumerate(data[:8]):
+                if type(d) != np.ndarray:
+                    data[i] = np.array([d])
+            [A, B1, B, C1, C, D11, D12, D21, nx, nw, nu, nz, ny] = data
+            # IPS()
+            t4 = time.time()
+            td["t4"]["t"] = t4 - t3
+            td["t4"]["n"] = "matlab function call"
+
+            context["A"] = "sp." + str(sp.Matrix(A))
+            context["B"] = "sp." + str(sp.Matrix(B))
+            context["B1"] = "sp." + str(sp.Matrix(B1))
+            context["C1"] = "sp." + str(sp.Matrix(C1))
+            context["C"] = "sp." + str(sp.Matrix(C))
+            context["D11"] = "sp." + str(sp.Matrix(D11))
+            context["D12"] = "sp." + str(sp.Matrix(D12))
+            context["D21"] = "sp." + str(sp.Matrix(D21))
+            context["A_num"] = sp.Matrix(A)
+            context["B_num"] = sp.Matrix(B)
+            context["B1_num"] = sp.Matrix(B1)
+            context["C1_num"] = sp.Matrix(C1)
+            context["C_num"] = sp.Matrix(C)
+            context["D11_num"] = sp.Matrix(D11)
+            context["D12_num"] = sp.Matrix(D12)
+            context["D21_num"] = sp.Matrix(D21)
+            context["nx"] = nx
+            context["nw"] = nw
+            context["nu"] = nu
+            context["nz"] = nz
+            context["ny"] = ny
+            context["model_name"] = f"'{model_name}'"
+            context["creator"] = "F. Leibfritz, also see <http://www.compleib.de/>"
+            context["editor"] = "This entity was automatically generated."
+            context["creation_date"] = core.current_time_str()
+            if source:
+                context["source"] = source
+            if model_counter < 10:
+                key = "COM0" + str(model_counter)
+            elif model_counter < 100:
+                key = "COM" + str(model_counter)
+            else:
+                key = "CO" + str(model_counter)
+            context["key"] = key
+
+            # TODO: why you so slow?
+
+            # simulate model, calculate final state
+            simulate_system(context)
+            t5 = time.time()
+            td["t5"]["t"] = t5 - t4
+            td["t5"]["n"] = "simulate"
+            # calculate controllability, observability
+            check_qs_qb(context)
+            t6 = time.time()
+            td["t6"]["t"] = t6 - t5
+            td["t6"]["n"] = "Qs Qb"
+
+            file_names = ["system_model.py", "simulation.py", "parameters.py", "metadata.yml", "documentation.tex"]
+            for name in file_names:
+                template_path = f"templates/{name}.template"
+                folder_path = os.path.join(core.data_path, "system_models", "compleib_models", handle)
+                if "docu" in name:
+                    folder_path = os.path.join(folder_path, "_data")
+                os.makedirs(folder_path, exist_ok=True)
+                target_path = os.path.join(folder_path, name)
+                context.pop("warning", None)
+                core.render_template(template_path, context, target_path)
+
+            t7 = time.time()
+            td["t7"]["t"] = t7 - t6
+            td["t7"]["n"] = "render"
+
+            # print(td)
+            print(bgreen(f"{handle} done."))
     print(stat_dict)
-    IPS()
-    exit()
-
-    [A,B1,B,C1,C,D11,D12,D21,nx,nw,nu,nz,ny] = convert_to_numpy(eng.COMPleib(handle, nargout=13))
-
-    context = {}
-    context["A"] = "sp." + str(sp.Matrix(A))
-    context["B"] = "sp." + str(sp.Matrix(B))
-    context["B1"] = "sp." + str(sp.Matrix(B1))
-    context["C"] = "sp." + str(sp.Matrix(C))
-    context["D21"] = "sp." + str(sp.Matrix(D21))
-    context["nx"] = nx
-    context["nw"] = nw
-    context["nu"] = nu
-    context["nz"] = nz
-    context["ny"] = ny
-    context["model_name"] = "'AC1'"
-    model_counter = 1
-    if model_counter < 10:
-        key = "COM0" + str(model_counter)
-    else:
-        key = "COM" + str(model_counter)
-    context["key"] = key
-    
-    file_names = ["system_model.py", "simulation.py", "parameters.py", "metadata.yml"]
-
-    for name in file_names:
-        template_path = f'templates/{name}.template'
-        target_path = os.path.join(core.data_path, "system_models", "test_entity", name)
-        core.render_template(template_path, context, target_path)
+    print("total time:", time.time() - ts)
 
 
 def convert_to_numpy(t: tuple) -> tuple:
+    assert len(t) == 13
     a = np.array(t)
     for i, v in enumerate(a):
-        if isinstance(v, matlab.double):
-            a[i] = np.array(v)
-        elif isinstance(v, float) and v == int(v):
+        # Matrices
+        if i < 8:
+            if isinstance(v, matlab.double):
+                a[i] = np.array(v)
+            else:
+                # 1x1 Matrix for type conformity
+                a[i] = np.array([v])
+        # Matix dimensions
+        else:
             a[i] = int(v)
     return a
 
+
 def cleanup_str(s: str) -> str:
-    """remove % and multi spaces from str"""
-    for character in ["%", ":", "(", ")"]:
+    """remove special characters and multi spaces from str"""
+    for character in ["%", ":", "(", ")", ";"]:
         s = s.replace(character, "")
     s = re.sub(r"\s+", " ", s)
     return s.strip()
+
+
+def simulate_system(context: dict) -> dict:
+    """simulate COMPleib system model and add relevnat infos to context dict"""
+
+    def uu_rhs(t, x):
+        u = np.zeros(context["nu"])
+        # u[0] = sp.sin(t)
+        return u
+
+    def rhs(t, x):
+        u = uu_rhs(t, x)
+        w = np.zeros(context["nw"])
+
+        dxx_dt = np.matmul(context["A_num"], x) + np.matmul(context["B1_num"], w) + np.matmul(context["B_num"], u)
+
+        return dxx_dt
+
+    t_end = 10
+    tt = np.linspace(0, t_end, 1000)
+    res = solve_ivp(rhs, (0, t_end), np.ones(context["nx"]), t_eval=tt)
+    context["final_state"] = "np." + repr(res.y[:, -1])
+
+    return context
+
+
+def check_qs_qb(context: dict) -> dict:
+    """check controllability and observability of model using Kalman criteria. Add info to context"""
+    A = context["A_num"]
+    B = context["B_num"]
+    C = context["C1_num"]
+    nx = context["nx"]
+
+    Qs = copy.copy(B)
+    for i in range(1, nx):
+        Qs = sp.Matrix(np.concatenate((Qs, A**i * B), axis=1))
+    r_qs = np.linalg.matrix_rank(np.array(Qs, dtype=float))
+    if r_qs == nx:
+        context["property"].append('I7864["controllability"]')
+    else:
+        context["not_property"].append('I7864["controllability"]')
+
+    Qb = copy.copy(C)
+    for i in range(1, nx):
+        Qb = sp.Matrix(np.concatenate((Qb, C * A**i), axis=0))
+    r_qb = np.linalg.matrix_rank(np.array(Qb, dtype=float))
+    if r_qb == nx:
+        context["property"].append('I3227["observability"]')
+    else:
+        context["not_property"].append('I3227["observability"]')
+
+    return context
