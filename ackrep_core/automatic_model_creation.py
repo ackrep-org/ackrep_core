@@ -34,7 +34,7 @@ def create_compleib_models_from_template():
     for part in parts:
         # select all comment blocks, code is handled by matlab engine
         if part[0:2] == "\n%":
-            flags = {}
+            # flags = {}
             # get rid of comments inside the comment block
             ehemals_pattern = re.compile(r"\%+ehemals[ ]*\([\w]+\)")
             part = re.sub(ehemals_pattern, "", part)
@@ -52,24 +52,43 @@ def create_compleib_models_from_template():
 
             recursion_failed = False
 
-            # find source
-            # author pattern and everything after, 
+            """
+            strategy to parse heterogeneous comment blocks:
+            - check if source exists (year and "")
+                - yes: extract source (can be structured in various ways), name = everything before source
+                - no: check if internal reference exists, e.g. see (AC1)
+                    - yes: use name and source of reference
+                    - no: everything is name, there is no source
+            """
             source = None
-            author_pattern = re.compile(r"(?<=\s)[A-Z]\.\s[A-Z][a-z]+.+|(?<=\()see Leibfritz.+(?=\))", re.DOTALL)  
-            sources = re.findall(author_pattern, part) # this is prefered, since it captures the source as a whole
+            year_pattern = re.compile(r"(?:20|19)[0-9]{2}")
+            title_pattern = re.compile(r'".+?"', re.DOTALL)
+            author_pattern = re.compile(r"[A-Z]\. (?:[A-Z]\. )?.+?(?=and|,|:)")
+            leibfritz_pattern = re.compile(r"Leibfritz, Volkwein:")
 
-            year_pattern = re.compile(r"[1-2][0-9]{3}")
-            years = re.findall(year_pattern, part) # this is the fallback, it just indicates, that there is a source
+            indicator = 0
+            for pattern in [year_pattern, title_pattern, author_pattern, leibfritz_pattern]:
+                if re.findall(pattern, part):
+                    indicator += 1
 
-            if sources:
-                assert len(sources) == 1, "only one source should be matched here"
-                assert len(sources[0]) > 0, "dont match empty strings"
-                source = cleanup_str(sources[0])
-            elif years and part.count('"') == 2:
-                # there is a source, but it doesnt match the pattern above -> speacial handling for source and name
-                s_pat = re.compile(r"(?<=\n).+", re.DOTALL)
-                source = cleanup_str(re.findall(s_pat, part.split(f"({handle})", 1)[-1])[0])
-                flags["special"] = True
+            if indicator >= 1:
+                # find the earliest possible start of the source
+                # source could start with title '"..."', author 'M. [M.] Mustermann' or 'see Leibfritz, Volkwein:'
+                start_positions = np.ones(3)*np.inf
+                for i, pattern in enumerate([title_pattern, author_pattern, leibfritz_pattern]):
+                    s = [match.start(0) for match in re.finditer(pattern, part)]
+                    if s:
+                        start_positions[i] = s[0]
+                start = int(min(start_positions))
+
+                source = cleanup_str(part[start:])
+                begin = part[:start]
+                raw = r"(?<=\(" + handle + r"\)).+"
+                name_pattern = re.compile(raw, re.DOTALL)
+                model_name = cleanup_str(re.findall(name_pattern, begin)[0])
+                if len(model_name) < 3:
+                    # model has no name
+                    model_name = handle
             else:
                 # no source was found, check for internal reference handle
                 ref_list = re.findall(handle_pattern, part.split(f"({handle})", 1)[-1])
@@ -77,18 +96,23 @@ def create_compleib_models_from_template():
                     assert len(ref_list) == 1
                     try:
                         source = model_dict[ref_list[0]]["source"]
-                        flags["ref_model"] = ref_list[0]
+                        model_name = model_dict[ref_list[0]]["name"]
                     except KeyError:
+                        # reference also doesnt have a source
                         recursion_failed = True
                         core.logger.info(f"Source recursion failed for {handle}")
                 else:
                     # no reference or source, but maybe the name of the previous model matches with the current model?
                     prev_handle = list(model_dict.keys())[-2]
                     prev_name = model_dict[prev_handle]["name"]
-                    if prev_name.lower() in part.lower() and "source" in model_dict[prev_handle].keys():
-                        source = model_dict[prev_handle]["source"]
-                        flags["ref_model"] = prev_handle
-
+                    if prev_name.lower() in part.lower():
+                        model_name = model_dict[prev_handle]["name"]
+                        if "source" in model_dict[prev_handle].keys():
+                            source = model_dict[prev_handle]["source"]
+                    else:
+                        raw = r"(?<=\(" + handle + r"\)).+"
+                        name_pattern = re.compile(raw, re.DOTALL)
+                        model_name = cleanup_str(re.findall(name_pattern, part)[0])
             if source:
                 model_dict[handle]["source"] = source
                 stat_dict["n_sources"] += 1
@@ -96,37 +120,11 @@ def create_compleib_models_from_template():
                 if not recursion_failed:
                     core.logger.warning(f"no Source found for {handle}")
                     # IPS()
-                    
-            # try to find appropriate model name
-            if "source" in model_dict[handle].keys() and "ref_model" not in flags.keys() and "special" not in flags.keys():
-                # everything between handle and source is name
-                raw = r"(?<=\(" + handle + r"\)).+?(?=[A-Z]\.\s[A-Z][a-z]+|\(see Leibfritz)"
-                name_pattern = re.compile(raw, re.DOTALL)
-                model_names = re.findall(name_pattern, part)
-                if len(model_names) > 0:
-                    assert len(model_names) == 1
-                    model_name = cleanup_str(model_names[0])
-                    if len(model_name) < 5:
-                        # re probably detected a first name of an author
-                        model_name = handle
-                else:
-                    model_name = handle
-            elif "ref_model" in flags.keys():
-                # if this is just a slightly diffrent version, use name of original model
-                model_name = model_dict[flags["ref_model"]]["name"]
-            elif "special" in flags.keys():
-                raw = r"(?<=\(" + handle + r"\)).+?(?=\n)" 
-                name_pattern = re.compile(raw)
-                model_name = cleanup_str(re.findall(name_pattern, part)[0])
-            else:
-                raw = r"(?<=\(" + handle + r"\)).+"
-                name_pattern = re.compile(raw, re.DOTALL)
-                model_name = cleanup_str(re.findall(name_pattern, part)[0])
-
+ 
             model_dict[handle]["name"] = model_name
             if model_name == handle:
                 core.logger.warning(f"no model name found for {handle}")
-                IPS()
+                # IPS()
             else:
                 stat_dict["n_names"] += 1
 
@@ -135,8 +133,7 @@ def create_compleib_models_from_template():
                 print(handle)
                 print(model_name)
                 print(source)
-            # IPS(handle == "ROC3")
-    # TODO NN1, DIS5 better pattern for authors
+
     print(stat_dict)
     IPS()
     exit()
@@ -181,7 +178,7 @@ def convert_to_numpy(t: tuple) -> tuple:
 
 def cleanup_str(s: str) -> str:
     """remove % and multi spaces from str"""
-    s = s.replace("%", "")
-    s = s.replace(":", "")
+    for character in ["%", ":", "(", ")"]:
+        s = s.replace(character, "")
     s = re.sub(r"\s+", " ", s)
     return s.strip()
