@@ -130,6 +130,12 @@ def main():
         "--only",
         metavar="handle",
     )
+    argparser.add_argument(
+        "-tcm",
+        "--test-compleib-models",
+        help="test all compleib models",
+        action="store_true",
+    )
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -262,6 +268,8 @@ def main():
         update_fallback_binaries()
     elif args.create_compleib_models:
         create_compleib_models(args.only)
+    elif args.test_compleib_models:
+        test_compleib_models()
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -914,3 +922,17 @@ def update_fallback_binaries():
 
 def create_compleib_models(arg0):
     automatic_model_creation.create_compleib_models_from_template(arg0)
+
+
+def test_compleib_models():
+    entity_list = list(models.SystemModel.objects.all())
+    com_models = [i for i in entity_list if "CO" in i.key]
+    for e in com_models:
+        print(bright(e))
+        res = core.check_generic(e.key)
+        if res.returncode == 0:
+            print(bgreen("Success."))
+        elif res.returncode == 2:
+            print(yellow("Inaccurate."))
+        else:
+            print(bred("Fail."))
