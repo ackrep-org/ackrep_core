@@ -12,6 +12,7 @@ from pyerk.builtin_entities import instance_of
 from pyerk.erkloader import load_mod_from_path, ModuleType
 from pyerk import builtin_entities
 from pyerk.auxiliary import *
+from . import models
 
 __URI__ = "erk:/ackrep"
 
@@ -135,37 +136,36 @@ def ensure_ocse_is_loaded() -> ModuleType:
 
 def load_all_problems_and_solutions(ackrep_path):
     retcodes = []
-    for n in ["problem_specifications", "problem_solutions"]:
-        path = os.path.join(ackrep_path, n)
-        folders = os.listdir(path)
-        for folder in folders:
-            # skip template folder
-            if folder[0] == "_":
-                continue
-            if not os.path.isdir(os.path.join(path, folder)):
-                continue
+    entities = list(models.ProblemSolution.objects.all()) + list(models.ProblemSpecification.objects.all())
+    for entity in entities:
+        retcode = load_problem_or_solution(os.path.join(ackrep_path, os.pardir, entity.base_path))
+        retcodes.append(retcode)
 
-            retcode = load_problem_or_solution(os.path.join(path, folder))
-            retcodes.append(retcode)
+    # for n in ["problem_specifications", "problem_solutions"]:
+    #     path = os.path.join(ackrep_path, n)
+    #     folders = os.listdir(path)
+    #     for folder in folders:
+    #         # skip template folder
+    #         if folder[0] == "_":
+    #             continue
+    #         if not os.path.isdir(os.path.join(path, folder)):
+    #             continue
+
+    #         retcode = load_problem_or_solution(os.path.join(path, folder))
+    #         retcodes.append(retcode)
 
     # if sum(retcodes) == 0:
-        # print(bgreen("All entities successfully parsed."))
+    # print(bgreen("All entities successfully parsed."))
     # else:
-        # print(bred("Not all entities parsed, see above."))
+    # print(bred("Not all entities parsed, see above."))
 
     return sum(retcodes)
 
 
 def load_all_system_models(ackrep_path):
     retcodes = []
-    system_models_path = os.path.join(ackrep_path, "system_models")
-    model_folders = os.listdir(system_models_path)
-    for folder in model_folders:
-        # skip template folder
-        if folder[0] == "_":
-            continue
-
-        retcode = load_system_model(os.path.join(system_models_path, folder))
+    for entity in list(models.SystemModel.objects.all()):
+        retcode = load_system_model(os.path.join(ackrep_path, os.pardir, entity.base_path))
         retcodes.append(retcode)
 
     # if sum(retcodes) == 0:
