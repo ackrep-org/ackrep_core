@@ -1,15 +1,17 @@
-import os
+import os, sys
 from ipydex import IPS
 from . import core
 import numpy as np
-from scipy.integrate import solve_ivp
+from scipy.integrate import solve_ivp, odeint
 import matplotlib.pyplot as plt
 import matlab.engine
 import sympy as sp
 import re
 from util import *
-import copy
 import time
+from numpy.linalg import LinAlgError
+
+row_template = "    {}s\n  {}"
 
 
 def create_compleib_models_from_template(target=None):
@@ -54,6 +56,11 @@ def create_compleib_models_from_template(target=None):
                 assert isinstance(target, str), f"name {target} must be string"
                 if target != handle:
                     continue
+            print(f"  starting with {handle}...")
+            t25 = time.time()
+            td["t25"] = {}
+            td["t25"]["t"] = t25 - t2
+            td["t25"]["n"] = "start model"
 
             context = {}
             context["property"] = []
@@ -81,6 +88,7 @@ def create_compleib_models_from_template(target=None):
                     - no: everything is name, there is no source
             """
             source = None
+            model_name = handle
             year_pattern = re.compile(r"(?:20|19)[0-9]{2}")
             title_pattern = re.compile(r'".+?"', re.DOTALL)
             author_pattern = re.compile(r"[A-Z]\. (?:[A-Z]\. )?.+?(?=and|,|:)")
@@ -123,16 +131,20 @@ def create_compleib_models_from_template(target=None):
                         core.logger.info(f"Source recursion failed for {handle}")
                 else:
                     # no reference or source, but maybe the name of the previous model matches with the current model?
-                    prev_handle = list(model_dict.keys())[-2]
-                    prev_name = model_dict[prev_handle]["name"]
-                    if prev_name.lower() in part.lower():
-                        model_name = model_dict[prev_handle]["name"]
-                        if "source" in model_dict[prev_handle].keys():
-                            source = model_dict[prev_handle]["source"]
-                    else:
-                        raw = r"(?<=\(" + handle + r"\)).+"
-                        name_pattern = re.compile(raw, re.DOTALL)
-                        model_name = cleanup_str(re.findall(name_pattern, part)[0])
+                    try:
+                        prev_handle = list(model_dict.keys())[-2]
+                        prev_name = model_dict[prev_handle]["name"]
+                        if prev_name.lower() in part.lower():
+                            model_name = model_dict[prev_handle]["name"]
+                            if "source" in model_dict[prev_handle].keys():
+                                source = model_dict[prev_handle]["source"]
+                        else:
+                            raw = r"(?<=\(" + handle + r"\)).+"
+                            name_pattern = re.compile(raw, re.DOTALL)
+                            model_name = cleanup_str(re.findall(name_pattern, part)[0])
+                    except IndexError:
+                        # only occurs if --only flag is set -> thats a debug case
+                        pass
             if source:
                 model_dict[handle]["source"] = source
                 stat_dict["n_sources"] += 1
@@ -149,38 +161,34 @@ def create_compleib_models_from_template(target=None):
                 stat_dict["n_names"] += 1
 
             t3 = time.time()
-            td["t3"]["t"] = t3 - t2
+            td["t3"]["t"] = t3 - t25
             td["t3"]["n"] = "parse .m"
+            print(row_template.format(round(t3 - t25, 1), "getting matrices..."))
+            try:
+                [A, B1, B, C1, C, D11, D12, D21, nx, nw, nu, nz, ny] = convert_to_numpy(
+                    eng.COMPleib(handle, nargout=13)
+                )
+            except:
+                core.logger.error(f"matlab error when reading matrices for {handle}")
+                continue
 
-            [A, B1, B, C1, C, D11, D12, D21, nx, nw, nu, nz, ny] = data = convert_to_numpy(
-                eng.COMPleib(handle, nargout=13)
-            )
-            # ensure homogeneous datatypes
-            for i, d in enumerate(data[:8]):
-                if type(d) != np.ndarray:
-                    data[i] = np.array([d])
-            [A, B1, B, C1, C, D11, D12, D21, nx, nw, nu, nz, ny] = data
-            # IPS()
-            t4 = time.time()
-            td["t4"]["t"] = t4 - t3
-            td["t4"]["n"] = "matlab function call"
-
-            context["A"] = "sp." + str(sp.Matrix(A))
-            context["B"] = "sp." + str(sp.Matrix(B))
-            context["B1"] = "sp." + str(sp.Matrix(B1))
-            context["C1"] = "sp." + str(sp.Matrix(C1))
-            context["C"] = "sp." + str(sp.Matrix(C))
-            context["D11"] = "sp." + str(sp.Matrix(D11))
-            context["D12"] = "sp." + str(sp.Matrix(D12))
-            context["D21"] = "sp." + str(sp.Matrix(D21))
-            context["A_num"] = sp.Matrix(A)
-            context["B_num"] = sp.Matrix(B)
-            context["B1_num"] = sp.Matrix(B1)
-            context["C1_num"] = sp.Matrix(C1)
-            context["C_num"] = sp.Matrix(C)
-            context["D11_num"] = sp.Matrix(D11)
-            context["D12_num"] = sp.Matrix(D12)
-            context["D21_num"] = sp.Matrix(D21)
+            context["A_num"] = A
+            context["B_num"] = B
+            context["B1_num"] = B1
+            context["C1_num"] = C1
+            context["C_num"] = C
+            context["D11_num"] = D11
+            context["D12_num"] = D12
+            context["D21_num"] = D21
+            np.set_printoptions(threshold=sys.maxsize)
+            context["A"] = "np." + repr(context["A_num"])
+            context["B"] = "np." + repr(context["B_num"])
+            context["B1"] = "np." + repr(context["B_num"])
+            context["C1"] = "np." + repr(context["C1_num"])
+            context["C"] = "np." + repr(context["C_num"])
+            context["D11"] = "np." + repr(context["D11_num"])
+            context["D12"] = "np." + repr(context["D12_num"])
+            context["D21"] = "np." + repr(context["D21_num"])
             context["nx"] = nx
             context["nw"] = nw
             context["nu"] = nu
@@ -200,18 +208,22 @@ def create_compleib_models_from_template(target=None):
                 key = "CO" + str(model_counter)
             context["key"] = key
 
-            # TODO: why you so slow?
-
+            t4 = time.time()
+            td["t4"]["t"] = t4 - t3
+            td["t4"]["n"] = "matlab function call"
+            print(row_template.format(round(t4 - t3, 1), "simulating..."))
             # simulate model, calculate final state
             simulate_system(context)
             t5 = time.time()
             td["t5"]["t"] = t5 - t4
             td["t5"]["n"] = "simulate"
+            print(row_template.format(round(t5 - t4, 1), "checking Qs, Qb ..."))
             # calculate controllability, observability
             check_qs_qb(context)
             t6 = time.time()
             td["t6"]["t"] = t6 - t5
             td["t6"]["n"] = "Qs Qb"
+            print(row_template.format(round(t6 - t5, 1), "rendering..."))
 
             file_names = ["system_model.py", "simulation.py", "parameters.py", "metadata.yml", "documentation.tex"]
             for name in file_names:
@@ -227,24 +239,25 @@ def create_compleib_models_from_template(target=None):
             t7 = time.time()
             td["t7"]["t"] = t7 - t6
             td["t7"]["n"] = "render"
-
-            # print(td)
+            print(f"    {round(t7-t6)}s")
             print(bgreen(f"{handle} done."))
     print(stat_dict)
     print("total time:", time.time() - ts)
 
+    # TODO: how to handle large matrices (too long for parameters.py) see CSE2
+
 
 def convert_to_numpy(t: tuple) -> tuple:
     assert len(t) == 13
-    a = np.array(t)
+    a = np.array(t, dtype=object)
     for i, v in enumerate(a):
         # Matrices
         if i < 8:
             if isinstance(v, matlab.double):
-                a[i] = np.array(v)
+                a[i] = np.array(v, dtype=float)
             else:
                 # 1x1 Matrix for type conformity
-                a[i] = np.array([v])
+                a[i] = np.array([v], dtype=float)
         # Matix dimensions
         else:
             a[i] = int(v)
@@ -259,7 +272,7 @@ def cleanup_str(s: str) -> str:
     return s.strip()
 
 
-def simulate_system(context: dict) -> dict:
+def simulate_system(context: dict):
     """simulate COMPleib system model and add relevnat infos to context dict"""
 
     def uu_rhs(t, x):
@@ -275,37 +288,89 @@ def simulate_system(context: dict) -> dict:
 
         return dxx_dt
 
-    t_end = 10
-    tt = np.linspace(0, t_end, 1000)
-    res = solve_ivp(rhs, (0, t_end), np.ones(context["nx"]), t_eval=tt)
+    if context["nx"] > 100:
+        # TODO simulation takes too long
+        context["final_state"] = f"np.zeros({context['nx']})"
+        core.logger.warning(f"Simulation of {context['model_name']} skipped.")
+        return
+    else:
+        t_end = context["t_end"] = 10
+        steps = context["steps"] = 1000
+    tt = np.linspace(0, t_end, steps)
+    xx0 = np.ones(context["nx"])
+
+    res = solve_ivp(rhs, (0, t_end), xx0, t_eval=tt)
     context["final_state"] = "np." + repr(res.y[:, -1])
 
-    return context
+    # res = odeint(rhs, y0=xx0, t=tt, tfirst=True)
+    # context["final_state"] = "np." + repr(res[-1, :])
+
+    return
 
 
-def check_qs_qb(context: dict) -> dict:
-    """check controllability and observability of model using Kalman criteria. Add info to context"""
+def check_qs_qb(context: dict):
+    """check controllability and observability of model using Hautus criteria. Add info to context"""
+    if context["nx"] > 500:
+        # TODO calculation takes too long
+        core.logger.warning(f"Qs, Qb of {context['model_name']} skipped.")
+        return
+
     A = context["A_num"]
     B = context["B_num"]
     C = context["C1_num"]
     nx = context["nx"]
 
-    Qs = copy.copy(B)
-    for i in range(1, nx):
-        Qs = sp.Matrix(np.concatenate((Qs, A**i * B), axis=1))
-    r_qs = np.linalg.matrix_rank(np.array(Qs, dtype=float))
-    if r_qs == nx:
+    # hautus
+    ev_A = np.linalg.eig(A)[0]
+    controllable = True
+    for ev in ev_A:
+        mat = np.concatenate((ev * np.eye(nx) - A, B), axis=1, dtype=complex)
+        if np.linalg.matrix_rank(mat) != nx:
+            controllable = False
+            break
+    if controllable:
         context["property"].append('I7864["controllability"]')
     else:
         context["not_property"].append('I7864["controllability"]')
 
-    Qb = copy.copy(C)
-    for i in range(1, nx):
-        Qb = sp.Matrix(np.concatenate((Qb, C * A**i), axis=0))
-    r_qb = np.linalg.matrix_rank(np.array(Qb, dtype=float))
-    if r_qb == nx:
+    observable = True
+    for ev in ev_A:
+        mat = np.concatenate((ev * np.eye(nx) - A, C), axis=0, dtype=complex)
+        if np.linalg.matrix_rank(mat) != nx:
+            observable = False
+            break
+    if observable:
         context["property"].append('I3227["observability"]')
     else:
         context["not_property"].append('I3227["observability"]')
 
-    return context
+    # kalman
+    # Qs = np.copy(B)
+    # Ai = np.eye(nx)
+    # for i in range(1, nx):
+    #     Ai = np.matmul(Ai, A)
+    #     Qs = np.concatenate((Qs, np.matmul(Ai, B)), axis=1, dtype=float)
+    # try:
+    #     r_qs = np.linalg.matrix_rank(Qs)
+    #     if r_qs == nx:
+    #         context["property"].append('I7864["controllability"]')
+    #     else:
+    #         context["not_property"].append('I7864["controllability"]')
+    # except LinAlgError:
+    #     core.logger.warning(f"rank calculation of controllability matrix failed")
+
+    # Qb = np.copy(C)
+    # Ai = np.eye(nx)
+    # for i in range(1, nx):
+    #     Ai = np.matmul(Ai, A)
+    #     Qb = np.concatenate((Qb, np.matmul(C, Ai)), axis=0, dtype=float)
+    # try:
+    #     r_qb = np.linalg.matrix_rank(Qb)
+    #     if r_qb == nx:
+    #         context["property"].append('I3227["observability"]')
+    #     else:
+    #         context["not_property"].append('I3227["observability"]')
+    # except LinAlgError:
+    #     core.logger.warning(f"rank calculation of observability matrix failed")
+
+    return

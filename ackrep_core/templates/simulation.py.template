@@ -2,12 +2,13 @@
 
 import numpy as np
 import system_model
-from scipy.integrate import solve_ivp
+from scipy.integrate import solve_ivp, odeint
 
 from ackrep_core import ResultContainer
 from ackrep_core.system_model_management import save_plot_in_dir
 import matplotlib.pyplot as plt
 import os
+from ipydex import Container
 
 # link to documentation with examples: https://ackrep-doc.readthedocs.io/en/latest/devdoc/contributing_data.html
 
@@ -31,10 +32,16 @@ def simulate():
     # initial state values
     xx0 = np.ones(model.sys_dim)
 
-    t_end = 10
-    tt = np.linspace(0, t_end, 10000)
+    t_end = {{context.t_end}}
+    tt = np.linspace(0, t_end, {{context.steps}})
 
     simulation_data = solve_ivp(rhs, (0, t_end), xx0, t_eval=tt)
+
+    # using odeint for models with large state vectors
+    # res = odeint(rhs, y0=xx0, t=tt, tfirst=True)
+    # simulation_data = Container()
+    # simulation_data.y = res.transpose()
+    # simulation_data.t = tt
 
     # postprocessing: calc output
     ny = {{context.ny}}
