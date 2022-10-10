@@ -13,3 +13,4 @@ symbtools
 pytrajectory
 tabulate
 deploymentutils
+pandas

@@ -23,6 +23,7 @@ import shutil
 import hmac
 import json
 from git import Repo
+import pandas as pd
 
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -129,7 +130,11 @@ class EntityDetailView(View):
         c.source_code_link = _create_source_code_link(entity)
         c.source_code_container = _get_source_code(entity)
 
-        if isinstance(entity, (core.models.SystemModel, core.models.ProblemSolution, core.models.Notebook)):
+        c.is_executable_entity = isinstance(
+            entity, (core.models.SystemModel, core.models.ProblemSolution, core.models.Notebook)
+        )
+
+        if c.is_executable_entity:
             env_key = entity.compatible_environment
             if env_key == "" or env_key is None:
                 env_key = settings.DEFAULT_ENVIRONMENT_KEY
@@ -146,88 +151,101 @@ class EntityDetailView(View):
         # inherit cotext data from EntityDetailView like source code and pdf
         c = self.get_context_container(key)
 
-        exitflag = False
-        c.result = "pending"
-        results_base_path = os.path.join(core.ci_results_path, "history")
-        # filter all ci_results yamls and sort them newest to oldest
-        filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir(results_base_path)), reverse=True)
-        # iterate all result files
-        for i, result_filename in enumerate(filename_list):
-            results_path = os.path.join(results_base_path, result_filename)
-            with open(results_path) as results_file:
-                results = yaml.load(results_file, Loader=yaml.FullLoader)
-            # if key is in current file
-            if key in results.keys():
-                ci_result_entity = results[key]
-                # take result of first test encountered (most recent)
-                if c.result == "pending":
-                    c.ci_result_entity = ci_result_entity
-                    c.result = ci_result_entity["result"]
-                    c.build_url = results["ci_logs"]["build_url"]
-                # entity passed on latest test
-                if i == 0 and ci_result_entity["result"] == 0:
-                    exitflag = True
-                # entity passed on some old test:
-                elif i > 0 and ci_result_entity["result"] == 0:
-                    c.last_time_passing = ci_result_entity["date"]
-                    c.logs = core.Container()
-                    c.logs.ackrep_data = results["commit_logs"]["ackrep_data"]
-                    c.logs.ackrep_core = results["commit_logs"]["ackrep_core"]
-                    c.logs.build_url = results["ci_logs"]["build_url"]
-                    c.logs.environment = ci_result_entity["env_version"]
+        if c.is_executable_entity:
+            exitflag = False
+            c.result = "pending"
+            results_base_path = os.path.join(core.ci_results_path, "history")
+            # filter all ci_results yamls and sort them newest to oldest
+            filename_list = sorted(
+                filter(lambda item: "ci_results" in item, os.listdir(results_base_path)), reverse=True
+            )
+            # iterate all result files
+            for i, result_filename in enumerate(filename_list):
+                results_path = os.path.join(results_base_path, result_filename)
+                with open(results_path) as results_file:
+                    results = yaml.load(results_file, Loader=yaml.FullLoader)
+                # if key is in current file
+                if key in results.keys():
+                    ci_result_entity = results[key]
+                    # take result of first test encountered (most recent)
+                    if c.result == "pending":
+                        c.ci_result_entity = ci_result_entity
+                        c.result = ci_result_entity["result"]
+                        c.build_url = results["ci_logs"]["build_url"]
+                    # entity passed on latest test
+                    if i == 0 and ci_result_entity["result"] == 0:
+                        exitflag = True
+                    # entity passed on some old test:
+                    elif i > 0 and ci_result_entity["result"] == 0:
+                        c.last_time_passing = ci_result_entity["date"]
+                        c.logs = core.Container()
+                        c.logs.ackrep_data = results["commit_logs"]["ackrep_data"]
+                        c.logs.ackrep_core = results["commit_logs"]["ackrep_core"]
+                        c.logs.build_url = results["ci_logs"]["build_url"]
+                        c.logs.environment = ci_result_entity["env_version"]
 
-                    exitflag = True
-            else:
-                core.logger.info(f"Entity {key} is not in {result_filename}.")
-            if exitflag:
-                break
+                        exitflag = True
+                else:
+                    core.logger.info(f"Entity {key} is not in {result_filename}.")
+                if exitflag:
+                    break
 
-        if c.result == "pending":
-            core.logger.warning(f"Entity {key} not found in any CI result files.")
-            c.result = -1
+            if c.result == "pending":
+                core.logger.warning(f"Entity {key} not found in any CI result files.")
+                c.result = -1
 
-        ## system_model and solution specifics:
-        if isinstance(c.entity, (models.ProblemSolution, models.SystemModel)):
-            c.image_list = core.get_data_files(f"ackrep_plots/{key}", endswith_str=".png", create_media_links=True)
-            # if ci didnt provide image, check fallback image folder
-            if len(c.image_list) == 0:
-                core.logger.info("No image found, checking fallback repo.")
-                c.image_list = core.get_data_files(
-                    f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True
+            ## system_model and solution specifics:
+            if isinstance(c.entity, (models.ProblemSolution, models.SystemModel)):
+                c.image_list = sorted(
+                    core.get_data_files(f"ackrep_plots/{key}", endswith_str=".png", create_media_links=True)
                 )
-                c.plot_disclaimer = True
+                # if ci didnt provide image, check fallback image folder
+                if len(c.image_list) == 0:
+                    core.logger.info("No image found, checking fallback repo.")
+                    c.image_list = sorted(
+                        core.get_data_files(
+                            f"ackrep_fallback_binaries/{key}", endswith_str=".png", create_media_links=True
+                        )
+                    )
+                    c.fallback_disclaimer = True
 
-        ## notebook specifics:
-        if isinstance(c.entity, models.Notebook):
-            nb = core.get_data_files(f"ackrep_notebooks/{key}", endswith_str=".html", create_media_links=True)
-            assert len(nb) == 1, "Multiple Notebooks per entity not supportet."
-            c.notebook = nb[0]
+            ## notebook specifics:
+            if isinstance(c.entity, models.Notebook):
+                nb = core.get_data_files(f"ackrep_notebooks/{key}", endswith_str=".html", create_media_links=True)
+                if len(nb) == 0:
+                    core.logger.info("No notebook found, checking fallback repo.")
+                    nb = core.get_data_files(
+                        f"ackrep_fallback_binaries/{key}", endswith_str=".html", create_media_links=True
+                    )
+                    c.fallback_disclaimer = True
+                assert len(nb) == 1, "No notebook html found."
+                c.notebook = nb[0]
 
-        c.show_debug = False
+            c.show_debug = False
 
-        if c.result == 0:
-            c.result_css_class = "success"
-            c.verbal_result = "Success."
-            c.test_date = c.ci_result_entity["date"]
-            c.diff_time_str = c.ci_result_entity["runtime"]
-        # no major error but numerical result was unexpected
-        elif c.result == 2:
-            c.result_css_class = "inaccurate"
-            c.verbal_result = "Inaccurate. (Different result than expected.)"
-            c.test_date = c.ci_result_entity["date"]
-            c.issues = c.ci_result_entity["issues"]
-            c.diff_time_str = c.ci_result_entity["runtime"]
-        # entity did not show in any result file
-        elif c.result == -1:
-            c.result_css_class = "unknown"
-            c.verbal_result = "Unknown. (Entity was not included in any CI Job.)"
-        else:
-            c.result_css_class = "fail"
-            c.verbal_result = "Script Error."
-            c.show_debug = settings.DEBUG
-            c.test_date = c.ci_result_entity["date"]
-            c.issues = c.ci_result_entity["issues"]
-            c.diff_time_str = c.ci_result_entity["runtime"]
+            if c.result == 0:
+                c.result_css_class = "success"
+                c.verbal_result = "Success."
+                c.test_date = c.ci_result_entity["date"]
+                c.diff_time_str = c.ci_result_entity["runtime"]
+            # no major error but numerical result was unexpected
+            elif c.result == 2:
+                c.result_css_class = "inaccurate"
+                c.verbal_result = "Inaccurate. (Different result than expected.)"
+                c.test_date = c.ci_result_entity["date"]
+                c.issues = c.ci_result_entity["issues"]
+                c.diff_time_str = c.ci_result_entity["runtime"]
+            # entity did not show in any result file
+            elif c.result == -1:
+                c.result_css_class = "unknown"
+                c.verbal_result = "Unknown. (Entity was not included in any CI Job.)"
+            else:
+                c.result_css_class = "fail"
+                c.verbal_result = "Script Error."
+                c.show_debug = settings.DEBUG
+                c.test_date = c.ci_result_entity["date"]
+                c.issues = c.ci_result_entity["issues"]
+                c.diff_time_str = c.ci_result_entity["runtime"]
 
         context = {"c": c}
 
@@ -282,17 +300,16 @@ class Webhook(View):
             else:
                 return d
 
-        path = os.path.join(core.root_path, "tmp")
+        path = os.path.join(core.ci_results_path, "history")
         try:
-            files = os.listdir(path)
-            for file_name in files:
-                name, ending = file_name.split(".")
-                if ending == "yaml":
-                    with open(os.path.join(path, file_name)) as file:
-                        results = yaml.load(file, Loader=yaml.FullLoader)
+            file_name = sorted(os.listdir(path), reverse=True)[0]
+            name, ending = file_name.split(".")
+            if ending == "yaml":
+                with open(os.path.join(path, file_name)) as file:
+                    results = yaml.load(file, Loader=yaml.FullLoader)
             content = recursive_table(results)
-        except FileNotFoundError:
-            content = "nothing in the temp folder"
+        except Exception as e:
+            content = str(e)
 
         style = "<style>table, th, td { border: 1px solid black;  border-collapse: collapse; padding: 5px}</style>"
         res = f"""
@@ -316,7 +333,7 @@ class Webhook(View):
                 if branch_name == "feature_webhook":
                     IPS()
                 elif branch_name == settings.ACKREP_DATA_BRANCH:
-                    core.download_and_store_artifacts(branch_name, request)
+                    core.download_and_store_artifacts(branch_name)
                 else:
                     core.logger.critical(f"No action specified for branch name {branch_name}")
                     IPS()
@@ -463,6 +480,188 @@ class DebugView(View):
         core.logger.info(request.body)
 
         return HttpResponse(res, content_type="text/html")
+
+
+class EntityOverView(View):
+    """display all results of all ci runs
+    entity name | key   | <buildnumbers>
+    lorenz      | UXMFA | F | S | S
+    """
+
+    def get(self, request):
+        table_dict = {}
+        build_urls = {}
+        # number of table columns on the left containing entity infos (key, name)
+        NUM_ENTITY_COLS = 2
+        NUM_DISPLAYED_RUNS = 20
+
+        entity_list_list = [
+            list(models.ProblemSolution.objects.all()),
+            list(models.SystemModel.objects.all()),
+            list(models.Notebook.objects.all()),
+        ]
+        entity_list = [x for xs in entity_list_list for x in xs]
+
+        for e in entity_list:
+            table_dict[e.key] = {}
+            table_dict[e.key]["Key"] = e.key
+            table_dict[e.key]["Name"] = e.name
+
+        results_base_path = os.path.join(core.ci_results_path, "history")
+        # filter all ci_results yamls and sort them oldest to newest
+        filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir(results_base_path)))
+        # iterate all result files
+        for i, result_filename in enumerate(filename_list[-NUM_DISPLAYED_RUNS:]):
+            results_path = os.path.join(results_base_path, result_filename)
+            with open(results_path) as results_file:
+                results = yaml.load(results_file, Loader=yaml.FullLoader)
+
+            for key, value in results.items():
+                if len(key) == 5:
+                    bn = int(results["ci_logs"]["build_number"])
+                    build_urls[bn] = results["ci_logs"]["build_url"]
+                    # try except for old keys that are not currently in database
+                    try:
+                        table_dict[key][bn] = int(value["result"])
+                    except KeyError:
+                        pass
+
+        # show 0 or 1 instead of 0.0, 1.0
+        pd.options.display.float_format = "{:,.0f}".format
+        dataframe = pd.DataFrame.from_dict(table_dict, orient="index")
+        # add numerical index
+        dataframe = dataframe.set_index(np.arange(dataframe.shape[0]))
+
+        # deal with NAN in df
+        dataframe["Name"] = dataframe["Name"].replace(np.nan, "<i>not in database</i>")
+        dataframe = dataframe.fillna("")
+
+        # add link to entity
+        for i, key in enumerate(dataframe["Key"]):
+            link = f"""<a href="/e/{key}" title="Checkout Entity">{key}</a>"""
+            dataframe.loc[i, "Key"] = link
+
+        # split df and sort builds part by build number
+        df_entity_part = dataframe.iloc[:, :NUM_ENTITY_COLS]
+        df_builds_part = dataframe.iloc[:, NUM_ENTITY_COLS:]
+        df_sorted = df_builds_part.reindex(sorted(df_builds_part.columns), axis=1)
+        dataframe_sorted = pd.concat([df_entity_part, df_sorted], axis=1)
+
+        # cell highlighting
+        dataframe_sorted = dataframe_sorted.replace([0, 1, 2], ["Pass", "Fail", "Inac"])
+
+        def highlight(cell_value):
+            color_0 = "background-color: hsl(120, 60%, 30%);"
+            color_1 = "background-color: hsl(0, 90%, 45%);"
+            color_2 = "background-color: hsl(34, 90%, 45%);"
+            default = ""
+
+            if cell_value == "Pass":
+                return color_0
+            elif cell_value == "Fail":
+                return color_1
+            elif cell_value == "Inac":
+                return color_2
+            return default
+
+        dataframe_sorted = dataframe_sorted.style.applymap(highlight)
+
+        # convert to html
+        table_string = dataframe_sorted.to_html()
+
+        # add build urls
+        for key in build_urls.keys():
+            link = f"""<a title="checkout CI build" href="{build_urls[key]}">{key}</a>"""
+            table_string = table_string.replace(str(key), link)
+
+        # rework headers
+        num_build_cols = dataframe.shape[1] - NUM_ENTITY_COLS
+        row = f"""
+            <thead>
+            <tr>
+                <th colspan="{NUM_ENTITY_COLS + 1}">Entity</th>
+                <th colspan="{num_build_cols}">Build</th>
+            </tr>"""
+        # Note entity_cols + 1 since index col is also displayed in table
+        table_string = table_string.replace("<thead>", row)
+
+        # add intermediate headers for entity types
+        for i in range(len(entity_list_list)):
+            if i == 0:
+                """header is inserted BEFORE the nth occurence of the string (here <tr>).
+                n = 3, we want to start inserting at 3rd row
+                Entity       | Build
+                Key   | Name | <build numbers>
+                solutions ---------------
+                <key> | ..."""
+                n = 3
+            else:
+                # n = 3 headers + len entities before + new rows inserted previously by this loop
+                n += len(entity_list_list[i - 1]) + 1
+            header = f"""
+            <tr>
+                <td colspan="{NUM_ENTITY_COLS + 1}"><b>{entity_list_list[i][0].type.replace("_", " ")}s</b></th>
+                <td colspan="{num_build_cols}"></th>
+            </tr>
+            """
+            pos = util.find_nth(table_string, "<tr>", n)
+            table_string = table_string[:pos] + header + table_string[pos:]
+
+        # TODO: improve sticky header: see
+        # TODO: https://stackoverflow.com/questions/54444642/sticky-header-table-with-mutiple-lines-in-the-thead
+        # TODO: for orientation
+        # styling, linebreaks
+        style = """
+        <style>
+            table {
+                border-bottom: 1px Solid Black;
+                border-right: 1px Solid Black;
+                border-collapse : collapse;
+                padding: 5px;
+            }
+            table td, table th {
+                border-left: 1px Solid Black;
+                border-top: 1px Solid Black;
+                border-bottom:none;
+                border-right:none;
+                max-width: 400px;
+                word-wrap: break-word;
+                padding: 5px;
+                background-clip: padding-box; /* fixes issue with disappearing borders due to background color*/
+            }
+            table thead {
+                position: sticky; 
+                top: 54;
+                z-index: 2;
+            }
+            table  th,
+            table  tr td {
+                background-color: #FFF;
+                border: 1px solid black;
+                padding: 5px;
+            }
+        </style>"""
+
+        # put it all together
+        res = f"""
+        <!DOCTYPE html>
+        {style}
+        <h2>Entity Overview</h2>
+        <br>
+        <b>Overview of the last {NUM_DISPLAYED_RUNS} CI jobs.</b>
+        <br><br>
+
+        {table_string}
+        """
+
+        base_path = os.path.join(core.root_path, "ackrep_core/ackrep_web/templates/ackrep_web/_temp")
+        os.makedirs(base_path, exist_ok=True)
+        path = os.path.join(base_path, "table.html")
+        with open(path, "w") as html_file:
+            html_file.write(res)
+
+        context = {}
+        return TemplateResponse(request, "ackrep_web/entity_overview.html", context)
 
 
 def _create_source_code_link(entity):

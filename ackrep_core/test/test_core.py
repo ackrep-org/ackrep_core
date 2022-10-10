@@ -52,7 +52,7 @@ ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
 # use `git log -1` to display the full hash
-default_repo_head_hash = "f4e28abffe9638baae88b9996f5e8576fd91f98f"  # 2022-07-19 branch for_unittests
+default_repo_head_hash = "63eee0f6f077e02c52df9412ac242471cae1088c"  # 2022-08-08 branch for_unittests
 
 
 class TestCases1(DjangoTestCase):
@@ -304,7 +304,7 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(res.returncode, 1)
 
         # test results.yaml
-        yaml_path = os.path.join(core.root_path, "artifacts", "ackrep_ci_results")
+        yaml_path = os.path.join(core.root_path, "artifacts", "ci_results")
         yamls = os.listdir(yaml_path)
         core.logger.info(yamls)
         self.assertEqual(len(yamls), 1)
@@ -317,10 +317,10 @@ class TestCases3(SimpleTestCase):
         self.assertIn("SyntaxError", results["LRHZX"]["issues"])
 
         # test plots
-        plot_path = "../artifacts/ackrep_plots"
+        plot_path = "../artifacts/ackrep_plots/UXMFA"
         plots = os.listdir(plot_path)
         self.assertEqual(len(plots), 1)
-        self.assertEqual("plot_UXMFA.png", plots[0])
+        self.assertEqual("plot.png", plots[0])
 
     def test_check_with_docker(self):
         # first: run directly
@@ -440,7 +440,7 @@ class TestCases3(SimpleTestCase):
 
         res = system_model.related_problems_list()
 
-        self.assertIn(problem_spec ,res)
+        self.assertIn(problem_spec, res)
 
     def test_entity_tag_list(self):
         e = core.model_utils.all_entities()[0]

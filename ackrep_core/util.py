@@ -178,3 +178,16 @@ def git_push(repo_path: str, files_to_add, message: str):
     repo.index.commit(message)
     origin = repo.remote(name="origin")
     origin.push()
+
+
+def find_nth(haystack, needle, n):
+    """string search: find position of nth occurence of "needle" in "haystack" """
+    start = haystack.find(needle)
+    while start >= 0 and n > 1:
+        start = haystack.find(needle, start + len(needle))
+        n -= 1
+    return start
+
+
+def timeout_handler(signum, frame):
+    raise TimeoutError(f"Process reached max time and was therefore canceled.")

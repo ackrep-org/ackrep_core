@@ -208,8 +208,12 @@ ACKREP_DATA_BRANCH = config("ACKREP_DATA_BRANCH")
 
 DEFAULT_ENVIRONMENT_KEY = "CDAMA"  # "YJBOX"
 
+ENTITY_TIMEOUT = 3 * 60  # s
+
 try:
     with open(os.path.join(BASE_DIR, "deployment_date.txt")) as txtfile:
         LAST_DEPLOYMENT = txtfile.read().strip()
 except FileNotFoundError:
     LAST_DEPLOYMENT = "<not available>"
+
+BASE_URL_FOR_PDF = "https://testing2.ackrep.org/"
