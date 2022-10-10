@@ -529,6 +529,8 @@ def create_pdf(key, output_path=None):
     tex_path = os.path.join(root_path, base_path, "_data")
     os.chdir(tex_path)
 
+    generate_notice_tex(key)
+
     assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel"
     try:
         res = core.check_generic(system_model_entity.key)
@@ -549,17 +551,26 @@ def create_pdf(key, output_path=None):
         with open(os.path.join(tex_path, "documentation.tex"), "w") as tex_file:
             tex_file.writelines(lines)
 
+
     if output_path is None:
-        res = run_command(["pdflatex", "-halt-on-error", "documentation.tex"], logger=core.logger, capture_output=True)
+        res = run_command(["pdflatex", "-halt-on-error", "documentation.tex"], logger=core.logger, capture_output=False)
     else:
         test_dir = os.path.join(tex_path, output_path)
         if not os.path.isdir(test_dir):
             os.mkdir(test_dir)
         res = run_command(
+            # ToDO: solve the following problem: 
+            # if the pdf is open in adobe acrobat the pdflatex cannot overwrite it and prompts for a new file name
+            # this is confusing 
+            # suggested solution: call pdflatex such that it exits without prompting and nonzero errorcode which is available `res`
+            # see if-statement below 
             ["pdflatex", "-halt-on-error", "-output-directory", output_path, "documentation.tex"],
             logger=core.logger,
             capture_output=True,
         )
+        if res.returncode != 0: 
+            # ToDo: print useful errormessage here
+            pass
 
     # clean up auxiliary files
     import time
@@ -588,12 +599,25 @@ def create_pdf(key, output_path=None):
     for file in files:
         if file.split(".")[-1] in delete_list:
             os.remove(os.path.split(file)[1])
-
+    os.remove(os.path.join(file_path, 'notice.tex'))
+    
     return res
 
 
+def generate_notice_tex(key):
+    note_text = r'''This document was automatically generated based on the \href{https://ackrep.org/}{ACKREP} project
+                \href{https://github.com/ackrep-org/ackrep_data/tree/main/system_models}{system model with --key--}. 
+                The Automatic Control Knowledge Repository, short ACKREP, aims to facilitate knowledge transfer of control theory and control engineering. '''
+
+    note_text = note_text.replace("--key--", key)
+    file_note = open("notice.tex", "w")
+    file_note.write(note_text)
+    file_note.close()
+
+
 def import_parameters(key=None):
-    """import parameters.py selected by given key and create related get function for system_model
+    """import parameters.py selected be given key and create related get function for system_model
+
     if key is None, the caller frame is inpected to get its location (used by system_model.py (ackrep_data))
 
     Args:
