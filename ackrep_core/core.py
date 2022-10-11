@@ -361,8 +361,12 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
         logger.debug((e.key, e.base_path))
 
         # check for duplicate keys
-        get_entity(e.key, raise_error_on_empty=False)
-
+        dupl_entity = get_entity(e.key, raise_error_on_empty=False)
+        if dupl_entity:
+            msg = f"Key {e.key} occurs at least twice in the database:\n" \
+                + f"first:   {dupl_entity} at location {dupl_entity.base_path}\n" \
+                + f"second:  {e} at location {e.base_path}"
+            raise DuplicateKeyError(msg)
         # store to db
         e.save()
         entity_list.append(e)

@@ -61,7 +61,7 @@ class DuplicateKeyError(Exception):
     """Raised when a duplicate key is found in the database."""
 
     def __init__(self, dup_key):
-        super().__init__(f"Duplicate key in database '{dup_key}'")
+        super().__init__(f"Duplicate key in database: '{dup_key}'")
 
 
 class QueryError(Exception):
