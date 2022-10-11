@@ -4,12 +4,16 @@ from . import core
 import numpy as np
 from scipy.integrate import solve_ivp, odeint
 import matplotlib.pyplot as plt
-import matlab.engine
 import sympy as sp
 import re
 from util import *
 import time
 from numpy.linalg import LinAlgError
+
+try:
+    import matlab.engine
+except:
+    pass
 
 row_template = "    {}s\n  {}"
 
@@ -288,16 +292,17 @@ def simulate_system(context: dict):
 
         return dxx_dt
 
+    t_end = context["t_end"] = 10
+    steps = context["steps"] = 1000
+
     if context["nx"] > 100:
         # TODO simulation takes too long
         context["final_state"] = f"np.zeros({context['nx']})"
         core.logger.warning(f"Simulation of {context['model_name']} skipped.")
         return
-    else:
-        t_end = context["t_end"] = 10
-        steps = context["steps"] = 1000
-    tt = np.linspace(0, t_end, steps)
+
     xx0 = np.ones(context["nx"])
+    tt = np.linspace(0, t_end, steps)
 
     res = solve_ivp(rhs, (0, t_end), xx0, t_eval=tt)
     context["final_state"] = "np." + repr(res.y[:, -1])
