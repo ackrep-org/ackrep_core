@@ -5,9 +5,12 @@
 <h3>Search entities in ontology</h3>
 
 {% if err %}
-<div class="errorbox">
-    <pre>{{ err }}</pre>
-</div>
+    <div class="errorbox">
+        <pre>{{ err }}</pre>
+    </div>
+    {% if stacktrace %}
+        <pre>{{ stacktrace }}</pre>
+    {% endif %}
 {% endif %}
 
 <form action="{% url 'search-sparql' %}" method="GET" class="styled_form">

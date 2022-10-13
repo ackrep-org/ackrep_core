@@ -22,12 +22,12 @@ from django.conf import settings
 from django.core import management
 from django.db import connection as django_db_connection, connections as django_db_connections
 
-from yamlpyowl import core as ypo
-
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception  # for debugging only
 
 # activate_ips_on_exception()
+
+from ipydex import Container
 
 from . import models
 from . import model_utils
@@ -237,8 +237,9 @@ class ACKREP_OntologyManager(object):
 
     def __init__(self):
         # noinspection PyTypeChecker
-        self.OM: ypo.OntologyManager = None
+        self.OM: Container = None
         self.ocse_entity_mapping = {}
+        self.ontology_loaded = False
 
     def load_ontology(self, startdir=None, entity_list=None):
         ERK_ROOT_DIR = p.aux.get_erk_root_dir()
@@ -247,19 +248,11 @@ class ACKREP_OntologyManager(object):
         ackrep_parser.load_ackrep_entities(startdir)
         self.ds = p.core.ds
         self.ds.rdfgraph = p.rdfstack.create_rdf_triples()
-
-    def get_list_of_all_ontology_based_tags(self):
-        qsrc = f"""PREFIX P: <{self.OM.iri}>
-            SELECT ?entity
-            WHERE {{
-              ?entity rdf:type ?type.
-              ?type rdfs:subClassOf* P:OCSE_Entity.
-            }}
-        """
-        res = list(self.OM.make_query(qsrc))
-        return res
+        self.ontology_loaded = True
 
     def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> list:
+        if not self.ontology_loaded:
+            self.load_ontology()
         self.ds = p.core.ds
         qsrc = self.ds.preprocess_query(qsrc)
         res = self.ds.rdfgraph.query(qsrc)
@@ -283,22 +276,6 @@ class ACKREP_OntologyManager(object):
                         entity = e
                     onto_entites.append(("?" + str(res.vars[i]), entity))
         return ackrep_entities, onto_entites
-
-    def wrap_onto_entity(self, onto_nty):
-        """
-
-        :param onto_nty:    class or instance from the ontology
-        :return:            template-compatible representation
-        """
-
-        ae, oe = None, None
-        if isinstance(onto_nty, self.OM.n.ACKREP_Entity):
-            key = onto_nty.has_entity_key
-            ae = get_entity(key)
-        else:
-            oe = str(onto_nty)
-
-        return ae, oe
 
 
 def load_repo_to_db(startdir, check_consistency=True):
@@ -363,9 +340,11 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
         # check for duplicate keys
         dupl_entity = get_entity(e.key, raise_error_on_empty=False)
         if dupl_entity:
-            msg = f"Key {e.key} occurs at least twice in the database:\n" \
-                + f"first:   {dupl_entity} at location {dupl_entity.base_path}\n" \
+            msg = (
+                f"Key {e.key} occurs at least twice in the database:\n"
+                + f"first:   {dupl_entity} at location {dupl_entity.base_path}\n"
                 + f"second:  {e} at location {e.base_path}"
+            )
             raise DuplicateKeyError(msg)
         # store to db
         e.save()

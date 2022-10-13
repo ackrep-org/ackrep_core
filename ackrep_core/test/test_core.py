@@ -629,6 +629,7 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(n_items2, n_items5)
         self.assertEqual(items5.difference(items2), set())
 
+
 class TestCases4(DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.

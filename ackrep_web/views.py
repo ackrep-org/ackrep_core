@@ -24,6 +24,7 @@ import hmac
 import json
 from git import Repo
 import pandas as pd
+import traceback
 
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -427,6 +428,9 @@ class SearchSparqlView(View):
             ackrep_entities, onto_entities = core.AOM.run_sparql_query_and_translate_result(qsrc)
         except Exception as e:
             context["err"] = f"The following error occurred: {str(e)}"
+            if settings.DEVMODE:
+                context["stacktrace"] = traceback.format_exc()
+
             ackrep_entities, onto_entities = [], []
 
         onto_entities_no_dupl = hide_duplicate_sparql_res(onto_entities)
