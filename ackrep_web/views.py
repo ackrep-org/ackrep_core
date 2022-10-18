@@ -1,9 +1,11 @@
 import time
 from textwrap import dedent as twdd
+from typing import Union, Optional, Dict, Tuple
 import pprint
 from django.db import OperationalError
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render, get_object_or_404
 from django.template.response import TemplateResponse, HttpResponse
 from django.shortcuts import redirect, reverse
 from django.http import Http404
@@ -19,7 +21,7 @@ import os
 import numpy as np
 from ackrep_core.util import run_command
 import yaml
-import shutil
+import urllib
 import hmac
 import json
 from git import Repo
@@ -35,6 +37,11 @@ from ipydex import IPS, activate_ips_on_exception
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
     import pyerk as p
+
+
+from django.http import JsonResponse
+from django.db.models import Q
+from .util import Entity, _entity_sort_key, render_entity_inline, reload_data_if_necessary, render_entity_relations, render_entity_scopes
 
 
 class LandingPageView(View):
@@ -415,6 +422,7 @@ class SearchSparqlView(View):
             f"""
         PREFIX : <{p.rdfstack.ERK_URI}>
         PREFIX ocse: <erk:/ocse/0.2#>
+        PREFIX ack: <erk:/ackrep#>
         SELECT ?s
         WHERE {{
             ?s :R16__has_property ocse:I7733__time_invariance.
@@ -442,6 +450,67 @@ class SearchSparqlView(View):
 
         return TemplateResponse(request, "ackrep_web/search_sparql.html", context)
 
+
+    # /search/?q=...
+def get_item(request):
+    reload_data_if_necessary()
+    q = request.GET.get("q")
+
+    payload = []
+    if q:
+        entities = Entity.objects.filter(
+            Q(label__content__icontains=q) | Q(uri__icontains=q) | Q(description__icontains=q)
+        )
+
+        entity_list = list(entities)
+        entity_list.sort(key=_entity_sort_key)
+
+        for idx, db_entity in enumerate(entity_list):
+            db_entity: Entity
+            try:
+                res = render_entity_inline(
+                    db_entity, idx=idx, script_tag="script", include_description=True, highlight_text=q
+                )
+            except KeyError:
+                # there seemse to be a bug related to data reloading and automatic key generation
+                # IPS()
+                raise
+
+            payload.append(res)
+    return JsonResponse({"status": 200, "data": payload})
+
+def entity_view(request, uri: Optional[str] = None, vis_options: Optional[Dict] = None):
+    reload_data_if_necessary()
+    # noinspection PyUnresolvedReferences
+    uri = urllib.parse.unquote(uri)
+
+    db_entity = get_object_or_404(Entity, uri=uri)
+    rendered_entity = render_entity_inline(db_entity, special_class="highlight", include_description=True)
+    rendered_entity_relations = render_entity_relations(db_entity)
+    # rendered_entity_context_vars = render_entity_context_vars(db_entity)
+    rendered_entity_scopes = render_entity_scopes(db_entity)
+
+    rendered_vis_result = None #! vis_integration.create_visualization(db_entity, vis_options)
+
+    # TODO: This should be done in vis_integration.create_visualization;    bookmark://vis01
+    #  or better: in visualize_entity() (called from there)
+    if rendered_vis_result:
+        rendered_vis_result = rendered_vis_result.replace(r"%", r"%25")
+
+    context = dict(
+        rendered_entity=rendered_entity,
+        entity=db_entity,
+        rendered_entity_relations=rendered_entity_relations,
+        # rendered_entity_context_vars=rendered_entity_context_vars,
+        rendered_entity_scopes=rendered_entity_scopes,
+        rendered_vis_result=rendered_vis_result,
+    )
+    return render(request, "mainapp/page-entity-detail.html", context)
+
+
+def entity_visualization_view(request, uri: Optional[str] = None):
+    vis_dict = {"depth": 1}
+    return entity_view(request, uri, vis_options=vis_dict)
 
 def hide_duplicate_sparql_res(res: list) -> list:
     new_list = []

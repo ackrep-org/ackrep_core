@@ -1,0 +1,33 @@
+{% load extra_filters %}
+
+
+{% if scopes %}
+{% for scope in scopes %}
+    <h4>{{scope.name}}</h4>
+    {% if scope.defining_relations %}
+    Variables:
+    <ul>
+        {% for tup in scope.defining_relations %}
+            <li>
+                {% for entity_dict in tup %}
+                    {% include entity_dict.template with c=entity_dict %}
+                {% endfor %}
+            </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% if scope.statement_relations %}
+    Statements:
+    <ul>
+        {% for tup in scope.statement_relations %}
+            <li>
+                {% for entity_dict in tup %}
+                    {% include entity_dict.template with c=entity_dict %}
+                {% endfor %}
+            </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+{% endfor %}
+{% endif %}
+

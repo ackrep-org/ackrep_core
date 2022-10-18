@@ -1,0 +1,14 @@
+{% load bleach_tags %}
+
+{#                                                                                                                    #}
+{#   This script-widget serves to include json data in the output. Djangos `|json_script` does not work here          #}
+{#   beause the id is also data-dependent. Also we have to use < script > (for API response)                          #}
+{#   or < myscript > (for browser response which is piped through bleach and custom filter).                          #}
+
+{% if c.script_tag %}
+    <{{c.script_tag}} id="result_url_{{c.idx}}" type="application/json">"{{c.detail_url}}"</{{c.script_tag}}>
+    <{{c.script_tag}} id="copy_text_{{c.idx}}" type="application/json">"{{c.short_key}}[\"{{c.label}}\"]"</{{c.script_tag}}>
+    <{{c.script_tag}} id="sparql_text_{{c.idx}}" type="application/json">"{{c.sparql_text}}"</{{c.script_tag}}>
+{% else %}
+<!--no json-script included -->
+{% endif %}

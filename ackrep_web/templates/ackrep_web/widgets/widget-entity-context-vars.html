@@ -1,0 +1,11 @@
+{% if context_vars %}
+<p>Context:</p>
+{% endif %}
+{% for name, note, entity in context_vars %}
+<div>
+    <i>{{name}}</i>
+{{note}}
+{{entity}}
+</div>
+{% endfor %}
+
