@@ -10,7 +10,7 @@ jobs: # A basic unit of work in a run
       - checkout # check out source code to working directory
       - restore_cache:
       # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
-          key: deps1--{{ checksum "requirements.txt" }}--
+          key: deps3--{{ checksum "requirements.txt" }}--
       - run:
           name: install graphviz
           command: |
@@ -38,7 +38,7 @@ jobs: # A basic unit of work in a run
             pip install -r requirements.txt
             pip install -e .
       - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
-          key: deps1--{{ checksum "requirements.txt" }}--
+          key: deps3--{{ checksum "requirements.txt" }}--
           paths:
             - "venv"
       - run:
