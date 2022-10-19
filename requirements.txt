@@ -14,3 +14,4 @@ pytrajectory
 tabulate
 deploymentutils
 pandas
+beautifulsoup4

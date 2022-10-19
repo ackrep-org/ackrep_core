@@ -5,13 +5,14 @@ from yaml.parser import ParserError
 from ipydex import IPS
 from typing import Union
 
-from pyerk.core import Item, Relation, Entity
-from pyerk import core
-from pyerk import aux
-from pyerk.builtin_entities import instance_of
-from pyerk.erkloader import load_mod_from_path, ModuleType
-from pyerk import builtin_entities
-from pyerk.auxiliary import *
+if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
+    from pyerk.core import Item, Relation, Entity
+    from pyerk import core
+    from pyerk import aux
+    from pyerk.builtin_entities import instance_of
+    from pyerk.erkloader import load_mod_from_path, ModuleType
+    from pyerk import builtin_entities
+    from pyerk.auxiliary import *
 from . import models
 
 __URI__ = "erk:/ackrep"
