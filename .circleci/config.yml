@@ -26,9 +26,11 @@ jobs: # A basic unit of work in a run
             ls ../../../
             echo 4
             ls ../../../../
-            python -m venv venv
+            echo 4.5
+            ls
             echo 5
             ls venv
+            python -m venv venv
             . venv/bin/activate
             pip install -U pip
             pip install -r requirements.txt
