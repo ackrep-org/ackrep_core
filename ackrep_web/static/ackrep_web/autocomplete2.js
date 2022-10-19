@@ -64,27 +64,11 @@ async function input_callback({ signal } = {}){
           result_list.appendChild(li);
       });
       // this ensures that math is rendered if it is present.
-      // MathJax.typeset();
+      MathJax.typeset();
   }
 }
 
-// let queue = []
-// async function handle_queue(){
-//   var d = {
-//     "query": main_input.value,
-//     "controller": new AbortController(),
-//   };
 
-//   queue.forEach(function(item, index, object){
-//     item["controller"].abort();
-//     object.splice(index, 1);
-//   })
-//   queue.push(d)
-//   input_callback({signal: d["controller"].signal})
-
-// }
-
-//
 // https://www.freecodecamp.org/news/javascript-debounce-example/
 function debounce(func, timeout = 400){
   let timer;
@@ -94,6 +78,7 @@ function debounce(func, timeout = 400){
   };
 }
 main_input.addEventListener("input", debounce(() => input_callback()));
+
 
 // if we reload the page with content in the input, the result should be shown directly
 if (main_input.value.length != 0) {
@@ -169,14 +154,6 @@ main_input.addEventListener('keydown', function(event) {
     console.log(`classList-: ${liSelected.classList}`);
     liSelected.classList.add("selected");
     console.log(`classList2-: ${liSelected.classList}`);
-  } else if (event.which === 13 &&event.shiftKey && liSelected ) {
-    //
-    // Shift + Enter
-    //
-    var copy_text = JSON.parse(document.getElementById(`copy_text_${index}`).textContent);
-    console.log(`Enter--> copy ${copy_text}`);
-    copytoclipboard(copy_text);
-    liSelected.classList.add("copied");
   } else if (event.which === 13 && liSelected ) {
     //
     // Enter
@@ -196,14 +173,6 @@ main_input.addEventListener('keydown', function(event) {
   }
 }, false);
 
-// F2 → select input
-document.addEventListener('keydown', function(event) {
-    if (event.which === 113) {
-    // F2
-    console.log("F2");
-    main_input.focus();
-  }
-}, false);
 
 main_input.addEventListener("focusin",function(event) {
     console.log("Focus");
@@ -224,14 +193,6 @@ function hide_result_list(){
     }
 }
 
-function copytoclipboard(text){
-
-    navigator.clipboard.writeText(text).then(function() {
-    //console.log('Async: Copying to clipboard was successful!');
-    }, function(err) {
-    console.error('Async: Could not copy text: ', err);
-    });
-};
 
 function clearinput(){
 

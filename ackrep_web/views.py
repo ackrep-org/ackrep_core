@@ -46,8 +46,6 @@ from .util import (
     _entity_sort_key,
     render_entity_inline,
     reload_data_if_necessary,
-    render_entity_relations,
-    render_entity_scopes,
 )
 
 
@@ -458,10 +456,9 @@ class SearchSparqlView(View):
 
         return TemplateResponse(request, "ackrep_web/search_sparql.html", context)
 
-    # /search/?q=...
-
-
+# /search/?q=...
 def get_item(request):
+    """generate response for dynamical pyerk entity search bar"""
     reload_data_if_necessary()
     q = request.GET.get("q")
 
@@ -487,40 +484,6 @@ def get_item(request):
 
             payload.append(res)
     return JsonResponse({"status": 200, "data": payload})
-
-
-def entity_view(request, uri: Optional[str] = None, vis_options: Optional[Dict] = None):
-    # reload_data_if_necessary()
-    # noinspection PyUnresolvedReferences
-    uri = urllib.parse.unquote(uri)
-
-    db_entity = get_object_or_404(PyerkEntity, uri=uri)
-    rendered_entity = render_entity_inline(db_entity, special_class="highlight", include_description=True)
-    rendered_entity_relations = render_entity_relations(db_entity)
-    # rendered_entity_context_vars = render_entity_context_vars(db_entity)
-    rendered_entity_scopes = render_entity_scopes(db_entity)
-
-    rendered_vis_result = None  #! vis_integration.create_visualization(db_entity, vis_options)
-
-    # TODO: This should be done in vis_integration.create_visualization;    bookmark://vis01
-    #  or better: in visualize_entity() (called from there)
-    if rendered_vis_result:
-        rendered_vis_result = rendered_vis_result.replace(r"%", r"%25")
-
-    context = dict(
-        rendered_entity=rendered_entity,
-        entity=db_entity,
-        rendered_entity_relations=rendered_entity_relations,
-        # rendered_entity_context_vars=rendered_entity_context_vars,
-        rendered_entity_scopes=rendered_entity_scopes,
-        rendered_vis_result=rendered_vis_result,
-    )
-    return render(request, "mainapp/page-entity-detail.html", context)
-
-
-def entity_visualization_view(request, uri: Optional[str] = None):
-    vis_dict = {"depth": 1}
-    return entity_view(request, uri, vis_options=vis_dict)
 
 
 def hide_duplicate_sparql_res(res: list) -> list:

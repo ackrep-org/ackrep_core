@@ -33,7 +33,18 @@ Use <code>UP</code> and <code>DOWN</code> to navigate and <code>ENTER</code> to 
         <ul id="autocomplete-result-list" class="autocomplete-result-list"></ul>
 </div>
 {% block script %}
-{# <script type="text/javascript" src="{% static 'ackrep_web/autocomplete.js' %}"></script> #}
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  config: ["MMLorHTML.js"],
+  loader: {load: ['ui/lazy']},
+  jax: ["input/TeX", "output/HTML-CSS", "output/NativeMML"],
+  extensions: ["MathMenu.js", "MathZoom.js"]
+});
+</script>
+
 <script type="text/javascript" src="{% static 'ackrep_web/autocomplete2.js' %}"></script>
 
 {% endblock %}
