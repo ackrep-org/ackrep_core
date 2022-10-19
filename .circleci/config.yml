@@ -18,20 +18,6 @@ jobs: # A basic unit of work in a run
       - run:
           name: Install Dependancies
           command: |
-            echo 1
-            ls /home/circleci/ackrep/ackrep_core/venv/bin
-            echo 2
-            ls ../../
-            echo 3
-            ls ../../../
-            echo 4
-            ls ../../../../
-            echo 4.5
-            ls
-            echo 5
-            ls venv
-            echo 6
-            ls venv/bin
             python -m venv venv
             . venv/bin/activate
             pip install -U pip
