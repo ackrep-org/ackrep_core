@@ -221,10 +221,8 @@ BASE_URL_FOR_PDF = "http://127.0.0.1:8000/"
 SPARQL_PREFIX_MAPPING = {
     ":": "<erk:/builtins#>",
     "<erk:/builtins#>": ":",
-
     "ocse:": "<erk:/ocse/0.2#>",
     "<erk:/ocse/0.2#>": "ocse:",
-
-    "ack:": '<erk:/ackrep#>',
-    '<erk:/ackrep#>': "ack:"
+    "ack:": "<erk:/ackrep#>",
+    "<erk:/ackrep#>": "ack:",
 }

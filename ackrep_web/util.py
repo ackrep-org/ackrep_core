@@ -108,6 +108,7 @@ def _entity_sort_key(entity) -> Tuple[str, int]:
 
     return letter, num
 
+
 def render_entity_inline(entity: Union[Entity, p.Entity], **kwargs) -> str:
 
     # allow both models.Entity (from db) and "code-defined" pyerk.Entity
@@ -150,6 +151,7 @@ def render_entity_inline(entity: Union[Entity, p.Entity], **kwargs) -> str:
     rendered_entity = template.render(context=ctx)
     return rendered_entity
 
+
 def represent_entity_as_dict(code_entity: Union[Entity, object]) -> dict:
 
     if isinstance(code_entity, p.Entity):
@@ -180,6 +182,7 @@ def represent_entity_as_dict(code_entity: Union[Entity, object]) -> dict:
 
     return res
 
+
 def q_reverse(pagename, uri, **kwargs):
     """
     Simplifies the hazzle for passing URIs into `reverse` (they must be percent-encoded therefor, aka quoted), and then
@@ -197,9 +200,11 @@ def q_reverse(pagename, uri, **kwargs):
     # noinspection PyUnresolvedReferences
     return quoted_url
 
+
 def urlquote(txt):
     # noinspection PyUnresolvedReferences
     return urllib.parse.quote(txt, safe="")
+
 
 def reload_data_if_necessary(force: bool = False, speedup: bool = True) -> Container:
     res = Container()
@@ -217,7 +222,9 @@ def reload_modules_if_necessary(force: bool = False) -> int:
     # load ocse
     if force or p.settings.OCSE_URI not in p.ds.uri_prefix_mapping.a:
         mod = p.erkloader.load_mod_from_path(
-            ERK_DATA_PATH, prefix="ct", modname=ERK_DATA_MOD_NAME,
+            ERK_DATA_PATH,
+            prefix="ct",
+            modname=ERK_DATA_MOD_NAME,
         )
         count += 1
 
@@ -307,7 +314,9 @@ def __load_entities_to_db(speedup: bool) -> None:
     if speedup:
         transaction.commit()
 
-    assert len(Entity.objects.all()) == len(LanguageSpecifiedString.objects.all()), "Mismatch in Entities and corresponding Labels."
+    assert len(Entity.objects.all()) == len(
+        LanguageSpecifiedString.objects.all()
+    ), "Mismatch in Entities and corresponding Labels."
     for entity, label in zip(Entity.objects.all(), LanguageSpecifiedString.objects.all()):
         entity.label.add(label)
 
@@ -336,6 +345,7 @@ def create_lss(ent: p.Entity, rel_key: str) -> LanguageSpecifiedString:
     """
     rdf_literal = p.aux.ensure_rdf_str_literal(getattr(ent, rel_key, ""))
     return LanguageSpecifiedString(langtag=rdf_literal.language, content=rdf_literal.value)
+
 
 def render_entity_relations(db_entity: Entity) -> str:
 
@@ -393,6 +403,7 @@ def render_entity_relations(db_entity: Entity) -> str:
 
     return render_result
 
+
 def render_entity_scopes(db_entity: Entity) -> str:
     code_entity = p.ds.get_entity_by_uri(db_entity.uri)
     # noinspection PyProtectedMember
@@ -436,11 +447,13 @@ def render_entity_scopes(db_entity: Entity) -> str:
     # IPS()
     return render_result
 
+
 def get_sparql_text(code_entity: Union[Entity, object]) -> str:
     uri = "<" + code_entity.base_uri + "#>"
     prefix = settings.SPARQL_PREFIX_MAPPING[uri]
     key = code_entity.short_key
     desc = code_entity.R1.replace(" ", "_")
+
     text = prefix + key + "__" + desc
 
     return text

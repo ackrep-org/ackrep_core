@@ -36,38 +36,64 @@ main_input.setSelectionRange(main_input.value.length, main_input.value.length);
 
 
 
-async function input_callback(){
-    const query = main_input.value;
-    const url = `/search/?q=${main_input.value}`;
-    const source = await fetch(url);
-    const res = await source.json();
+async function input_callback({ signal } = {}){
+  const query = main_input.value;
+  console.log("call", query)
+  const url = `/search/?q=${main_input.value}`;
+  const source = await fetch(url, {signal});
+  const res = await source.json();
 //     console.log(res.data);
+  console.log("res", query)
+  result_list.innerHTML = '';
+  if (main_input.value.length == 0) {
+      console.log(`input empty`);
+      return
+  }
+  if (res.data.length > 0) {
+      info.innerHTML = `Displaying <strong>${res.data.length}</strong> results`;
+  } else {
+      info.innerHTML = `Found <strong>${res.data.length}</strong> matching results for <strong>"${query}"</strong>`;
+  }
+  result_list.prepend(info);
 
-    result_list.innerHTML = '';
-    if (main_input.value.length == 0) {
-        console.log(`input empty`);
-        return
-    }
-    if (res.data.length > 0) {
-        info.innerHTML = `Displaying <strong>${res.data.length}</strong> results`;
-    } else {
-        info.innerHTML = `Found <strong>${res.data.length}</strong> matching results for <strong>"${query}"</strong>`;
-    }
-    result_list.prepend(info);
-
-    if (res.data.length > 0) {
-        res.data.forEach(function(item){
+  if (res.data.length > 0) {
+      res.data.forEach(function(item){
 //         console.log(`-->${item}`);
-            var li = document.createElement("li");
-            li.insertAdjacentHTML("beforeend", `${item}`);
-            result_list.appendChild(li);
-        });
-        // this ensures that math is rendered if it is present.
-        // MathJax.typeset();
-    }
+          var li = document.createElement("li");
+          li.insertAdjacentHTML("beforeend", `${item}`);
+          result_list.appendChild(li);
+      });
+      // this ensures that math is rendered if it is present.
+      // MathJax.typeset();
+  }
 }
 
-main_input.addEventListener("input", input_callback);
+// let queue = []
+// async function handle_queue(){
+//   var d = {
+//     "query": main_input.value,
+//     "controller": new AbortController(),
+//   };
+
+//   queue.forEach(function(item, index, object){
+//     item["controller"].abort();
+//     object.splice(index, 1);
+//   })
+//   queue.push(d)
+//   input_callback({signal: d["controller"].signal})
+
+// }
+
+//
+// https://www.freecodecamp.org/news/javascript-debounce-example/
+function debounce(func, timeout = 400){
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+  };
+}
+main_input.addEventListener("input", debounce(() => input_callback()));
 
 // if we reload the page with content in the input, the result should be shown directly
 if (main_input.value.length != 0) {
@@ -160,7 +186,7 @@ main_input.addEventListener('keydown', function(event) {
     query.focus()
     query.selectionStart = query_cursor_pos + text.length
     query.selectionEnd = query_cursor_pos + text.length
-
+    clearinput()
 
   } else if (event.which === 27) {
     // ESC
