@@ -1,0 +1,41 @@
+{% load bleach_tags %}
+{% load extra_filters %}
+
+{% if re_dict_2tuples %}
+<strong>Relations:</strong>
+    <ul class="entity-relations">
+        {% for tup in re_dict_2tuples %}
+            <li class="entity-relation-edge">
+                {% include main_entity.template with c=main_entity omit_label=True special_class="highlight" %}
+                {% for entity_dict in tup %}
+                    {% include entity_dict.template with c=entity_dict %}
+                {% endfor %}
+            </li>
+        {% endfor %}
+    </ul>
+
+{% else %}
+<p>
+No direct relations found.
+</p>
+{% endif %}
+
+{% if inv_re_dict_2tuples %}
+<strong>Inverse Relations:</strong>
+    <ul class="entity-relations">
+        {% for tup in inv_re_dict_2tuples %}
+            <li class="entity-relation-edge">
+                {% for entity_dict in tup %}
+                    {% include entity_dict.template with c=entity_dict %}
+                {% endfor %}
+                 {% include main_entity.template with c=main_entity omit_label=True special_class="highlight" %}
+            </li>
+        {% endfor %}
+    </ul>
+
+{% else %}
+<p>
+No inverse relations found.
+</p>
+{% endif %}
+

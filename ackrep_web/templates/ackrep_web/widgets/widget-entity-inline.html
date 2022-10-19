@@ -1,0 +1,21 @@
+{% load bleach_tags %}
+
+{% include "ackrep_web/widgets/script-entity-list-entry-json.html" %}
+<span class="entity-inline-wrapper">
+<span class="entity-key {{c.special_class}}">{{c.short_key}}</span><!--
+{# Note: omit_label is not set by default (evaluates to false); thus the following span is included by default #}
+-->{% if not omit_label %}<!--
+    -->{% if c.hl_label  %}<!--
+        -->["<span class="entity-label" title="{{c.description}}">{{c.hl_label|bleach}}</span>"]<!--
+    -->{% else %}<!--
+        -->["<span class="entity-label" title="{{c.description}}">{{c.label|bleach}}</span>"]<!--
+    -->{% endif %}
+{% endif %}
+{% if include_description %}
+    {% if c.hl_description  %}
+        <div class="entity-description">{{c.hl_description|bleach}}</div>
+    {% else  %}
+        <div class="entity-description">{{c.description |bleach}}</div>
+    {% endif  %}
+{% endif %}
+</span>

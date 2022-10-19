@@ -3,14 +3,11 @@ from django.urls import reverse
 from django.test.utils import override_settings
 from unittest import skipUnless
 from ackrep_core.test._test_utils import load_repo_to_db_for_ut, reset_repo
-from ackrep_core.util import run_command, utf8decode, strip_decode
-import re
 import json
 import os
 from ackrep_core_django_settings import settings
-import time
-import subprocess
 import pyerk as p
+from bs4 import BeautifulSoup
 
 try:
     # noinspection PyPackageRequirements
@@ -190,6 +187,21 @@ class TestCases2(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "UXMFA")
         self.assertContains(response, "utc_template_name=ackrep_web/search_sparql.html")
+
+    def test02_search_api(self):
+        url = "/search/?q=set"
+        res = self.client.get(url)
+
+        soup = BeautifulSoup(res.content.decode("utf8"), "lxml")
+
+        script_tags = soup.findAll("script")
+
+        for tag in script_tags:
+            # this assumes that Item I13 has not changed its label since the test was written
+            if tag.contents and (tag.contents[0] == '\\"I13[\\\\\\"mathematical set\\\\\\"]\\"'):
+                break
+        else:
+            self.assertTrue(False, "could not find expected copy-string in response")
 
     def tearDown(self) -> None:
         reset_repo(ackrep_data_test_repo_path)

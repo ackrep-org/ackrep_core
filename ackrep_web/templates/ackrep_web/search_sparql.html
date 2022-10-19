@@ -1,5 +1,5 @@
 {% extends "ackrep_web/base.html" %}
-
+{% load static %}
 {% block content %}
 
 <h3>Search entities in ontology</h3>
@@ -12,7 +12,7 @@
         <pre>{{ stacktrace }}</pre>
     {% endif %}
 {% endif %}
-
+<code>CTRL + SPACE</code> will take you to the PyERK entity search field
 <form action="{% url 'search-sparql' %}" method="GET" class="styled_form">
 <!--    {% csrf_token %}-->
     <label for="query">SPARQL query:</label>
@@ -20,7 +20,35 @@
     <br>
     <button id="btn_mr_submit" type="submit">Search</button>
 </form>
+{# --------------------- pyerk autocomplete item search --------------------- #}
+<br>
+<h4>Search the PyERK entities for an item / a relation and use the respective key for the SPARQL query</h4>
+<br>
+Use <code>UP</code> and <code>DOWN</code> to navigate and <code>ENTER</code> to select.
+<div id="autoComplete" class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list_1" aria-haspopup="true" aria-expanded="false">
+    <div  class="ac_input_wrapper">
+        <input id="main-input" class="autocomplete-input" />
+    </div>
+        <p id="result-info"></p>
+        <ul id="autocomplete-result-list" class="autocomplete-result-list"></ul>
+</div>
+{% block script %}
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  config: ["MMLorHTML.js"],
+  loader: {load: ['ui/lazy']},
+  jax: ["input/TeX", "output/HTML-CSS", "output/NativeMML"],
+  extensions: ["MathMenu.js", "MathZoom.js"]
+});
+</script>
 
+<script type="text/javascript" src="{% static 'ackrep_web/autocomplete2.js' %}"></script>
+
+{% endblock %}
+{# -------------------------------------------------------------------------- #}
 {% if query %}
 <code>
 <pre>
