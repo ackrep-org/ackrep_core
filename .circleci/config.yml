@@ -30,6 +30,8 @@ jobs: # A basic unit of work in a run
             ls
             echo 5
             ls venv
+            echo 6
+            ls venv/bin
             python -m venv venv
             . venv/bin/activate
             pip install -U pip
