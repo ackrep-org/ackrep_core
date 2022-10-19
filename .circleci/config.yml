@@ -19,7 +19,7 @@ jobs: # A basic unit of work in a run
           name: Install Dependancies
           command: |
             echo 1
-            ls ../
+            ls /home/circleci/ackrep/ackrep_core/venv/bin
             echo 2
             ls ../../
             echo 3
