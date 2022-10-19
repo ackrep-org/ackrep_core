@@ -18,7 +18,15 @@ jobs: # A basic unit of work in a run
       - run:
           name: Install Dependancies
           command: |
+            echo 1
+            ls
+            echo 2
+            ls ../
+            echo 3
+            ls ../../
             python -m venv venv
+            echo 4
+            ls venv
             . venv/bin/activate
             pip install -U pip
             pip install -r requirements.txt
