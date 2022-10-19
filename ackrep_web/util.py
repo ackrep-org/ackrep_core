@@ -11,6 +11,8 @@ from addict import Addict as Container
 from ipydex import IPS, activate_ips_on_exception
 from ackrep_core_django_settings import settings
 
+from ackrep_core.models import PyerkEntity, LanguageSpecifiedString
+
 activate_ips_on_exception()
 
 from pyerk.settings import DEFAULT_DATA_LANGUAGE
@@ -31,53 +33,6 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
 
-class BaseModel(models.Model):
-    class Meta:
-        abstract = True
-
-    objects = models.Manager()  # make PyCharm happy
-
-
-class LanguageSpecifiedString(BaseModel):
-    id = models.BigAutoField(primary_key=True)
-    langtag = models.CharField(max_length=8, default="", null=False)
-    content = models.TextField(null=True)
-
-    def __repr__(self):
-        return f"<LSS({self.content}@{self.langtag})>"
-
-
-class Entity(BaseModel):
-    id = models.BigAutoField(primary_key=True)
-
-    # TODO: this should be renamed to `short_key` (first step: see property `short_key` below)
-    uri = models.TextField(default="(unknown uri)")
-
-    # note: in reality this a one-to-many-relationship which in principle could be modeled by a ForeignKeyField
-    # on the other side. However, as we might use the LanguageSpecifiedString model also on other fields (e.g.
-    # description) in the future this is not an option
-    label = models.ManyToManyField(LanguageSpecifiedString)
-    description = models.TextField(default="", null=True)
-
-    def get_label(self, langtag=None) -> str:
-        if langtag is None:
-            langtag = DEFAULT_DATA_LANGUAGE
-        # noinspection PyUnresolvedReferences
-        res = self.label.filter(langtag=langtag)
-        if len(res) == 0:
-            return f"[no label in language {langtag} available]"
-        else:
-            return res[0].content
-
-    def __str__(self) -> str:
-        label_str = self.get_label().replace(" ", "_")
-        # TODO introduce prefixes
-        return f"{self.uri}__{label_str}"
-
-    # TODO: remove obsolete short_key
-    # @property
-    # def short_key(self):
-    #     return self.uri
 
 
 def _entity_sort_key(entity) -> Tuple[str, int]:
@@ -109,12 +64,12 @@ def _entity_sort_key(entity) -> Tuple[str, int]:
     return letter, num
 
 
-def render_entity_inline(entity: Union[Entity, p.Entity], **kwargs) -> str:
+def render_entity_inline(entity: Union[PyerkEntity, p.Entity], **kwargs) -> str:
 
     # allow both models.Entity (from db) and "code-defined" pyerk.Entity
     if isinstance(entity, p.Entity):
         code_entity = entity
-    elif isinstance(entity, Entity):
+    elif isinstance(entity, PyerkEntity):
         code_entity = p.ds.get_entity_by_uri(entity.uri)
     else:
         # TODO: improve handling of literal values
@@ -152,7 +107,7 @@ def render_entity_inline(entity: Union[Entity, p.Entity], **kwargs) -> str:
     return rendered_entity
 
 
-def represent_entity_as_dict(code_entity: Union[Entity, object]) -> dict:
+def represent_entity_as_dict(code_entity: Union[PyerkEntity, object]) -> dict:
 
     if isinstance(code_entity, p.Entity):
 
@@ -168,7 +123,7 @@ def represent_entity_as_dict(code_entity: Union[Entity, object]) -> dict:
             "short_key": code_entity.short_key,
             "label": generalized_label,
             "description": str(code_entity.R2),
-            "detail_url": q_reverse("entitypage", uri=code_entity.uri),
+            # "detail_url": q_reverse("entitypage", uri=code_entity.uri),
             "template": "ackrep_web/widgets/widget-entity-inline.html",
             "_replacement_exceptions": _replacement_exceptions,
             "sparql_text": get_sparql_text(code_entity),
@@ -249,7 +204,7 @@ def load_erk_entities_to_db(speedup: bool = True) -> int:
 
     # delete all existing data (if database already exisits)
     try:
-        Entity.objects.all().delete()
+        PyerkEntity.objects.all().delete()
         LanguageSpecifiedString.objects.all().delete()
     except OperationalError:
         # db does not yet exist. The functions is probably called during `manage.py migrate` or similiar.
@@ -261,7 +216,7 @@ def load_erk_entities_to_db(speedup: bool = True) -> int:
     # repopulate the databse with items and relations (and auxiliary objects)
     _load_entities_to_db(speedup=speedup)
 
-    n = len(Entity.objects.all())
+    n = len(PyerkEntity.objects.all())
     n += len(LanguageSpecifiedString.objects.all())
 
     return n
@@ -302,22 +257,22 @@ def __load_entities_to_db(speedup: bool) -> None:
     label_list = []
     for ent in itertools.chain(p.ds.items.values(), p.ds.relations.values()):
         label = create_lss(ent, "R1")
-        entity = Entity(uri=ent.uri, description=getattr(ent, "R2", None))
+        entity = PyerkEntity(uri=ent.uri, description=getattr(ent, "R2", None))
 
         label_list.append(label)
         entity_list.append(entity)
 
     # print(p.auxiliary.bcyan(f"time1: {time.time() - t0}"))
-    Entity.objects.bulk_create(entity_list)
+    PyerkEntity.objects.bulk_create(entity_list)
     LanguageSpecifiedString.objects.bulk_create(label_list)
 
     if speedup:
         transaction.commit()
 
-    assert len(Entity.objects.all()) == len(
+    assert len(PyerkEntity.objects.all()) == len(
         LanguageSpecifiedString.objects.all()
     ), "Mismatch in Entities and corresponding Labels."
-    for entity, label in zip(Entity.objects.all(), LanguageSpecifiedString.objects.all()):
+    for entity, label in zip(PyerkEntity.objects.all(), LanguageSpecifiedString.objects.all()):
         entity.label.add(label)
 
     # print(p.auxiliary.bcyan(f"time2: {time.time() - t0}"))
@@ -330,7 +285,7 @@ def unload_data(strict=False):
     p.unload_mod(p.settings.OCSE_URI, strict=strict)
 
     # unload db
-    Entity.objects.all().delete()
+    PyerkEntity.objects.all().delete()
     LanguageSpecifiedString.objects.all().delete()
 
 
@@ -347,7 +302,7 @@ def create_lss(ent: p.Entity, rel_key: str) -> LanguageSpecifiedString:
     return LanguageSpecifiedString(langtag=rdf_literal.language, content=rdf_literal.value)
 
 
-def render_entity_relations(db_entity: Entity) -> str:
+def render_entity_relations(db_entity: PyerkEntity) -> str:
 
     # omit information which is already displayed by render_entity (label, description)
     black_listed_keys = ["R1", "R2"]
@@ -404,7 +359,7 @@ def render_entity_relations(db_entity: Entity) -> str:
     return render_result
 
 
-def render_entity_scopes(db_entity: Entity) -> str:
+def render_entity_scopes(db_entity: PyerkEntity) -> str:
     code_entity = p.ds.get_entity_by_uri(db_entity.uri)
     # noinspection PyProtectedMember
 
@@ -448,7 +403,7 @@ def render_entity_scopes(db_entity: Entity) -> str:
     return render_result
 
 
-def get_sparql_text(code_entity: Union[Entity, object]) -> str:
+def get_sparql_text(code_entity: Union[PyerkEntity, object]) -> str:
     uri = "<" + code_entity.base_uri + "#>"
     prefix = settings.SPARQL_PREFIX_MAPPING[uri]
     key = code_entity.short_key

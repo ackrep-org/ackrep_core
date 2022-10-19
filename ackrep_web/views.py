@@ -41,8 +41,8 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
 
 from django.http import JsonResponse
 from django.db.models import Q
+from ackrep_core.models import PyerkEntity
 from .util import (
-    Entity,
     _entity_sort_key,
     render_entity_inline,
     reload_data_if_necessary,
@@ -467,7 +467,7 @@ def get_item(request):
 
     payload = []
     if q:
-        entities = Entity.objects.filter(
+        entities = PyerkEntity.objects.filter(
             Q(label__content__icontains=q) | Q(uri__icontains=q) | Q(description__icontains=q)
         )
 
@@ -475,7 +475,7 @@ def get_item(request):
         entity_list.sort(key=_entity_sort_key)
 
         for idx, db_entity in enumerate(entity_list):
-            db_entity: Entity
+            db_entity: PyerkEntity
             try:
                 res = render_entity_inline(
                     db_entity, idx=idx, script_tag="script", include_description=True, highlight_text=q
@@ -494,7 +494,7 @@ def entity_view(request, uri: Optional[str] = None, vis_options: Optional[Dict] 
     # noinspection PyUnresolvedReferences
     uri = urllib.parse.unquote(uri)
 
-    db_entity = get_object_or_404(Entity, uri=uri)
+    db_entity = get_object_or_404(PyerkEntity, uri=uri)
     rendered_entity = render_entity_inline(db_entity, special_class="highlight", include_description=True)
     rendered_entity_relations = render_entity_relations(db_entity)
     # rendered_entity_context_vars = render_entity_context_vars(db_entity)
