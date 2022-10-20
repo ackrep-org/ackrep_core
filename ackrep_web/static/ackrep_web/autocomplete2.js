@@ -127,10 +127,11 @@ main_input.addEventListener('keydown', function(event) {
       liSelected = result_list.getElementsByTagName('li')[0];
 
     }
-    console.log(`liSelected: ${liSelected}`);
-    console.log(`classList: ${liSelected.classList}`);
+    // console.log(`liSelected: ${liSelected}`);
+    // console.log(`classList: ${liSelected.classList}`);
     liSelected.classList.add("selected");
-    console.log(`classList2: ${liSelected.classList}`);
+    // console.log(`classList2: ${liSelected.classList}`);
+    result_list.scrollTop= liSelected.offsetTop - 150
   } else if (event.which === 38 && maxidx > -1) {
 
     //up
@@ -150,10 +151,11 @@ main_input.addEventListener('keydown', function(event) {
       index = 0;
       liSelected = result_list.getElementsByTagName('li')[maxidx];
     }
-    console.log(`liSelected-: ${liSelected}`);
-    console.log(`classList-: ${liSelected.classList}`);
+    // console.log(`liSelected-: ${liSelected}`);
+    // console.log(`classList-: ${liSelected.classList}`);
     liSelected.classList.add("selected");
-    console.log(`classList2-: ${liSelected.classList}`);
+    // console.log(`classList2-: ${liSelected.classList}`);
+    result_list.scrollTop= liSelected.offsetTop - 150
   } else if (event.which === 13 && liSelected ) {
     //
     // Enter

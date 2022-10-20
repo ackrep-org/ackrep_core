@@ -43,6 +43,7 @@ from django.http import JsonResponse
 from django.db.models import Q
 from ackrep_core.models import PyerkEntity
 from .util import (
+    Separator,
     _entity_sort_key,
     render_entity_inline,
     reload_data_if_necessary,
@@ -463,28 +464,43 @@ def get_item(request):
     q = request.GET.get("q")
 
     payload = []
+    entity_list = []
     if q:
-        entities = PyerkEntity.objects.filter(
-            Q(label__content__icontains=q) | Q(uri__icontains=q) | Q(description__icontains=q)
-        )
+        search_and_render(q, entity_list, payload)
 
-        entity_list = list(entities)
-        entity_list.sort(key=_entity_sort_key)
+        # look for partial match
+        if " " in q:
+            # entity_list.insert(0, Separator("full matches:"))
+            # entity_list.append(Separator("partial matches:"))
+            subqueries = q.split()
+            for sq in subqueries:
+                if len(sq) > 2:
+                    search_and_render(sq, entity_list, payload)
 
-        for idx, db_entity in enumerate(entity_list):
-            db_entity: PyerkEntity
-            try:
-                res = render_entity_inline(
-                    db_entity, idx=idx, script_tag="script", include_description=True, highlight_text=q
-                )
-            except KeyError:
-                # there seemse to be a bug related to data reloading and automatic key generation
-                # IPS()
-                raise
-
-            payload.append(res)
     return JsonResponse({"status": 200, "data": payload})
 
+def search_and_render(q: str, entity_list: list, payload: list) -> Tuple[list, list]:
+    filters = [Q(uri__icontains=q), Q(label__content__icontains=q), Q(description__icontains=q)]
+    for f in filters:
+        e_list = list(PyerkEntity.objects.filter(f))
+        e_list.sort(key=_entity_sort_key)
+        render_list = list(set(e_list) - set(entity_list))
+        entity_list.extend(render_list)
+
+    for idx, db_entity in enumerate(render_list):
+        db_entity: PyerkEntity
+        try:
+            res = render_entity_inline(
+                db_entity, idx=idx, script_tag="script", include_description=True, highlight_text=q
+            )
+        except KeyError:
+            # there seemse to be a bug related to data reloading and automatic key generation
+            # IPS()
+            raise
+
+        payload.append(res)
+
+    return entity_list, payload
 
 def hide_duplicate_sparql_res(res: list) -> list:
     new_list = []

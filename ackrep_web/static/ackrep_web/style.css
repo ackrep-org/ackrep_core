@@ -329,7 +329,8 @@ input#hide:checked ~ span#content {
 }
 .autoComplete_wrapper > ul {
     position: absolute;
-    max-height: 226px;
+    padding-left: 10px;
+    max-height: 40vh;
     overflow-y: auto;
     box-sizing: border-box;
     left: 0;
@@ -385,11 +386,6 @@ input#hide:checked ~ span#content {
     margin-top: 10px;
 
 }
-.autoComplete_wrapper > ul  {
-    padding-left: 10px;
-    max-height: 80vh;
-}
-
 
 li.selected {
     background-color: linen !important;

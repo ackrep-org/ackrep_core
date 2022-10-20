@@ -9,8 +9,9 @@ from django.db.utils import OperationalError
 from django.db import transaction
 from addict import Addict as Container
 from ipydex import IPS, activate_ips_on_exception
-from ackrep_core_django_settings import settings
+import re
 
+from ackrep_core_django_settings import settings
 from ackrep_core.models import PyerkEntity, LanguageSpecifiedString
 
 activate_ips_on_exception()
@@ -31,6 +32,11 @@ ERK_DATA_MOD_NAME = "control_theory1"
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
     import pyerk as p
+
+
+class Separator():
+    def __init__(self, text: str) -> None:
+        self.text = text
 
 
 def _entity_sort_key(entity) -> Tuple[str, int]:
@@ -69,6 +75,8 @@ def render_entity_inline(entity: Union[PyerkEntity, p.Entity], **kwargs) -> str:
         code_entity = entity
     elif isinstance(entity, PyerkEntity):
         code_entity = p.ds.get_entity_by_uri(entity.uri)
+    elif isinstance(entity, Separator):
+        pass
     else:
         # TODO: improve handling of literal values
         assert isinstance(entity, (str, int, float, complex))
@@ -87,7 +95,8 @@ def render_entity_inline(entity: Union[PyerkEntity, p.Entity], **kwargs) -> str:
                 continue
             value = entity_dict[key]
             new_key = f"hl_{key}"
-            new_data[new_key] = value.replace(highlight_text, f"<strong>{highlight_text}</strong>")
+            pattern = re.compile(highlight_text, re.I)
+            new_data[new_key] = value = re.sub(pattern, f"<strong>{highlight_text}</strong>", value)
 
         entity_dict.update(new_data)
 

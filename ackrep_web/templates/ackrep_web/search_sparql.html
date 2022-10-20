@@ -12,7 +12,7 @@
         <pre>{{ stacktrace }}</pre>
     {% endif %}
 {% endif %}
-<code>CTRL + SPACE</code> will take you to the PyERK entity search field
+<code>CTRL + SPACE</code> will take you to the PyERK entity search field.
 <form action="{% url 'search-sparql' %}" method="GET" class="styled_form">
 <!--    {% csrf_token %}-->
     <label for="query">SPARQL query:</label>
@@ -22,8 +22,7 @@
 </form>
 {# --------------------- pyerk autocomplete item search --------------------- #}
 <br>
-<h4>Search the PyERK entities for an item / a relation and use the respective key for the SPARQL query</h4>
-<br>
+<h4>Search the PyERK entities for an item / a relation and use it in the SPARQL query</h4>
 Use <code>UP</code> and <code>DOWN</code> to navigate and <code>ENTER</code> to select.
 <div id="autoComplete" class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list_1" aria-haspopup="true" aria-expanded="false">
     <div  class="ac_input_wrapper">
