@@ -43,7 +43,6 @@ from django.http import JsonResponse
 from django.db.models import Q
 from ackrep_core.models import PyerkEntity
 from .util import (
-    Separator,
     _entity_sort_key,
     render_entity_inline,
     reload_data_if_necessary,
@@ -457,6 +456,7 @@ class SearchSparqlView(View):
 
         return TemplateResponse(request, "ackrep_web/search_sparql.html", context)
 
+
 # /search/?q=...
 def get_item(request):
     """generate response for dynamical pyerk entity search bar"""
@@ -466,19 +466,37 @@ def get_item(request):
     payload = []
     entity_list = []
     if q:
-        search_and_render(q, entity_list, payload)
+        subqueries = q.split()
+        filters = []
+        # every word in the query should appear at least once in uri, label or description
+        for sq in subqueries:
+            filters.append(Q(uri__icontains=sq) | Q(label__content__icontains=sq) | Q(description__icontains=sq))
+        total_filter = None
+        for f in filters:
+            if total_filter == None:
+                total_filter = f
+            else:
+                total_filter = total_filter & f
 
-        # look for partial match
-        if " " in q:
-            # entity_list.insert(0, Separator("full matches:"))
-            # entity_list.append(Separator("partial matches:"))
-            subqueries = q.split()
-            for sq in subqueries:
-                if len(sq) > 2:
-                    search_and_render(sq, entity_list, payload)
+        entity_list = list(PyerkEntity.objects.filter(total_filter))
+        entity_list.sort(key=_entity_sort_key)
+        for idx, db_entity in enumerate(entity_list):
+            db_entity: PyerkEntity
+            try:
+                res = render_entity_inline(
+                    db_entity, idx=idx, script_tag="script", include_description=True, highlight_text=subqueries
+                )
+            except KeyError:
+                # there seemse to be a bug related to data reloading and automatic key generation
+                # IPS()
+                raise
+
+            payload.append(res)
 
     return JsonResponse({"status": 200, "data": payload})
 
+
+# todo: obsolete?
 def search_and_render(q: str, entity_list: list, payload: list) -> Tuple[list, list]:
     filters = [Q(uri__icontains=q), Q(label__content__icontains=q), Q(description__icontains=q)]
     for f in filters:
@@ -501,6 +519,7 @@ def search_and_render(q: str, entity_list: list, payload: list) -> Tuple[list, l
         payload.append(res)
 
     return entity_list, payload
+
 
 def hide_duplicate_sparql_res(res: list) -> list:
     new_list = []
