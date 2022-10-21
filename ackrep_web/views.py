@@ -479,7 +479,7 @@ def get_item(request):
                 total_filter = total_filter & f
 
         entity_list = list(PyerkEntity.objects.filter(total_filter))
-        entity_list.sort(key=_entity_sort_key)
+        entity_list.sort(key=lambda ent: _entity_sort_key(ent, subqueries))
         for idx, db_entity in enumerate(entity_list):
             db_entity: PyerkEntity
             try:

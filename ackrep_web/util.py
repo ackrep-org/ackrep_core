@@ -34,8 +34,7 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
 
-
-def _entity_sort_key(entity) -> Tuple[str, int]:
+def _entity_sort_key(entity, subqueries) -> Tuple[int, str, int]:
     """
     Convert an short_key of an entity to a tuple which is used for sorting.
 
@@ -51,6 +50,18 @@ def _entity_sort_key(entity) -> Tuple[str, int]:
     """
 
     uri = entity.uri
+    label = p.ds.get_entity_by_uri(uri).R1
+    descr = entity.description
+
+    relevance = 0
+    for sq in subqueries:
+        if sq in uri:
+            relevance -= 5
+        if sq in label:
+            relevance -= 2
+        if sq in descr:
+            relevance -= 1
+
     mod_uri, sk = uri.split(p.settings.URI_SEP)
 
     if sk[1].isdigit():
@@ -61,7 +72,7 @@ def _entity_sort_key(entity) -> Tuple[str, int]:
         num = int(sk[2:])
         letter = f"x{sk[0]}"
 
-    return letter, num
+    return relevance, letter, num
 
 
 def render_entity_inline(entity: Union[PyerkEntity, p.Entity], **kwargs) -> str:
