@@ -57,9 +57,9 @@ def _entity_sort_key(entity, subqueries) -> Tuple[int, str, int]:
     for sq in subqueries:
         if sq in uri:
             relevance -= 5
-        if sq in label:
+        if label and sq in label:
             relevance -= 2
-        if sq in descr:
+        if descr and sq in descr:
             relevance -= 1
 
     mod_uri, sk = uri.split(p.settings.URI_SEP)
