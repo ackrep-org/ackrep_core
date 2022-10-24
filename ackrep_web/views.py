@@ -143,7 +143,9 @@ class EntityDetailView(View):
         c.view_type = "detail"
         c.view_type_title = "Details for:"
         if isinstance(entity, core.models.SystemModel):
-            c.pdf_list = core.get_data_files(entity.base_path, endswith_str=".pdf", create_media_links=True)
+            c.pdf_list = core.get_data_files(
+                entity.base_path, endswith_str="documentation.pdf", create_media_links=True
+            )
         c.source_code_link = _create_source_code_link(entity)
         c.source_code_container = _get_source_code(entity)
 
