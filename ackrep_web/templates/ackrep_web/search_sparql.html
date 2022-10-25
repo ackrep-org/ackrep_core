@@ -182,16 +182,37 @@ MathJax.Hub.Config({
     </code>
 </span>
 <br>
-
-<h3>Resulting ACKREP Entities ({{ackrep_entities|length}}) </h3>
-{% if ackrep_entities %}
-    {% for e in ackrep_entities %}
-        {{ e|first }}:
-        {% include "ackrep_web/widgets/entity.html" with entity=e|last c=c display="short" only %}
-    {% endfor %}
+{% load extra_filters %}
+<h3>Results ({{table_data|length}}) </h3>
+{% if table_data %}
+    <table class="res_table">
+        <thead>
+            <tr>
+                {% for head in table_head %}
+                    <th style="width:{{col_width}};">{{head}}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in table_data %}
+                <tr>
+                    {% for cell in row %}
+                        {% if cell|is_entity == True %}
+                            <td>
+                                Model of {{cell.name}}
+                                (<a href="/e/{{cell.key}}" title="show details">{{cell.key}}</a>)
+                            </td>
+                        {% else %}
+                            <td>{{cell}}</td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endif %}
 
-<h3>Resulting General Entities from the Ontology ({{onto_entities|length}})</h3>
+
 <style>
 span#c_show_all {
     display:block;
@@ -215,19 +236,6 @@ input#hide_dubpl:checked ~ span#c_hide_dubpl {
 }
 </style>
 
-{% if onto_entities|length != onto_entities_no_dupl|length %}
-    [
-    <label for="show_all">
-        <span class="fake_button">Show all</span>
-    </label>
-    <input type=radio id="show_all" name="group2">
-    /
-    <label for="hide_dubpl">
-        <span class="fake_button"> Hide duplicates</span>
-    </label>
-    <input type=radio id="hide_dubpl" name="group2">
-    ]
-{% endif %}
 <span id="c_show_all">
     {% if onto_entities %}
         {% for e in onto_entities %}

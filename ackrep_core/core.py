@@ -256,26 +256,52 @@ class ACKREP_OntologyManager(object):
         self.ds = p.core.ds
         qsrc = self.ds.preprocess_query(qsrc)
         res = self.ds.rdfgraph.query(qsrc)
-        erk_entitites = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+        erk_entitites = list(p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res))
+        erk_entitites.sort(key=_sort_sparql_results)
 
-        ackrep_entities = []
-        onto_entites = []
+        table_data = []
+        table_head = [str(var) for var in res.vars]
         for tuples in erk_entitites:
+            row = []
             for i, e in enumerate(tuples):
                 # entity is system model
                 try:
                     re = e.get_relations("ct__R2950__has_corresponding_ackrep_key")
                     entity_key = re[0].relation_tuple[2]
+
                     assert isinstance(entity_key, str)
                     entity = get_entity(entity_key)
-                    ackrep_entities.append(("?" + str(res.vars[i]), entity))
+                    row.append(entity)
                 except:
                     try:
                         entity = [e.short_key, e.R1]
                     except:
                         entity = e
-                    onto_entites.append(("?" + str(res.vars[i]), entity))
-        return ackrep_entities, onto_entites
+                    row.append(entity)
+            table_data.append(row)
+
+        return table_head, table_data
+
+
+def _sort_sparql_results(res_tuple):
+    """sort res tuples with ackrep entities on top"""
+    relevance = 0
+    for entity in res_tuple:
+        if hasattr(entity, "get_relations") and entity.get_relations("ct__R2950__has_corresponding_ackrep_key"):
+            relevance -= 5
+
+    uri = res_tuple[0].uri
+    _, sk = uri.split(p.settings.URI_SEP)
+
+    if sk[1].isdigit():
+        num = int(sk[1:])
+        letter = sk[0]
+        # return
+    else:
+        num = int(sk[2:])
+        letter = f"x{sk[0]}"
+
+    return relevance, letter, num
 
 
 def load_repo_to_db(startdir, check_consistency=True):
