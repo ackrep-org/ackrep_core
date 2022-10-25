@@ -11,7 +11,9 @@ import git
 
 from . import util
 from . import model_utils
-from pyerk.settings import DEFAULT_DATA_LANGUAGE
+
+if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
+    from pyerk.settings import DEFAULT_DATA_LANGUAGE
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS  # only for debugging

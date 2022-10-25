@@ -15,7 +15,8 @@ from ackrep_core.util import run_command, utf8decode, strip_decode
 from ipydex import IPS  # only for debugging
 
 from distutils.spawn import find_executable
-import pyerk as p
+if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
+    import pyerk as p
 
 """
 This module contains the tests of the core module (not ackrep_web).
