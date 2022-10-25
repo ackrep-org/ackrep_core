@@ -1103,7 +1103,7 @@ def download_and_store_artifacts(branch_name):
     | wget --force-directories --no-host-directories --cut-dirs=6 --verbose --header 'Circle-Token: {circle_token}' \
     --input-file -"""
     ]
-    # 
+    #
     # --force-directories       keeps directory structure
     # --no-host-directories     omits directory with host url
     # --cut-dirs=6              omits next 6 directories --> artifact dir

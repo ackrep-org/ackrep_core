@@ -465,7 +465,10 @@ def update_parameter_tex(key):
     p_values = [sp.latex(p_sf) for p_sf in parameters.pp_sf]
     # set cells in math-mode
     for i in range(len(p_values)):
-        p_values[i] = "$" + str('{:.{p}g}'.format(float(p_values[i]), p=4))  + "$"
+        try:
+            p_values[i] = "$" + str("{:.{p}g}".format(float(p_values[i]), p=4)) + "$"
+        except:
+            p_values[i] = f"${p_values[i]}$"
 
     # Define "Range" column
     p_ranges = []
@@ -551,7 +554,6 @@ def create_pdf(key, output_path=None):
         with open(os.path.join(tex_path, "documentation.tex"), "w") as tex_file:
             tex_file.writelines(lines)
 
-
     if output_path is None:
         res = run_command(["pdflatex", "-halt-on-error", "documentation.tex"], logger=core.logger, capture_output=False)
     else:
@@ -559,16 +561,16 @@ def create_pdf(key, output_path=None):
         if not os.path.isdir(test_dir):
             os.mkdir(test_dir)
         res = run_command(
-            # ToDO: solve the following problem: 
+            # ToDO: solve the following problem:
             # if the pdf is open in adobe acrobat the pdflatex cannot overwrite it and prompts for a new file name
-            # this is confusing 
+            # this is confusing
             # suggested solution: call pdflatex such that it exits without prompting and nonzero errorcode which is available `res`
-            # see if-statement below 
+            # see if-statement below
             ["pdflatex", "-halt-on-error", "-output-directory", output_path, "documentation.tex"],
             logger=core.logger,
             capture_output=True,
         )
-        if res.returncode != 0: 
+        if res.returncode != 0:
             # ToDo: print useful errormessage here
             pass
 
@@ -599,15 +601,15 @@ def create_pdf(key, output_path=None):
     for file in files:
         if file.split(".")[-1] in delete_list:
             os.remove(os.path.split(file)[1])
-    os.remove(os.path.join(file_path, 'notice.tex'))
-    
+    os.remove(os.path.join(file_path, "notice.tex"))
+
     return res
 
 
 def generate_notice_tex(key):
-    note_text = r'''This document was automatically generated based on the \href{https://ackrep.org/}{ACKREP} project
+    note_text = r"""This document was automatically generated based on the \href{https://ackrep.org/}{ACKREP} project
                 \href{https://github.com/ackrep-org/ackrep_data/tree/main/system_models}{system model with --key--}. 
-                The Automatic Control Knowledge Repository, short ACKREP, aims to facilitate knowledge transfer of control theory and control engineering. '''
+                The Automatic Control Knowledge Repository, short ACKREP, aims to facilitate knowledge transfer of control theory and control engineering. """
 
     note_text = note_text.replace("--key--", key)
     file_note = open("notice.tex", "w")
@@ -775,7 +777,19 @@ def create_system_model_list_pdf():
             if "\\part*{Model Documentation of the:}" in v:
                 lines[i] = "\n"
             if "Add Model Name" in v:
-                lines[i] = "\\part{" + sm.name + "}\n" + "ACKREP-Key: " + "\\href{" + settings.BASE_URL_FOR_PDF + "e/" + sm.key + "}{" + sm.key + "}"
+                lines[i] = (
+                    "\\part{"
+                    + sm.name
+                    + "}\n"
+                    + "ACKREP-Key: "
+                    + "\\href{"
+                    + settings.BASE_URL_FOR_PDF
+                    + "e/"
+                    + sm.key
+                    + "}{"
+                    + sm.key
+                    + "}"
+                )
             if "\\input{parameters.tex}" in v:
                 lines[i] = (
                     "\\input{"
@@ -788,7 +802,9 @@ def create_system_model_list_pdf():
                 )
             if "\\includegraphics" in v:
                 graphics_name = v.split("{")[1].split("}")[0]
-                new_path = str(os.path.join(core.data_path, os.pardir, sm.base_path, "_data", graphics_name).replace("\\", "/"))
+                new_path = str(
+                    os.path.join(core.data_path, os.pardir, sm.base_path, "_data", graphics_name).replace("\\", "/")
+                )
                 lines[i] = lines[i].replace(graphics_name, new_path)
             if "\\begin{thebibliography}" in v:
                 lines[i] = _import_png_to_tex(sm) + lines[i]
