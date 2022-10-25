@@ -6,7 +6,8 @@ from ackrep_core.test._test_utils import load_repo_to_db_for_ut, reset_repo
 import json
 import os
 from ackrep_core_django_settings import settings
-import pyerk as p
+if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
+    import pyerk as p
 from bs4 import BeautifulSoup
 
 try:

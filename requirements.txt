@@ -16,3 +16,4 @@ deploymentutils
 pandas
 beautifulsoup4
 lxml
+addict

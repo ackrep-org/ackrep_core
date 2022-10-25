@@ -16,22 +16,20 @@ from ackrep_core.models import PyerkEntity, LanguageSpecifiedString
 
 activate_ips_on_exception()
 
-
-from pyerk.auxiliary import get_erk_root_dir
-
-ERK_ROOT_DIR = get_erk_root_dir()
-
-# Flag to determine if tests are running
-RUNNING_TESTS = False
-
-# TODO: This should be read from a config file
-ERK_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
-ERK_DATA_MOD_NAME = "control_theory1"
-
-
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
     import pyerk as p
+    from pyerk.auxiliary import get_erk_root_dir
+
+    ERK_ROOT_DIR = get_erk_root_dir()
+
+    # Flag to determine if tests are running
+    RUNNING_TESTS = False
+
+    # TODO: This should be read from a config file
+    ERK_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+    ERK_DATA_MOD_NAME = "control_theory1"
+
 
 
 def _entity_sort_key(entity, subqueries) -> Tuple[int, str, int]:

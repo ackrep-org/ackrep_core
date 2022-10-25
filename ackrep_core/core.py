@@ -31,7 +31,8 @@ from ipydex import Container
 
 from . import models
 from . import model_utils
-from . import ackrep_parser
+if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
+    from . import ackrep_parser
 
 # noinspection PyUnresolvedReferences
 from .model_utils import get_entity_dict_from_db, get_entity_types, resolve_keys, get_entity
