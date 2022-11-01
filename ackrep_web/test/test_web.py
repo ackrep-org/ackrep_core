@@ -230,8 +230,9 @@ class TestCases2(SimpleTestCase):
         # this tests:
         # - partial matching (out of order search of key words)
         # - sorting of pyerk entities in relevant order
-        class C():
+        class C:
             pass
+
         request = C()
         request.GET = {"q": "system model general"}
 
