@@ -434,26 +434,27 @@ class SearchSparqlView(View):
         SELECT ?s
         WHERE {{
             ?s :R16__has_property ocse:I7733__time_invariance.
-
         }}
         """
         )
         qsrc = context["query"] = request.GET.get("query", example_query)
 
         try:
-            ackrep_entities, onto_entities = core.AOM.run_sparql_query_and_translate_result(qsrc)
+            table_head, table_data = core.AOM.run_sparql_query_and_translate_result(qsrc)
         except Exception as e:
             context["err"] = f"The following error occurred: {str(e)}"
             if settings.DEVMODE:
                 context["stacktrace"] = traceback.format_exc()
+            table_head = []
+            table_data = []
 
-            ackrep_entities, onto_entities = [], []
+        # onto_entities_no_dupl = hide_duplicate_sparql_res(onto_entities)
 
-        onto_entities_no_dupl = hide_duplicate_sparql_res(onto_entities)
-
-        context["ackrep_entities"] = ackrep_entities
-        context["onto_entities"] = onto_entities
-        context["onto_entities_no_dupl"] = onto_entities_no_dupl
+        context["table_head"] = table_head
+        context["table_data"] = table_data
+        if table_head:
+            context["col_width"] = f"{100 / len(table_head)}%"
+        # context["onto_entities_no_dupl"] = onto_entities_no_dupl
         context["c"] = util.Container()  # this could be used for further options
 
         return TemplateResponse(request, "ackrep_web/search_sparql.html", context)
@@ -496,39 +497,6 @@ def get_item(request):
             payload.append(res)
 
     return JsonResponse({"status": 200, "data": payload})
-
-
-# todo: obsolete?
-def search_and_render(q: str, entity_list: list, payload: list) -> Tuple[list, list]:
-    filters = [Q(uri__icontains=q), Q(label__content__icontains=q), Q(description__icontains=q)]
-    for f in filters:
-        e_list = list(PyerkEntity.objects.filter(f))
-        e_list.sort(key=_entity_sort_key)
-        render_list = list(set(e_list) - set(entity_list))
-        entity_list.extend(render_list)
-
-    for idx, db_entity in enumerate(render_list):
-        db_entity: PyerkEntity
-        try:
-            res = render_entity_inline(
-                db_entity, idx=idx, script_tag="script", include_description=True, highlight_text=q
-            )
-        except KeyError:
-            # there seemse to be a bug related to data reloading and automatic key generation
-            # IPS()
-            raise
-
-        payload.append(res)
-
-    return entity_list, payload
-
-
-def hide_duplicate_sparql_res(res: list) -> list:
-    new_list = []
-    for entry in res:
-        if not entry in new_list:
-            new_list.append(entry)
-    return new_list
 
 
 class NotYetImplementedView(View):

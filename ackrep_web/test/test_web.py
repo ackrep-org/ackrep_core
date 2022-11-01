@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.test.utils import override_settings
 from unittest import skipUnless
 from ackrep_core.test._test_utils import load_repo_to_db_for_ut, reset_repo
+from ackrep_web.views import get_item
 import json
 import os
 from ackrep_core_django_settings import settings
@@ -189,6 +190,28 @@ class TestCases2(SimpleTestCase):
         self.assertContains(response, "UXMFA")
         self.assertContains(response, "utc_template_name=ackrep_web/search_sparql.html")
 
+    def test_sparql_query3(self):
+        # test for correct display of sparql results in table form
+        url = reverse("search-sparql")
+        query = (
+            "query=PREFIX+%3A+<erk%3A%2Fbuiltins%23>%0D%0APREFIX+ocse%3A+<erk%3A%2Focse%2F0.2%23>%0D%0APREFIX"
+            "+ack%3A+<erk%3A%2Fackrep%23>%0D%0ASELECT+%3Fs+%3Fp+%3Fo%0D%0AWHERE+{%0D%0A++++%3Fs+%3Fp+%3Fo.%0D%0A"
+            "%3Fs+%3AR4__is_instance_of+ocse%3AI5356__general_system_property.%0D%0A}%0D%0A"
+        )
+        response = self.client.get(f"{url}?{query}")
+        self.assertEqual(response.status_code, 200)
+
+        soup = BeautifulSoup(response.content.decode("utf8"), "lxml")
+        rows = soup.findAll("tr")
+
+        self.assertGreaterEqual(len(rows), 44)
+
+        row0 = rows[0].findAll("th")
+
+        tablehead = ["s", "p", "o"]
+        for i in range(3):
+            self.assertEqual(row0[i].contents[0], tablehead[i])
+
     def test02_search_api(self):
         url = "/search/?q=set"
         res = self.client.get(url)
@@ -203,6 +226,26 @@ class TestCases2(SimpleTestCase):
                 break
         else:
             self.assertTrue(False, "could not find expected copy-string in response")
+
+    def test03_search_api(self):
+        # this tests:
+        # - partial matching (out of order search of key words)
+        # - sorting of pyerk entities in relevant order
+        class C:
+            pass
+
+        request = C()
+        request.GET = {"q": "system model general"}
+
+        res = get_item(request)
+
+        soup = BeautifulSoup(res.content.decode("utf8"), "lxml")
+
+        script_tags = soup.findAll("script")
+
+        self.assertTrue(script_tags[0].contents[0], '\\"\\"')
+        self.assertTrue(script_tags[1].contents[0], '\\"I7641[\\\\\\"general system model\\\\\\"]\\"')
+        self.assertTrue(script_tags[2].contents[0], '\\"ocse:I7641__general_system_model\\"')
 
     def tearDown(self) -> None:
         reset_repo(ackrep_data_test_repo_path)
