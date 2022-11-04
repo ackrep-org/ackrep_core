@@ -19,7 +19,7 @@ row_template = "    {}s\n  {}"
 
 
 def create_compleib_models_from_template(target=None):
-    lib_folder = os.path.join(core.data_path, "system_models", "compleib_models", "src")
+    lib_folder = os.path.join(core.data_path, "system_models", "compleib_models", "_src")
     lib_path = os.path.join(lib_folder, "COMPleib.m")
     td = {"t1": {}, "t2": {}, "t3": {}, "t4": {}, "t5": {}, "t6": {}, "t7": {}, "t8": {}}
     ts = time.time()
