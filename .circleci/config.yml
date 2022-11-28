@@ -44,9 +44,8 @@ jobs: # A basic unit of work in a run
             cd ../
             mkdir erk-data
             cd erk-data
-            git clone https://github.com/ackrep-org/erk-data-control-theory.git
-            mv erk-data-control-theory control-theory
-            cd control-theory
+            git clone https://github.com/ackrep-org/ocse.git
+            cd ocse
             git checkout develop
       - run:
           name: Load Test Data

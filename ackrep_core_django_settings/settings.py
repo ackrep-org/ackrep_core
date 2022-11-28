@@ -226,3 +226,4 @@ SPARQL_PREFIX_MAPPING = {
     "ack:": "<erk:/ackrep#>",
     "<erk:/ackrep#>": "ack:",
 }
+ERK_DATA_REL_PATH = os.path.join("erk-data", "ocse", "control_theory1.py")

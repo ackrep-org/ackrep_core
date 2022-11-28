@@ -27,8 +27,8 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     RUNNING_TESTS = False
 
     # TODO: This should be read from a config file
-    ERK_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
-    ERK_DATA_MOD_NAME = "control_theory1"
+    ERK_DATA_PATH = os.path.join(ERK_ROOT_DIR, settings.ERK_DATA_REL_PATH)
+    ERK_DATA_MOD_NAME = os.path.split(ERK_DATA_PATH)[1]
 
 
 

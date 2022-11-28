@@ -244,7 +244,7 @@ class ACKREP_OntologyManager(object):
 
     def load_ontology(self, startdir=None, entity_list=None):
         ERK_ROOT_DIR = p.aux.get_erk_root_dir()
-        TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+        TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, settings.ERK_DATA_REL_PATH)
         mod1 = p.erkloader.load_mod_from_path(modpath=TEST_DATA_PATH, prefix="ct")
         ackrep_parser.load_ackrep_entities(startdir)
         self.ds = p.core.ds
