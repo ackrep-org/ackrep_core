@@ -18,7 +18,7 @@ from distutils.spawn import find_executable
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
-from ackrep_core_django_settings.settings import ERK_DATA_REL_PATH
+from ackrep_core_django_settings.settings import ERK_DATA_REL_PATH_CT
 """
 This module contains the tests of the core module (not ackrep_web).
 
@@ -56,7 +56,7 @@ ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
 )
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
-pyerk_ocse_path = os.path.join(p.aux.get_erk_root_dir(), ERK_DATA_REL_PATH)
+pyerk_ocse_path = os.path.join(p.aux.get_erk_root_dir(), ERK_DATA_REL_PATH_CT)
 pyerk_ocse_name = "ocse/0.2"
 
 # use `git log -1` to display the full hash

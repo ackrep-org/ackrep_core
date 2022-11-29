@@ -13,7 +13,7 @@ from pyerk.erkloader import load_mod_from_path, ModuleType
 from pyerk import builtin_entities
 from pyerk.auxiliary import *
 from . import models
-from ackrep_core_django_settings.settings import ERK_DATA_REL_PATH
+from ackrep_core_django_settings.settings import ERK_DATA_REL_PATH_CT
 
 __URI__ = "erk:/ackrep"
 
@@ -115,7 +115,7 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
 
 
 def ensure_ocse_is_loaded() -> ModuleType:
-    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, ERK_DATA_REL_PATH)
+    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, ERK_DATA_REL_PATH_CT)
     TEST_MOD_NAME = os.path.split(TEST_DATA_PATH)[1]
 
     # noinspection PyShadowingNames
