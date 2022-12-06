@@ -64,8 +64,8 @@ CONFIG_PATH = config.path
 # SECURITY WARNING: keep the secret key used in production secret!
 # (the following key is only used for local testing but not for production deployment)
 SECRET_KEY = config("SECRET_KEY")
-SECRET_CIRCLECI_WEBHOOK_KEY = config("SECRET_CIRCLECI_WEBHOOK_KEY")
-SECRET_CIRCLECI_API_KEY = config("SECRET_CIRCLECI_API_KEY")
+SECRET_CIRCLECI_WEBHOOK_KEY = config("SECRET_CIRCLECI_WEBHOOK_KEY", default="unknown")
+SECRET_CIRCLECI_API_KEY = config("SECRET_CIRCLECI_API_KEY", default="unknown")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # note this might be influenced by DEVMODE
@@ -203,8 +203,8 @@ BACKUP_PATH = os.path.join(BASE_DIR, "db_backups")
 
 TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
 
-ACKREP_DATA_BASE_URL = config("ACKREP_DATA_BASE_URL")
-ACKREP_DATA_BRANCH = config("ACKREP_DATA_BRANCH")
+ACKREP_DATA_BASE_URL = config("ACKREP_DATA_BASE_URL", default="unknown")
+ACKREP_DATA_BRANCH = config("ACKREP_DATA_BRANCH", default="unknown")
 
 DEFAULT_ENVIRONMENT_KEY = "CDAMA"  # "YJBOX"
 
