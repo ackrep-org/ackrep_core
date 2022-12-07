@@ -13,6 +13,13 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 import os
 import sys
 from pathlib import Path
+
+try:
+    # this will be part of standard library for python >= 3.11
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
 import deploymentutils as du
 
 
@@ -219,23 +226,38 @@ except FileNotFoundError:
 
 BASE_URL_FOR_PDF = "http://127.0.0.1:8000/"
 
+# While this is also pyerk-related it makes sense to configure these prefixes in ackrep because they are used
+# here. The erk module might be used also in different contexts where these prefixes would not apply.
+SPARQL_PREFIX_MAPPING = {
+    ":": "<erk:/builtins#>",
+    "ocse:": "<erk:/ocse/0.2/control_theory#>",
+    "ma": "<erk:/ocse/0.2/math#>",
+    "ack:": "<erk:/ackrep#>"
+}
+
+# ensure that values are also keys
+SPARQL_PREFIX_MAPPING.update((v, k) for k, v in list(SPARQL_PREFIX_MAPPING.items()))
+
 # TODO: remove this obsolete code (after all tests pass)
-# SPARQL_PREFIX_MAPPING = {
-#     ":": "<erk:/builtins#>",
-#     "<erk:/builtins#>": ":",
-#     "ocse:": "<erk:/ocse/0.2#>",
-#     "<erk:/ocse/0.2#>": "ocse:",
-#     "ack:": "<erk:/ackrep#>",
-#     "<erk:/ackrep#>": "ack:",
-#     "ma": "<erk:/math/0.2#>",
-#     "<erk:/math/0.2#>": "ma",
-# }
 # ERK_DATA_REL_PATH_CT = os.path.join("erk-data", "ocse", "control_theory1.py")
 
+tmp = config("ERK_DATA_OCSE_CONF_ABSPATH").replace("__thisdir__", Path(CONFIG_PATH).parent.as_posix())
 
-tmp = config("ERK_DATA_OCSE_CT_ABSPATH").replace("__thisdir__", Path(CONFIG_PATH).parent.as_posix())
-ERK_DATA_OCSE_CT_ABSPATH = os.path.abspath(tmp)
+ERK_DATA_OCSE_CONF_ABSPATH = os.path.abspath(tmp)
 
-if not os.path.isfile(ERK_DATA_OCSE_CT_ABSPATH):
-    msg = f"Could not find {ERK_DATA_OCSE_CT_ABSPATH}. This file is necessary."
+
+if not os.path.isfile(ERK_DATA_OCSE_CONF_ABSPATH):
+    msg = f"Could not find `{ERK_DATA_OCSE_CONF_ABSPATH}` as specified in confing file `{CONFIG_PATH}`."
     raise FileNotFoundError(msg)
+
+
+with open(ERK_DATA_OCSE_CONF_ABSPATH, "rb") as fp:
+    ERK_CONF = tomllib.load(fp)
+
+ocse_main_rel_path = ERK_CONF["main_module"]
+ERK_DATA_OCSE_MAIN_ABSPATH = Path(ERK_DATA_OCSE_CONF_ABSPATH).parent.joinpath(ocse_main_rel_path).as_posix()
+
+# this is necessary because the execscript loads ackrep.core which loads pyerk which requires a pyerkconf.toml to load
+pyerk_base_dir = Path(ERK_DATA_OCSE_CONF_ABSPATH).parent.as_posix()
+assert os.environ.get("PYERK_BASE_DIR") in (None, pyerk_base_dir)  # only accept unset or expected value
+os.environ["PYERK_BASE_DIR"] = pyerk_base_dir

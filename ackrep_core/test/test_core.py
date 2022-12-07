@@ -18,7 +18,7 @@ from distutils.spawn import find_executable
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
-from ackrep_core_django_settings.settings import ERK_DATA_OCSE_CT_ABSPATH
+from ackrep_core_django_settings.settings import ERK_DATA_OCSE_MAIN_ABSPATH
 """
 This module contains the tests of the core module (not ackrep_web).
 
@@ -27,6 +27,8 @@ The order of classes in the file reflects the execution order, see also
 
 
 Possibilities to run (some of) the tests:
+
+The option `--keepdb` is important such that the execscript has access to the same db as the test.
 
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core`
 `python manage.py test --keepdb -v 2 --nocapture ackrep_core.test.test_core`
@@ -56,7 +58,7 @@ ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
 )
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
-pyerk_ocse_path = ERK_DATA_OCSE_CT_ABSPATH
+pyerk_ocse_path = ERK_DATA_OCSE_MAIN_ABSPATH
 pyerk_ocse_name = "ocse/0.2"
 
 # use `git log -1` to display the full hash
