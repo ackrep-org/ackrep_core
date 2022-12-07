@@ -18,7 +18,7 @@ from distutils.spawn import find_executable
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
-from ackrep_core_django_settings.settings import ERK_DATA_REL_PATH_CT
+from ackrep_core_django_settings.settings import ERK_DATA_OCSE_CT_ABSPATH
 """
 This module contains the tests of the core module (not ackrep_web).
 
@@ -56,7 +56,7 @@ ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
 )
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
-pyerk_ocse_path = os.path.join(p.aux.get_erk_root_dir(), ERK_DATA_REL_PATH_CT)
+pyerk_ocse_path = ERK_DATA_OCSE_CT_ABSPATH
 pyerk_ocse_name = "ocse/0.2"
 
 # use `git log -1` to display the full hash
@@ -572,13 +572,15 @@ class TestCases3(SimpleTestCase):
             p.unload_mod(mod_id)
 
         n_items1 = len(p.ds.items)
-        mod1 = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
+        _ = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
         n_items2 = len(p.ds.items)
         self.assertGreater(n_items2, n_items1)
 
         p1 = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
-        res = core.ackrep_parser.load_ackrep_entities(p1)
-        self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2"], "ct")
+        _ = core.ackrep_parser.load_ackrep_entities(p1)
+
+        # assert that ocse-ct was loaded with expected prefix (this should be done in setUp)
+        self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2/ct"], "ct")
         n_items3 = len(p.ds.items)
         self.assertGreater(n_items3, n_items2)
 

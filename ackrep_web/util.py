@@ -26,10 +26,9 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # Flag to determine if tests are running
     RUNNING_TESTS = False
 
-    # TODO: This should be read from a config file
-    ERK_DATA_PATH = os.path.join(ERK_ROOT_DIR, settings.ERK_DATA_REL_PATH_CT)
+    # TODO: This might be obsolete redundancy
+    ERK_DATA_PATH = settings.ERK_DATA_OCSE_CT_ABSPATH
     ERK_DATA_MOD_NAME = os.path.split(ERK_DATA_PATH)[1]
-
 
 
 def _entity_sort_key(entity, subqueries) -> Tuple[int, str, int]:

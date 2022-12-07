@@ -1,10 +1,16 @@
+"""
+This module was originally part of pyerk and served to parse ackrep-specific information to pyerk-entities
+"""
+
 import os
 import re as regex
+from packaging import version
 import yaml
 from yaml.parser import ParserError
 from ipydex import IPS
 from typing import Union
 
+import pyerk
 from pyerk.core import Item, Relation, Entity
 from pyerk import core
 from pyerk import aux
@@ -13,7 +19,12 @@ from pyerk.erkloader import load_mod_from_path, ModuleType
 from pyerk import builtin_entities
 from pyerk.auxiliary import *
 from . import models
-from ackrep_core_django_settings.settings import ERK_DATA_REL_PATH_CT
+from ackrep_core_django_settings.settings import ERK_DATA_OCSE_CT_ABSPATH
+
+
+min_pyerk_version = "0.6.0"
+msg = f"Your version of pyerk is too old. At least {min_pyerk_version} reququired!"
+assert version.parse(pyerk.__version__) >= version.parse(min_pyerk_version), msg
 
 __URI__ = "erk:/ackrep"
 
@@ -115,8 +126,7 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
 
 
 def ensure_ocse_is_loaded() -> ModuleType:
-    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, ERK_DATA_REL_PATH_CT)
-    TEST_MOD_NAME = os.path.split(TEST_DATA_PATH)[1]
+    TEST_MOD_NAME = os.path.split(ERK_DATA_OCSE_CT_ABSPATH)[1]
 
     # noinspection PyShadowingNames
 
@@ -125,7 +135,7 @@ def ensure_ocse_is_loaded() -> ModuleType:
     if ocse_uri := core.ds.uri_prefix_mapping.b.get(ocse_prefix):
         ocse_mod = core.ds.uri_mod_dict[ocse_uri]
     else:
-        ocse_mod = load_mod_from_path(TEST_DATA_PATH, prefix=ocse_prefix, modname=TEST_MOD_NAME)
+        ocse_mod = load_mod_from_path(ERK_DATA_OCSE_CT_ABSPATH, prefix=ocse_prefix, modname=TEST_MOD_NAME)
 
     # ensure that ocse entities are available
 
@@ -354,7 +364,7 @@ def get_entity_from_string(string: str, enforce_class=False) -> Entity:
             # we have to determine if `entity` is a metaclass or a subclass of metaclass
             # this is relevant for entities, that have to be specified by additional relations
             has_super_class = entity.R3 is not None
-            is_instance_of_metaclass = builtin_entities.is_instance_of_generalized_metaclass(entity)
+            is_instance_of_metaclass = builtin_entities.allows_instantiation(entity)
             assert has_super_class or is_instance_of_metaclass, f"The item {entity} has to be a class, not an instance."
 
         # if entity is class

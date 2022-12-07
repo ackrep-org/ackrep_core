@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import sys
+from pathlib import Path
 import deploymentutils as du
 
 
@@ -218,14 +219,23 @@ except FileNotFoundError:
 
 BASE_URL_FOR_PDF = "http://127.0.0.1:8000/"
 
-SPARQL_PREFIX_MAPPING = {
-    ":": "<erk:/builtins#>",
-    "<erk:/builtins#>": ":",
-    "ocse:": "<erk:/ocse/0.2#>",
-    "<erk:/ocse/0.2#>": "ocse:",
-    "ack:": "<erk:/ackrep#>",
-    "<erk:/ackrep#>": "ack:",
-    "ma": "<erk:/math/0.2#>",
-    "<erk:/math/0.2#>": "ma",
-}
-ERK_DATA_REL_PATH_CT = os.path.join("erk-data", "ocse", "control_theory1.py")
+# TODO: remove this obsolete code (after all tests pass)
+# SPARQL_PREFIX_MAPPING = {
+#     ":": "<erk:/builtins#>",
+#     "<erk:/builtins#>": ":",
+#     "ocse:": "<erk:/ocse/0.2#>",
+#     "<erk:/ocse/0.2#>": "ocse:",
+#     "ack:": "<erk:/ackrep#>",
+#     "<erk:/ackrep#>": "ack:",
+#     "ma": "<erk:/math/0.2#>",
+#     "<erk:/math/0.2#>": "ma",
+# }
+# ERK_DATA_REL_PATH_CT = os.path.join("erk-data", "ocse", "control_theory1.py")
+
+
+tmp = config("ERK_DATA_OCSE_CT_ABSPATH").replace("__thisdir__", Path(CONFIG_PATH).parent.as_posix())
+ERK_DATA_OCSE_CT_ABSPATH = os.path.abspath(tmp)
+
+if not os.path.isfile(ERK_DATA_OCSE_CT_ABSPATH):
+    msg = f"Could not find {ERK_DATA_OCSE_CT_ABSPATH}. This file is necessary."
+    raise FileNotFoundError(msg)
