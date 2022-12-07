@@ -63,6 +63,9 @@ pyerk_ocse_name = "ocse/0.2"
 
 # use `git log -1` to display the full hash
 default_repo_head_hash = "834aaad12256118d475de9eebfdaefb7746a28bc"  # 2022-09-13 branch for_unittests
+# useful to get the currently latest sha strings:
+# git log --pretty=oneline | head
+TEST_DATA_REPO_COMMIT_SHA = "14cfbc0023c18d774dc039e94d2d5fb455639649"
 
 
 class TestCases1(DjangoTestCase):
@@ -83,6 +86,10 @@ class TestCases1(DjangoTestCase):
         """
         Test whether the repository to which the unittests refer is in a defined state.
 
+        Construct a list of all sha-strings which where commited in the current branch and assert that
+        the expected string is among them. This heuristics assumes that it is OK if the data-repo is newer than
+        expected. But the tests fails if it is older (or on an unexpeced branch).
+
         The name should ensure that this test runs first (do not waste time with further tests if this fails).
         """
 
@@ -99,15 +106,15 @@ class TestCases1(DjangoTestCase):
         msg = f"There are uncommited changes in the repo {ackrep_data_test_repo_path}"
         self.assertFalse(repo.is_dirty(), msg=msg)
 
-        # Ensure that the repository is in the expected state. This actual state (and its hash) will change in the
-        # future. This test prevents that this happens without intention.
-        repo_head_hash = repo.head.commit.hexsha
+        log_list = repo.git.log("--pretty=oneline").split("\n")
+        sha_list = [line.split(" ")[0] for line in log_list]
+
         msg = (
             f"Repository {ackrep_data_test_repo_path} is in the wrong state. "
-            f"HEAD is {repo_head_hash[:7]} but should be {default_repo_head_hash[:7]}."
+            f"Current branch does unexpectedly not contain commit {TEST_DATA_REPO_COMMIT_SHA[:7]}."
         )
 
-        self.assertEqual(repo_head_hash, default_repo_head_hash, msg=msg)
+        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
     def test_logging(self):
         res = run_command(["ackrep", "--test-logging", "--log=10"])
