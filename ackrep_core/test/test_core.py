@@ -580,7 +580,7 @@ class TestCases3(SimpleTestCase):
         _ = core.ackrep_parser.load_ackrep_entities(p1)
 
         # assert that ocse-ct was loaded with expected prefix (this should be done in setUp)
-        self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2/ct"], "ct")
+        self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2/control_theory"], "ct")
         n_items3 = len(p.ds.items)
         self.assertGreater(n_items3, n_items2)
 
