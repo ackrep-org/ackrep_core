@@ -17,4 +17,5 @@ pandas
 beautifulsoup4
 lxml
 addict
+tomli
 # pyerk
