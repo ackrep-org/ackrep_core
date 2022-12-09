@@ -17,5 +17,5 @@ pandas
 beautifulsoup4
 lxml
 addict
-tomli
+tomli >= 1.1.0 ; python_version < "3.11"
 # pyerk
