@@ -34,7 +34,9 @@ if os.name != "nt":
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--version", help="version of the ackrep_core framework", action="store_true")
+    argparser.add_argument(
+        "--version", help="version of the ackrep_core framework", action="store_true"
+    )
     argparser.add_argument("--key", help="print a random key and exit", action="store_true")
     argparser.add_argument(
         "-c",
@@ -55,13 +57,15 @@ def main():
         help="check all entities (solutions and models) (may take some time)",
         action="store_true",
     )
-    argparser.add_argument("-da", "--download-artifacts", help="download artifacts from CI", action="store_true")
+    argparser.add_argument(
+        "-da", "--download-artifacts", help="download artifacts from CI", action="store_true"
+    )
     argparser.add_argument(
         "--update-parameter-tex",
         metavar="metadatafile",
         help=(
             "update parameters of system model in tex file (system model entity is specified by metadata file or key)",
-        )
+        ),
     )
     argparser.add_argument(
         "--create-pdf",
@@ -80,16 +84,22 @@ def main():
         action="store_true",
     )
     argparser.add_argument(
-        "--get-metadata-abs-path-from-key", metavar="key", help="return absolute path to metadata file for a given key"
+        "--get-metadata-abs-path-from-key",
+        metavar="key",
+        help="return absolute path to metadata file for a given key",
     )
     argparser.add_argument(
         "--get-metadata-rel-path-from-key",
         metavar="key",
         help="return path to metadata file (relative to repo root) for a given key",
     )
-    argparser.add_argument("--bootstrap-db", help="delete database and recreate it (without data)", action="store_true")
     argparser.add_argument(
-        "--bootstrap-test-db", help="delete database for unittests and recreate it (without data)", action="store_true"
+        "--bootstrap-db", help="delete database and recreate it (without data)", action="store_true"
+    )
+    argparser.add_argument(
+        "--bootstrap-test-db",
+        help="delete database for unittests and recreate it (without data)",
+        action="store_true",
     )
     argparser.add_argument(
         "--prepare-script",
@@ -137,27 +147,42 @@ def main():
         help="test all compleib models",
         action="store_true",
     )
-    argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
+    argparser.add_argument(
+        "-n", "--new", help="interactively create new entity", action="store_true"
+    )
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
-    argparser.add_argument("--qq", help="create new metada.yml based on interactive questionnaire", action="store_true")
+    argparser.add_argument(
+        "--qq", help="create new metada.yml based on interactive questionnaire", action="store_true"
+    )
 
     # for development only
-    argparser.add_argument("--dd", help="start interactive IPython shell for debugging", action="store_true")
+    argparser.add_argument(
+        "--dd", help="start interactive IPython shell for debugging", action="store_true"
+    )
     argparser.add_argument("--md", help="shortcut for `-m metadata.yml`", action="store_true")
     argparser.add_argument("-m", "--metadata", help="process metadata in yaml syntax (.yml file). ")
     argparser.add_argument(
-        "--show-debug", help="set exitflags false in order to see underlying debug outputs", action="store_true"
-    )
-
-    argparser.add_argument("--show-entity-info", metavar="key", help="print out some info about the entity")
-
-    argparser.add_argument(
-        "--log", metavar="loglevel", help="specify log level: DEBUG (10), INFO, WARNING, ERROR, CRITICAL (50)", type=int
+        "--show-debug",
+        help="set exitflags false in order to see underlying debug outputs",
+        action="store_true",
     )
 
     argparser.add_argument(
-        "--test-logging", help="print out some dummy messages for each logging category", action="store_true"
+        "--show-entity-info", metavar="key", help="print out some info about the entity"
+    )
+
+    argparser.add_argument(
+        "--log",
+        metavar="loglevel",
+        help="specify log level: DEBUG (10), INFO, WARNING, ERROR, CRITICAL (50)",
+        type=int,
+    )
+
+    argparser.add_argument(
+        "--test-logging",
+        help="print out some dummy messages for each logging category",
+        action="store_true",
     )
     argparser.add_argument(
         "--unittest",
@@ -396,7 +421,9 @@ def check_all_entities(unittest=False, fast=False):
             issues = res.stdout
         date_string = date.strftime("%Y-%m-%d %H:%M:%S")
 
-        content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date_string}}
+        content = {
+            key: {"result": result, "issues": issues, "runtime": runtime, "date": date_string}
+        }
 
         if "Calculated with " in res.stdout:
             version = res.stdout.split("Calculated with ")[-1].split("\n\n")[0]
@@ -452,7 +479,9 @@ def check(arg0: str, exitflag: bool = True):
     except TimeoutError as exc:
         msg = f"Entity calculation reached timeout ({settings.ENTITY_TIMEOUT}s)."
         core.logger.error(msg)
-        res = subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr=f"Entity check timed out.\n{exc}")
+        res = subprocess.CompletedProcess(
+            cmd, returncode=1, stdout="", stderr=f"Entity check timed out.\n{exc}"
+        )
 
     # cancel timeout
     if not os.name == "nt":
@@ -810,7 +839,9 @@ def run_jupyter(key):
     print("To access the Notebook, click one of the provided links below.\n")
 
     port_dict = {8888: 8888}
-    container_id = core.start_idle_container(entity.name, try_to_use_local_image=True, port_dict=port_dict)
+    container_id = core.start_idle_container(
+        entity.name, try_to_use_local_image=True, port_dict=port_dict
+    )
 
     core.logger.info(f"Ackrep command running in Container: {container_id}")
     host_uid = core.get_host_uid()
@@ -859,7 +890,9 @@ def pull_and_show_envs():
         if os.environ.get("CI") == "true":
             dockerfile_path = f"../{dockerfile_name}"
         else:
-            dockerfile_path = os.path.join(root_path, "ackrep_deployment/dockerfiles/ackrep_core", dockerfile_name)
+            dockerfile_path = os.path.join(
+                root_path, "ackrep_deployment/dockerfiles/ackrep_core", dockerfile_name
+            )
         cmd = [
             "docker",
             "run",
@@ -907,7 +940,9 @@ def get_entity_and_key(arg0):
 def update_fallback_binaries():
     fallback_bin_location = os.path.join(root_path, "ackrep_fallback_binaries")
 
-    entity_list = list(models.ProblemSolution.objects.all()) + list(models.SystemModel.objects.all())
+    entity_list = list(models.ProblemSolution.objects.all()) + list(
+        models.SystemModel.objects.all()
+    )
 
     for entity in entity_list:
         key = entity.key
