@@ -11,7 +11,6 @@ import yaml
 from git import Repo
 import shutil
 import signal
-import numpy as np
 import os
 
 from ipydex import IPS, activate_ips_on_exception
@@ -26,7 +25,7 @@ if os.environ.get("CI") != "true":
 from . import core
 from . import models
 from . import automatic_model_creation
-from .util import *
+from .util import bred, yellow, bgreen, timeout_handler, run_command, root_path, bright, data_path
 
 # timeout setup for entity check timeout, see https://stackoverflow.com/a/494273
 if os.name != "nt":
@@ -60,7 +59,9 @@ def main():
     argparser.add_argument(
         "--update-parameter-tex",
         metavar="metadatafile",
-        help="update parameters of system model in tex file (system model entity is specified by metadata file or key)",
+        help=(
+            "update parameters of system model in tex file (system model entity is specified by metadata file or key)",
+        )
     )
     argparser.add_argument(
         "--create-pdf",
