@@ -247,18 +247,7 @@ tmp = config("ERK_DATA_OCSE_CONF_ABSPATH").replace("__thisdir__", Path(CONFIG_PA
 
 # the following handles the second config file. rationale: config.ini is for deployment-relevant configuration,
 # ackrepconf.toml is for non-secret local-relevant configuration (such as paths)
-# this obviously fails during `--bootsrap-config`
-
-try:
-    config_dict = config_handler.load_config_file()
-    config_file_found = True
-except FileNotFoundError:
-    config_dict = {}
-    config_file_found = False
-else:
-    pyerk_base_dir = Path(config_dict["ERK_DATA_OCSE_CONF_ABSPATH"]).parent.as_posix()
-    assert os.environ.get("PYERK_BASE_DIR") in (None, pyerk_base_dir)  # only accept unset or expected value
-    os.environ["PYERK_BASE_DIR"] = pyerk_base_dir
+# this obviously fails during `--bootsrap-config` because the config file does not yet exist
 
 
 class FlexibleConfigHandler(object):
@@ -271,6 +260,10 @@ class FlexibleConfigHandler(object):
         self.config_dict = config_dict
 
     def __getattr__(self, name):
+
+        # this is necessary to make that class working with djangos settings-wrapping
+        if name == "_mask_wrapped":
+            raise AttributeError
 
         if not self.config_file_found:
             msg = (
@@ -296,6 +289,14 @@ class FlexibleConfigHandler(object):
 
         # handle the general case
         return self.config_dict[name]
+
+
+try:
+    config_dict = config_handler.load_config_file()
+    config_file_found = True
+except FileNotFoundError:
+    config_dict = {}
+    config_file_found = False
 
 
 CONF = FlexibleConfigHandler(config_dict, config_file_found)

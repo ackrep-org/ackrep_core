@@ -1,5 +1,4 @@
 import os
-import sys
 import yaml
 
 from unittest import skipIf, skipUnless
@@ -7,10 +6,10 @@ from django.test import TestCase as DjangoTestCase, SimpleTestCase
 from django.conf import settings
 from git import Repo, InvalidGitRepositoryError
 
-from ackrep_core import core, system_model_management
+from ackrep_core import core, system_model_management, util
 
 from ._test_utils import load_repo_to_db_for_ut, reset_repo
-from ackrep_core.util import run_command, utf8decode, strip_decode
+from ackrep_core.util import run_command, utf8decode
 
 from ipydex import IPS  # only for debugging
 
@@ -413,7 +412,7 @@ class TestCases3(SimpleTestCase):
 
     def test_entity_tag_list(self):
         e = core.model_utils.all_entities()[0]
-        tag_list = core.util.smart_parse(e.tag_list)
+        tag_list = util.smart_parse(e.tag_list)
         self.assertTrue(isinstance(tag_list, list))
 
     def test_print_entity_info(self):
