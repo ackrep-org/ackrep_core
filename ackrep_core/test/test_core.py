@@ -681,6 +681,29 @@ class TestCases4(DjangoTestCase):
         core.logger.setLevel(loglevel)
 
 
+class TestCases5(DjangoTestCase):
+    """
+    ERK related test cases
+    """
+
+    def test_01_erk_loading(self):
+        mods = core.p.ds.uri_prefix_mapping.a
+
+        # this is an assumption on pyerk
+        self.assertIn("erk:/builtins", mods)
+
+        # only builtins is loaded by default
+        self.assertEqual(len(mods), 1)
+
+        # now load the full ackrep data
+        core.load_repo_to_db(ackrep_data_test_repo_path)
+
+        # this ensures that all necessary pyerk modules for correct ackrep functionality are loaded
+        self.assertIn("erk:/ocse/0.2/math", mods)
+        self.assertIn("erk:/ocse/0.2/control_theory", mods)
+        self.assertIn("erk:/ackrep", mods)
+
+
 def get_data_files_dict(path, endings=[]):
     """fetch all data filed from given path and put them in dict with the following keys:
     - "all"
