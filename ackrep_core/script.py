@@ -25,6 +25,7 @@ if os.environ.get("CI") != "true":
 from . import core
 from . import models
 from . import automatic_model_creation
+from . import util
 from .util import bred, yellow, bgreen, timeout_handler, run_command, root_path, bright, data_path
 
 # timeout setup for entity check timeout, see https://stackoverflow.com/a/494273
@@ -64,7 +65,7 @@ def main():
         "--update-parameter-tex",
         metavar="metadatafile",
         help=(
-            "update parameters of system model in tex file (system model entity is specified by metadata file or key)",
+            "update parameters of system model in tex file (system model entity is specified by metadata file or key)"
         ),
     )
     argparser.add_argument(
@@ -101,9 +102,19 @@ def main():
         help="delete database for unittests and recreate it (without data)",
         action="store_true",
     )
+
+    argparser.add_argument(
+        "--bootstrap-config",
+        help="initialize the configuration file of the application.",
+        action="store_true",
+    )
+
     argparser.add_argument(
         "--prepare-script",
-        help="render the execscript and place it in the docker ackrep_data folder (specified by path to metadata file or key)",
+        help=(
+            "render the execscript and place it in the docker ackrep_data folder "
+            "(specified by path to metadata file or key)"
+        ),
         metavar="metadatafile",
     )
     argparser.add_argument(
@@ -270,6 +281,8 @@ def main():
     elif args.key:
         print("Random entity-key: ", core.gen_random_entity_key())
         return
+    elif args.bootstrap_config_from_current_directory:
+        util.bootstrap_config_from_current_directory()
     elif args.bootstrap_db:
         bootstrap_db(db="main")
     elif args.bootstrap_test_db:
