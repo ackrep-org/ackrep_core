@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 import os
 import sys
 from pathlib import Path
+from ackrep_core import config_handler
 
 try:
     # this will be part of standard library for python >= 3.11
@@ -29,6 +30,7 @@ import deploymentutils as du
 #   - DEVMODE explicitly activated by ENV-Variable DJANGO_DEVMODE
 # Also, for  some management commands (on the production server) we want to explicitly switch off DEVMODE
 
+# TODO: This should be `ACKREP_DEVMODE`
 # export DJANGO_DEVMODE=True; py3 manage.py <some_command>
 env_devmode = os.getenv("DJANGO_DEVMODE")
 if env_devmode is None:
@@ -53,7 +55,7 @@ else:
         class UnsafeConfiguration(BaseException):
             pass
 
-        msg = f"Using the example config is not allowed outside development mode.{DEVMODE} " + str(sys.argv)
+        # msg = f"Using the example config is not allowed outside development mode.{DEVMODE} " + str(sys.argv)
         # raise UnsafeConfiguration(msg)
 
         # TODO:
@@ -243,21 +245,57 @@ SPARQL_PREFIX_MAPPING.update((v, k) for k, v in list(SPARQL_PREFIX_MAPPING.items
 
 tmp = config("ERK_DATA_OCSE_CONF_ABSPATH").replace("__thisdir__", Path(CONFIG_PATH).parent.as_posix())
 
-ERK_DATA_OCSE_CONF_ABSPATH = os.path.abspath(tmp)
+# the following handles the second config file. rationale: config.ini is for deployment-relevant configuration,
+# ackrepconf.toml is for non-secret local-relevant configuration (such as paths)
+# this obviously fails during `--bootsrap-config`
+
+try:
+    config_dict = config_handler.load_config_file()
+    config_file_found = True
+except FileNotFoundError:
+    config_dict = {}
+    config_file_found = False
+else:
+    pyerk_base_dir = Path(config_dict["ERK_DATA_OCSE_CONF_ABSPATH"]).parent.as_posix()
+    assert os.environ.get("PYERK_BASE_DIR") in (None, pyerk_base_dir)  # only accept unset or expected value
+    os.environ["PYERK_BASE_DIR"] = pyerk_base_dir
 
 
-if not os.path.isfile(ERK_DATA_OCSE_CONF_ABSPATH):
-    msg = f"Could not find `{ERK_DATA_OCSE_CONF_ABSPATH}` as specified in confing file `{CONFIG_PATH}`."
-    raise FileNotFoundError(msg)
+class FlexibleConfigHandler(object):
+    """
+    This class provides access to config data if available and gives reasonable error messages if not
+    """
+
+    def __init__(self, config_dict, config_file_found):
+        self.config_file_found = config_file_found
+        self.config_dict = config_dict
+
+    def __getattr__(self, name):
+
+        if not self.config_file_found:
+            msg = (
+                f"ackrep config file {config_handler.DEFAULT_CONFIGFILE_PATH} could not be found; "
+                f"Thus, {name} is not available. Maybe you have to run `ackrep --bootstrap-config`?"
+            )
+            raise FileNotFoundError(msg)
+
+        # handle some special cases
+        if name == "ERK_DATA_OCSE_MAIN_ABSPATH":
+            ocse_conf_path = self.ERK_DATA_OCSE_CONF_ABSPATH
+
+            if not os.path.isfile(ocse_conf_path):
+                msg = f"Error on loading OCSE config file: {ocse_conf_path}"
+                raise FileNotFoundError(msg)
+
+            with open(ocse_conf_path, "rb") as fp:
+                erk_conf_dict = tomllib.load(fp)
+
+            ocse_main_rel_path = erk_conf_dict["main_module"]
+            ocse_main_mod_path = Path(ocse_conf_path).parent.joinpath(ocse_main_rel_path).as_posix()
+            return ocse_main_mod_path
+
+        # handle the general case
+        return self.config_dict[name]
 
 
-with open(ERK_DATA_OCSE_CONF_ABSPATH, "rb") as fp:
-    ERK_CONF = tomllib.load(fp)
-
-ocse_main_rel_path = ERK_CONF["main_module"]
-ERK_DATA_OCSE_MAIN_ABSPATH = Path(ERK_DATA_OCSE_CONF_ABSPATH).parent.joinpath(ocse_main_rel_path).as_posix()
-
-# this is necessary because the execscript loads ackrep.core which loads pyerk which requires a pyerkconf.toml to load
-pyerk_base_dir = Path(ERK_DATA_OCSE_CONF_ABSPATH).parent.as_posix()
-assert os.environ.get("PYERK_BASE_DIR") in (None, pyerk_base_dir)  # only accept unset or expected value
-os.environ["PYERK_BASE_DIR"] = pyerk_base_dir
+CONF = FlexibleConfigHandler(config_dict, config_file_found)

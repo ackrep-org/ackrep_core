@@ -1,13 +1,12 @@
-import logging
+import os
+from ackrep_core import logging
 from colorama import Style, Fore
 from django.utils import timezone
 import yaml
 import subprocess
 from git import Repo
 
-import os
 from ipydex import Container
-
 
 # path of this module (i.e. the file core.py)
 mod_path = os.path.dirname(os.path.abspath(__file__))
@@ -166,7 +165,7 @@ def run_command(arglist, logger=None, capture_output=True, **kwargs):
 
         stderr: {res.stderr}
         """
-        if type(logger) == logging.Logger:
+        if isinstance(logger, logging.logging.Logger):
             logger.error(msg)
 
     return res

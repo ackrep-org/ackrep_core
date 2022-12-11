@@ -10,13 +10,14 @@ from ipydex import IPS, activate_ips_on_exception
 
 # import fast modules from ackrep
 from ackrep_core import release
-from ackrep_core import util
+from ackrep_core import config_handler
 from ackrep_core.util import bred, yellow, bgreen, timeout_handler, run_command, root_path, bright, data_path
 
 # wrap access to modules which are slow to import
 from ackrep_core import modules as acm
 
-if os.environ.get("CI") != "true":
+# if os.environ.get("CI") != "true":
+if os.environ.get("ACKREP_DEVMODE") == "true":
     activate_ips_on_exception()
 
 # timeout setup for entity check timeout, see https://stackoverflow.com/a/494273
@@ -97,8 +98,8 @@ def main():
     argparser.add_argument(
         "--bootstrap-config",
         help=(
-            "initialize the configuration file of the application. This assumes correct current working directory"
-            "see docs (or source code) for more information"
+            "initialize the configuration file of the application. This assumes correct current working directory."
+            "See docs (or source code) for more information. If config file already exists, just print its path."
         ),
         action="store_true",
     )
@@ -276,7 +277,7 @@ def main():
         print("Random entity-key: ", acm.core.gen_random_entity_key())
         return
     elif args.bootstrap_config:
-        util.bootstrap_config_from_current_directory()
+        config_handler.bootstrap_config_from_current_directory()
     elif args.bootstrap_db:
         bootstrap_db(db="main")
     elif args.bootstrap_test_db:
