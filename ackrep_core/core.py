@@ -854,7 +854,7 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
         res = run_command(pull_cmd, logger=logger, capture_output=True)
         assert res.returncode == 0, f"Unable to pull image from remote. Does '{image_name}' exist?"
 
-        logger.info("stopping old containers")
+        logger.info("stopping old containers (if necessary)")
         # stop all running containers with env_name to ensure name uniqueness
         find_cmd = ["docker", "ps", "--filter", f"name={env_name}", "-q"]
         res = run_command(find_cmd, logger=logger, capture_output=True)
@@ -863,6 +863,9 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
             for i in ids:
                 stop_cmd = ["docker", "stop", i]
                 run_command(stop_cmd, logger=logger, capture_output=True)
+
+        # give some additional time such that the container can finish stopping
+        time.sleep(1)
 
         cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
         # * Note: even though we are running the container in the background (detached -d), we still have to
