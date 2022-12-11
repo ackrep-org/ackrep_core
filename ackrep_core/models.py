@@ -12,8 +12,6 @@ import git
 from . import util
 from . import model_utils
 
-if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
-    from pyerk.settings import DEFAULT_DATA_LANGUAGE
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS  # only for debugging
@@ -366,6 +364,8 @@ class LanguageSpecifiedString(BaseModel):
     def __repr__(self):
         return f"<LSS({self.content}@{self.langtag})>"
 
+# prevent possible performance drop: cache the environment variable (holding the ackrep environment name)
+envar_ACKREP_ENVIRONMENT_NAME = os.environ.get("ACKREP_ENVIRONMENT_NAME")
 
 class PyerkEntity(BaseModel):
     id = models.BigAutoField(primary_key=True)
@@ -380,8 +380,12 @@ class PyerkEntity(BaseModel):
     description = models.TextField(default="", null=True)
 
     def get_label(self, langtag=None) -> str:
-        if langtag is None:
-            langtag = DEFAULT_DATA_LANGUAGE
+
+        if not envar_ACKREP_ENVIRONMENT_NAME:
+            # defer this import until it is necessary
+            from pyerk import settings as pyerk_settings
+            if langtag is None:
+                langtag = pyerk_settings.DEFAULT_DATA_LANGUAGE
         # noinspection PyUnresolvedReferences
         res = self.label.filter(langtag=langtag)
         if len(res) == 0:
