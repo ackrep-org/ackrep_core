@@ -96,7 +96,10 @@ def main():
 
     argparser.add_argument(
         "--bootstrap-config",
-        help="initialize the configuration file of the application.",
+        help=(
+            "initialize the configuration file of the application. This assumes correct current working directory"
+            "see docs (or source code) for more information"
+        ),
         action="store_true",
     )
 
@@ -202,13 +205,13 @@ def main():
 
     # non-exclusive options
     if args.log:
-        acm.core.logger.setLevel(int(args.log))
+        acm.logging.logger.setLevel(int(args.log))
 
     if os.environ.get("ACKREP_PRINT_DEBUG_REPORT"):
-        acm.core.send_debug_report(print)
+        acm.logging.send_debug_report(print)
     else:
         # default: use logger.debug
-        acm.core.send_debug_report(acm.core.logger.debug)
+        acm.logging.send_debug_report(acm.logging.logger.debug)
 
     # exclusive options
     if args.new:
@@ -272,7 +275,7 @@ def main():
     elif args.key:
         print("Random entity-key: ", acm.core.gen_random_entity_key())
         return
-    elif args.bootstrap_config_from_current_directory:
+    elif args.bootstrap_config:
         util.bootstrap_config_from_current_directory()
     elif args.bootstrap_db:
         bootstrap_db(db="main")
@@ -378,7 +381,7 @@ def check_all_entities(unittest=False, fast=False):
         )
         # for faster CI testing:
         if fast:
-            acm.core.logger.warning(
+            acm.logging.logger.warning(
                 "--- Using the fast version of check all entities, not all entities will be checked! --- "
             )
             entity_list = [
@@ -418,7 +421,7 @@ def check_all_entities(unittest=False, fast=False):
 
             os.makedirs(dest_folder, exist_ok=True)
             # docker cp has to be used, see https://circleci.com/docs/2.0/building-docker-images#mounting-folders
-            run_command(["docker", "cp", src, dest], logger=acm.core.logger)
+            run_command(["docker", "cp", src, dest], logger=acm.logging.logger)
 
             # remove tex and pdf files to prevent them being copied
             for file in os.listdir(dest_folder):
@@ -482,12 +485,12 @@ def check(arg0: str, exitflag: bool = True):
         elif isinstance(entity, acm.models.Notebook):
             path = os.path.join(acm.core.root_path, entity.base_path, entity.notebook_file)
             cmd = ["jupyter", "nbconvert", "--execute", "--to", "html", path]
-            res = run_command(cmd, logger=acm.core.logger, capture_output=False)
+            res = run_command(cmd, logger=acm.logging.logger, capture_output=False)
         else:
             raise NotImplementedError
     except TimeoutError as exc:
         msg = f"Entity calculation reached timeout ({acm.settings.ENTITY_TIMEOUT}s)."
-        acm.core.logger.error(msg)
+        acm.logging.logger.error(msg)
         res = subprocess.CompletedProcess(
             cmd, returncode=1, stdout="", stderr=f"Entity check timed out.\n{exc}"
         )
@@ -814,7 +817,7 @@ def run_interactive_environment(args):
 
     container_id = acm.core.start_idle_container(entity.name, try_to_use_local_image=False)
 
-    acm.core.logger.info(f"Ackrep command running in Container: {container_id}")
+    acm.logging.logger.info(f"Ackrep command running in Container: {container_id}")
     host_uid = acm.core.get_host_uid()
     cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
 
@@ -828,7 +831,7 @@ def run_interactive_environment(args):
     res = run_command(cmd, capture_output=False)
 
     print("Shutting down container...")
-    run_command(["docker", "stop", container_id], logger=acm.core.logger, capture_output=True)
+    run_command(["docker", "stop", container_id], logger=acm.logging.logger, capture_output=True)
 
     return res.returncode
 
@@ -859,7 +862,7 @@ def run_jupyter(key):
         entity.name, try_to_use_local_image=True, port_dict=port_dict
     )
 
-    acm.core.logger.info(f"Ackrep command running in Container: {container_id}")
+    acm.logging.logger.info(f"Ackrep command running in Container: {container_id}")
     host_uid = acm.core.get_host_uid()
     cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
 
@@ -879,7 +882,7 @@ def run_jupyter(key):
     res = run_command(cmd, capture_output=False)
 
     print("Shutting down container...")
-    run_command(["docker", "stop", container_id], logger=acm.core.logger, capture_output=True)
+    run_command(["docker", "stop", container_id], logger=acm.logging.logger, capture_output=True)
 
     return res.returncode
 
@@ -901,7 +904,7 @@ def pull_and_show_envs():
         dockerfile_name = "Dockerfile_" + env_name
         # pull most recent image
         cmd = ["docker", "pull", f"ghcr.io/ackrep-org/{env_name}:latest"]
-        pull = run_command(cmd, acm.core.logger, capture_output=True)
+        pull = run_command(cmd, acm.logging.logger, capture_output=True)
         # get version info of image
         if os.environ.get("CI") == "true":
             dockerfile_path = f"../{dockerfile_name}"
@@ -918,7 +921,7 @@ def pull_and_show_envs():
             "-1",
             dockerfile_path,
         ]
-        res = run_command(cmd, acm.core.logger, capture_output=True)
+        res = run_command(cmd, acm.logging.logger, capture_output=True)
         infos = res.stdout.split('org.opencontainers.image.description "')[-1].split("|")
 
         print(f"{env_name} ({env_key}):")
@@ -971,7 +974,7 @@ def update_fallback_binaries():
             target_dir = os.path.join(fallback_bin_location, key, "plot.png")
             shutil.copy(plot_dir, target_dir)
         else:
-            acm.core.logger.info(f"{entity} plot was not found.")
+            acm.logging.logger.info(f"{entity} plot was not found.")
 
 
 def create_compleib_models(arg0):

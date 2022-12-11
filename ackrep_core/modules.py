@@ -11,7 +11,7 @@ KNOWN_MODULES = {
     "automatic_model_creation": 1,
     "config_handler": 1,
     "core": 1,
-    "django_setup": 1,
+    "logging": 1,
     "model_utils": 1,
     "models": 1,
     "modules": 1,

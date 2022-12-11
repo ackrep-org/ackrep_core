@@ -4,7 +4,6 @@ import os, sys
 import pathlib
 import time
 import shutil
-import logging
 from typing import List
 from jinja2 import Environment, FileSystemLoader
 from ipydex import Container  # for functionality
@@ -52,20 +51,8 @@ from .util import (
     run_command,
 )
 
-from . import util
+from .logging import logger
 
-
-# initialize logging with default loglevel (might be overwritten by command line option)
-# see https://docs.python.org/3/howto/logging-cookbook.html
-defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
-logger = logging.getLogger("ackrep_logger")
-FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
-DATEFORMAT = "%H:%M:%S"
-formatter = logging.Formatter(fmt=FORMAT, datefmt=DATEFORMAT)
-handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(defaul_loglevel)
 
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
@@ -100,28 +87,6 @@ required_generic_meta_data = {
 
 
 db_name = django_db_connection.settings_dict["NAME"]
-
-
-def send_debug_report(send=None):
-    """
-    Send debug information such as relevant environmental variables to designated output (logger or stdout).
-
-    :param send:    Function to be used for sending the message. Default: logger.debug. Alternatively: print.
-    """
-
-    if send is None:
-        send = logger.debug
-
-    row_template = "  {:<30}: {}"
-
-    send("** ENVIRONMENT VARS: **")
-    for k, v in os.environ.items():
-        if k.startswith("ACKREP_"):
-            send(row_template.format(k, v))
-
-    send("** DB CONNECTION:  **")
-    send(django_db_connections["default"].get_connection_params())
-    send("\n")
 
 
 def gen_random_entity_key():
