@@ -116,6 +116,12 @@ class TestCases01(DjangoTestCase):
 
         self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
+    def test_01_pyerk_dependency(self):
+        from packaging import version
+        from pyerk import release
+        pyerk_version = version.parse(release.__version__)
+        self.assertTrue(pyerk_version >= version.parse("0.6.2"))
+
     def test_logging(self):
         res = run_command(["ackrep", "--test-logging", "--log=10"])
         nl = os.linesep
