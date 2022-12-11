@@ -4,11 +4,8 @@ import os, sys
 import pathlib
 import time
 import shutil
-from typing import List
 from jinja2 import Environment, FileSystemLoader
-from ipydex import Container  # for functionality
 from git import Repo
-import re
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
@@ -19,7 +16,7 @@ from ackrep_core_django_settings import settings
 # noinspection PyUnresolvedReferences
 from django.conf import settings
 from django.core import management
-from django.db import connection as django_db_connection, connections as django_db_connections
+from django.db import connection as django_db_connection
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception  # for debugging only
@@ -52,8 +49,6 @@ from .util import (
 )
 
 from .logging import logger
-
-
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
 
@@ -206,6 +201,7 @@ class ACKREP_OntologyManager(object):
         self.OM: Container = None
         self.ocse_entity_mapping = {}
         self.ontology_loaded = False
+        self.ds = None
 
     def load_ontology(self, startdir=None, entity_list=None):
         _ = p.erkloader.load_mod_from_path(modpath=settings.CONF.ERK_DATA_OCSE_MAIN_ABSPATH, prefix="ct")
@@ -214,7 +210,7 @@ class ACKREP_OntologyManager(object):
         self.ds.rdfgraph = p.rdfstack.create_rdf_triples()
         self.ontology_loaded = True
 
-    def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> list:
+    def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> (list, list):
         if not self.ontology_loaded:
             self.load_ontology()
         self.ds = p.core.ds

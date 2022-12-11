@@ -32,8 +32,8 @@ The option `--keepdb` is important such that the execscript has access to the sa
 
 `python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core`
 `python manage.py test --keepdb -v 2 --nocapture ackrep_core.test.test_core`
-`python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases1`
-`python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases3.test_get_metadata_path_from_key`
+`python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases01`
+`python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases03.test_get_metadata_path_from_key`
 
 See also devdocs for tipps on speeding tests.
 """
@@ -68,7 +68,7 @@ default_repo_head_hash = "834aaad12256118d475de9eebfdaefb7746a28bc"  # 2022-09-1
 TEST_DATA_REPO_COMMIT_SHA = "14cfbc0023c18d774dc039e94d2d5fb455639649"
 
 
-class TestCases1(DjangoTestCase):
+class TestCases01(DjangoTestCase):
     """
     The tests in this class should be run first.
 
@@ -133,7 +133,7 @@ class TestCases1(DjangoTestCase):
         self.assertIn("warning", lines[-1])
 
 
-class TestCases2(DjangoTestCase):
+class TestCases02(DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.
 
@@ -170,7 +170,7 @@ class TestCases2(DjangoTestCase):
         # core.load_repo_to_db(ackrep_data_test_repo_path)
 
 
-class TestCases3(SimpleTestCase):
+class TestCases03(SimpleTestCase):
     """
     These tests expect the database to be loaded.
 
@@ -643,7 +643,7 @@ class TestCases3(SimpleTestCase):
         self.assertEqual(items5.difference(items2), set())
 
 
-class TestCases4(DjangoTestCase):
+class TestCases04(DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.
 
@@ -681,7 +681,7 @@ class TestCases4(DjangoTestCase):
         core.logger.setLevel(loglevel)
 
 
-class TestCases5(DjangoTestCase):
+class TestCases05(DjangoTestCase):
     """
     ERK related test cases
     """

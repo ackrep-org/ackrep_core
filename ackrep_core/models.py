@@ -364,8 +364,10 @@ class LanguageSpecifiedString(BaseModel):
     def __repr__(self):
         return f"<LSS({self.content}@{self.langtag})>"
 
+
 # prevent possible performance drop: cache the environment variable (holding the ackrep environment name)
 envar_ACKREP_ENVIRONMENT_NAME = os.environ.get("ACKREP_ENVIRONMENT_NAME")
+
 
 class PyerkEntity(BaseModel):
     id = models.BigAutoField(primary_key=True)
