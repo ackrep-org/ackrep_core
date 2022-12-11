@@ -3,30 +3,21 @@ import subprocess
 import pprint
 import time
 import datetime
-import questionary
-import platform
-from django.core import management
-from django.conf import settings
-import yaml
-from git import Repo
-import shutil
 import signal
 import os
 
 from ipydex import IPS, activate_ips_on_exception
 
-from ackrep_core import system_model_management
-
+# import fast modules from ackrep
 from ackrep_core import release
+from ackrep_core import util
+from ackrep_core.util import bred, yellow, bgreen, timeout_handler, run_command, root_path, bright, data_path
+
+# wrap access to modules which are slow to import
+from ackrep_core import modules as acm
 
 if os.environ.get("CI") != "true":
     activate_ips_on_exception()
-
-from . import core
-from . import models
-from . import automatic_model_creation
-from . import util
-from .util import bred, yellow, bgreen, timeout_handler, run_command, root_path, bright, data_path
 
 # timeout setup for entity check timeout, see https://stackoverflow.com/a/494273
 if os.name != "nt":
@@ -211,13 +202,13 @@ def main():
 
     # non-exclusive options
     if args.log:
-        core.logger.setLevel(int(args.log))
+        acm.core.logger.setLevel(int(args.log))
 
     if os.environ.get("ACKREP_PRINT_DEBUG_REPORT"):
-        core.send_debug_report(print)
+        acm.core.send_debug_report(print)
     else:
         # default: use logger.debug
-        core.send_debug_report(core.logger.debug)
+        acm.core.send_debug_report(acm.core.logger.debug)
 
     # exclusive options
     if args.new:
@@ -226,17 +217,17 @@ def main():
         IPS()
     elif args.load_repo_to_db:
         startdir = args.load_repo_to_db
-        core.load_repo_to_db(startdir)
+        acm.core.load_repo_to_db(startdir)
         print(bgreen("Done"))
     elif args.extend:
         startdir = args.extend
-        core.extend_db(startdir)
+        acm.core.extend_db(startdir)
         print(bgreen("Done"))
     elif args.qq:
 
         entity = dialoge_entity_type()
         field_values = dialoge_field_values(entity)
-        core.convert_dict_to_yaml(field_values, target_path="./metadata.yml")
+        acm.core.convert_dict_to_yaml(field_values, target_path="./metadata.yml")
         return
     elif args.check:
         metadatapath = args.check
@@ -271,7 +262,7 @@ def main():
     elif args.metadata or args.md:
         if args.md:
             args.metadata = "metadata.yml"
-        data = core.get_metadata_from_file(args.metadata)
+        data = acm.core.get_metadata_from_file(args.metadata)
 
         print(f"\n  {bgreen('content of '+args.metadata)}\n")
 
@@ -279,7 +270,7 @@ def main():
         print("")
         return
     elif args.key:
-        print("Random entity-key: ", core.gen_random_entity_key())
+        print("Random entity-key: ", acm.core.gen_random_entity_key())
         return
     elif args.bootstrap_config_from_current_directory:
         util.bootstrap_config_from_current_directory()
@@ -289,9 +280,9 @@ def main():
         bootstrap_db(db="test")
     elif args.show_entity_info:
         key = args.show_entity_info
-        core.print_entity_info(key)
+        acm.core.print_entity_info(key)
     elif args.test_logging:
-        core.send_log_messages()
+        acm.core.send_log_messages()
     elif args.version:
         print("Version", release.__version__)
     elif args.prepare_script:
@@ -318,6 +309,7 @@ def main():
 
 
 def create_new_entity():
+    import questionary
 
     entity_class = dialoge_entity_type()
     dir_name = questionary.text("directory name?", default="unnamed_entity").ask()
@@ -333,18 +325,21 @@ def create_new_entity():
     field_values = dialoge_field_values(entity_class)
 
     path = os.path.join(dir_name, "metadata.yml")
-    core.convert_dict_to_yaml(field_values, target_path=path)
+    acm.core.convert_dict_to_yaml(field_values, target_path=path)
 
 
 def check_all_entities(unittest=False, fast=False):
     """this function is called during CI.
     All (checkable) entities are checked and the results stored in a yaml file."""
+
+    import yaml
+    from git import Repo
     # setup ci_results folder
     date = datetime.datetime.now()
     date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
     file_name = "ci_results__" + date_string + ".yaml"
-    file_path = os.path.join(core.root_path, "artifacts", "ci_results", file_name)
-    os.makedirs(os.path.join(core.root_path, "artifacts", "ci_results"), exist_ok=True)
+    file_path = os.path.join(acm.core.root_path, "artifacts", "ci_results", file_name)
+    os.makedirs(os.path.join(acm.core.root_path, "artifacts", "ci_results"), exist_ok=True)
 
     content = {"commit_logs": {}}
     # save the commits of the current ci job
@@ -374,23 +369,23 @@ def check_all_entities(unittest=False, fast=False):
     returncodes = []
     failed_entities = []
     if unittest:
-        entity_list = [core.get_entity("UXMFA"), core.get_entity("LRHZX"), core.get_entity("7WIQH")]
+        entity_list = [acm.core.get_entity("UXMFA"), acm.core.get_entity("LRHZX"), acm.core.get_entity("7WIQH")]
     else:
         entity_list = (
-            list(models.Notebook.objects.all())
-            + list(models.ProblemSolution.objects.all())
-            + list(models.SystemModel.objects.all())
+            list(acm.models.Notebook.objects.all())
+            + list(acm.models.ProblemSolution.objects.all())
+            + list(acm.models.SystemModel.objects.all())
         )
         # for faster CI testing:
         if fast:
-            core.logger.warning(
+            acm.core.logger.warning(
                 "--- Using the fast version of check all entities, not all entities will be checked! --- "
             )
             entity_list = [
-                core.get_entity("UXMFA"),  # sm lorenz
-                core.get_entity("7WIQH"),  # nb limit cycle van der pol
-                core.get_entity("CZKWU"),  # ps nonlinear_trajectory_electrical_resistance
-                core.get_entity("IG3GA"),  # sm linear transport (pde -> qt)
+                acm.core.get_entity("UXMFA"),  # sm lorenz
+                acm.core.get_entity("7WIQH"),  # nb limit cycle van der pol
+                acm.core.get_entity("CZKWU"),  # ps nonlinear_trajectory_electrical_resistance
+                acm.core.get_entity("IG3GA"),  # sm linear transport (pde -> qt)
             ]
     for entity in entity_list:
         key = entity.key
@@ -405,15 +400,15 @@ def check_all_entities(unittest=False, fast=False):
             issues = ""
 
             # copy plot or notebook to collection directory
-            dest_dir_plots = os.path.join(core.root_path, "artifacts", "ackrep_plots")
-            dest_dir_notebooks = os.path.join(core.root_path, "artifacts", "ackrep_notebooks")
+            dest_dir_plots = os.path.join(acm.core.root_path, "artifacts", "ackrep_plots")
+            dest_dir_notebooks = os.path.join(acm.core.root_path, "artifacts", "ackrep_notebooks")
 
-            if isinstance(entity, models.ProblemSolution) or isinstance(entity, models.SystemModel):
+            if isinstance(entity, acm.models.ProblemSolution) or isinstance(entity, acm.models.SystemModel):
                 # copy entire folder since there could be multiple images with arbitrary names
                 src = f"dummy:/code/{entity.base_path}/_data/."
                 dest_folder = os.path.join(dest_dir_plots, key)
                 dest = dest_folder
-            elif isinstance(entity, models.Notebook):
+            elif isinstance(entity, acm.models.Notebook):
                 html_file_name = entity.notebook_file.replace(".ipynb", ".html")
                 src = f"dummy:/code/{entity.base_path}/{html_file_name}"
                 dest_folder = os.path.join(dest_dir_notebooks, key)
@@ -423,7 +418,7 @@ def check_all_entities(unittest=False, fast=False):
 
             os.makedirs(dest_folder, exist_ok=True)
             # docker cp has to be used, see https://circleci.com/docs/2.0/building-docker-images#mounting-folders
-            run_command(["docker", "cp", src, dest], logger=core.logger)
+            run_command(["docker", "cp", src, dest], logger=acm.core.logger)
 
             # remove tex and pdf files to prevent them being copied
             for file in os.listdir(dest_folder):
@@ -471,27 +466,28 @@ def check(arg0: str, exitflag: bool = True):
     entity, key = get_entity_and_key(arg0)
 
     assert isinstance(
-        entity, (models.ProblemSolution, models.SystemModel, models.Notebook)
+        entity, (acm.models.ProblemSolution, acm.models.SystemModel, acm.models.Notebook)
     ), f"No support for entity with type {type(entity)}."
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
 
     # set timeout
     if not os.name == "nt":
-        signal.alarm(settings.ENTITY_TIMEOUT)
+        signal.alarm(acm.settings.ENTITY_TIMEOUT)
     try:
-        if isinstance(entity, (models.ProblemSolution, models.SystemModel)):
+        if isinstance(entity, (acm.models.ProblemSolution, acm.models.SystemModel)):
+            # TODO: this cmd seems to be obsolete
             cmd = [f"core.check_generic(key={key}"]
-            res = core.check_generic(key=key)
-        elif isinstance(entity, models.Notebook):
-            path = os.path.join(core.root_path, entity.base_path, entity.notebook_file)
+            res = acm.core.check_generic(key=key)
+        elif isinstance(entity, acm.models.Notebook):
+            path = os.path.join(acm.core.root_path, entity.base_path, entity.notebook_file)
             cmd = ["jupyter", "nbconvert", "--execute", "--to", "html", path]
-            res = run_command(cmd, logger=core.logger, capture_output=False)
+            res = run_command(cmd, logger=acm.core.logger, capture_output=False)
         else:
             raise NotImplementedError
     except TimeoutError as exc:
-        msg = f"Entity calculation reached timeout ({settings.ENTITY_TIMEOUT}s)."
-        core.logger.error(msg)
+        msg = f"Entity calculation reached timeout ({acm.settings.ENTITY_TIMEOUT}s)."
+        acm.core.logger.error(msg)
         res = subprocess.CompletedProcess(
             cmd, returncode=1, stdout="", stderr=f"Entity check timed out.\n{exc}"
         )
@@ -517,14 +513,14 @@ def check(arg0: str, exitflag: bool = True):
         return res
 
 
-def get_environment_version(entity: models.GenericEntity):
+def get_environment_version(entity: "acm.models.GenericEntity"):
     try:
         env_key = entity.compatible_environment
         if env_key == "" or env_key is None:
-            env_key = settings.DEFAULT_ENVIRONMENT_KEY
-        env_name = core.get_entity(env_key).name
+            env_key = acm.settings.DEFAULT_ENVIRONMENT_KEY
+        env_name = acm.core.get_entity(env_key).name
         dockerfile_name = "Dockerfile_" + env_name
-        path = os.path.join(core.root_path, dockerfile_name)
+        path = os.path.join(acm.core.root_path, dockerfile_name)
         with open(path, "r") as docker_file:
             lines = docker_file.readlines()
         if "LABEL" in lines[-1]:
@@ -549,11 +545,11 @@ def check_with_docker(arg0: str, exitflag: bool = True):
     entity, key = get_entity_and_key(arg0)
 
     assert isinstance(
-        entity, (models.ProblemSolution, models.SystemModel, models.Notebook)
+        entity, (acm.models.ProblemSolution, acm.models.SystemModel, acm.models.Notebook)
     ), f"No support for entity with type {type(entity)}."
 
     print(f'Checking {bright(str(entity))} "({entity.name}, {entity.estimated_runtime})"')
-    res = core.check(key=key)
+    res = acm.core.check(key=key)
 
     if res.returncode == 0:
         print(res.stdout)
@@ -580,11 +576,11 @@ def get_metadata_path_from_key(arg0: str, absflag: bool = True, exitflag: bool =
     :return:            container of subprocess.run (if exitflag == False)
     """
 
-    entity = core.get_entity(arg0)
+    entity = acm.core.get_entity(arg0)
 
     path = os.path.join(entity.base_path, "metadata.yml")
     if absflag:
-        path = os.path.join(core.root_path, path)
+        path = os.path.join(acm.core.root_path, path)
     print(path)
 
     if exitflag:
@@ -604,9 +600,9 @@ def update_parameter_tex(arg0: str, exitflag: bool = True):
 
     entity, key = get_entity_and_key(arg0)
 
-    assert isinstance(entity, models.SystemModel)
+    assert isinstance(entity, acm.models.SystemModel)
     # IPS()
-    res = system_model_management.update_parameter_tex(key=key)
+    res = acm.system_model_management.update_parameter_tex(key=key)
 
 
 def create_pdf(arg0: str, exitflag: bool = True):
@@ -620,9 +616,9 @@ def create_pdf(arg0: str, exitflag: bool = True):
 
     entity, key = get_entity_and_key(arg0)
 
-    assert isinstance(entity, models.SystemModel), f"{key} is not a system model key!"
+    assert isinstance(entity, acm.models.SystemModel), f"{key} is not a system model key!"
     # IPS()
-    res = system_model_management.create_pdf(key=key)
+    res = acm.system_model_management.create_pdf(key=key)
     if res.returncode == 0:
         print(bgreen("Success."))
     else:
@@ -643,19 +639,19 @@ def update_all_pdfs():
     :return:            container of subprocess.run (if exitflag == False)
     """
     failed_entities = []
-    entity_list = list(models.SystemModel.objects.all())
+    entity_list = list(acm.models.SystemModel.objects.all())
     for e in entity_list:
         print(bright(e))
         try:
-            core.check_generic(e.key)
+            acm.core.check_generic(e.key)
         except:
             print(bred("Could not check entity, plot may not be up to date."))
 
         try:
-            system_model_management.update_parameter_tex(e.key)
+            acm.system_model_management.update_parameter_tex(e.key)
         except:
             print("Parameter update Error, maybe entity doesnt have params?")
-        res = system_model_management.create_pdf(key=e.key)
+        res = acm.system_model_management.create_pdf(key=e.key)
         if res.returncode == 0:
             print(bgreen("Success."))
         else:
@@ -672,9 +668,9 @@ def update_all_pdfs():
 
 
 def create_system_model_list_pdf(exitflag: bool = True):
-    res = system_model_management.create_system_model_list_pdf()
+    res = acm.system_model_management.create_system_model_list_pdf()
     if res.returncode == 0:
-        print(f"PDF is stored in {core.root_path}/local_outputs/ .")
+        print(f"PDF is stored in {acm.core.root_path}/local_outputs/ .")
         print(bgreen("Success."))
     else:
         print(bred("Fail."))
@@ -686,7 +682,8 @@ def create_system_model_list_pdf(exitflag: bool = True):
 
 
 def dialoge_entity_type():
-    entities = models.get_entities()
+    import questionary
+    entities = acm.models.get_entities()
 
     # noinspection PyProtectedMember
     choices = [e._type for e in entities]
@@ -702,10 +699,11 @@ def dialoge_entity_type():
 
 
 def dialoge_field_values(entity_class):
+    import questionary
 
     fields = entity_class.get_fields()
 
-    entity = entity_class(key=core.gen_random_entity_key())
+    entity = entity_class(key=acm.core.gen_random_entity_key())
 
     res_dict = dict()
 
@@ -750,11 +748,13 @@ def bootstrap_db(db: str) -> None:
     :param db:      'main' or 'test'
     """
 
+    from django.core import management
+
     valid_values = ("main", "test")
     assert db in valid_values
 
     old_workdir = os.getcwd()
-    os.chdir(core.core_pkg_path)
+    os.chdir(acm.core.core_pkg_path)
 
     if db == "main":
         fname = "db.sqlite3"
@@ -776,7 +776,7 @@ def bootstrap_db(db: str) -> None:
     except FileNotFoundError:
         pass
 
-    settings.DATABASES["default"]["NAME"] = db_path
+    acm.settings.DATABASES["default"]["NAME"] = db_path
     management.call_command("migrate", "--run-syncdb")
 
     # return to old working dir
@@ -791,28 +791,31 @@ def prepare_script(arg0):
     """
     _, key = get_entity_and_key(arg0)
 
-    entity, c = core.get_entity_context(key)
-    scriptpath = os.path.join(core.root_path, "ackrep_data")
-    core.create_execscript_from_template(entity, c, scriptpath=scriptpath)
+    entity, c = acm.core.get_entity_context(key)
+    scriptpath = os.path.join(acm.core.root_path, "ackrep_data")
+    acm.core.create_execscript_from_template(entity, c, scriptpath=scriptpath)
 
     print(bgreen("Success."))
 
 
 def run_interactive_environment(args):
     """get imagename, start container"""
+
+    import platform
+
     if platform.system() != "Linux":
         msg = f"No support for {platform.system()}"
         raise NotImplementedError(msg)
 
     entity, key = get_entity_and_key(args[0])
     msg = f"{key} is not an EnvironmentSpecification key."
-    assert isinstance(entity, models.EnvironmentSpecification), msg
+    assert isinstance(entity, acm.models.EnvironmentSpecification), msg
     print("\nRunning Interactive Docker Container. To Exit, press Ctrl+D.\n")
 
-    container_id = core.start_idle_container(entity.name, try_to_use_local_image=False)
+    container_id = acm.core.start_idle_container(entity.name, try_to_use_local_image=False)
 
-    core.logger.info(f"Ackrep command running in Container: {container_id}")
-    host_uid = core.get_host_uid()
+    acm.core.logger.info(f"Ackrep command running in Container: {container_id}")
+    host_uid = acm.core.get_host_uid()
     cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
 
     if len(args) == 1:
@@ -825,7 +828,7 @@ def run_interactive_environment(args):
     res = run_command(cmd, capture_output=False)
 
     print("Shutting down container...")
-    run_command(["docker", "stop", container_id], logger=core.logger, capture_output=True)
+    run_command(["docker", "stop", container_id], logger=acm.core.logger, capture_output=True)
 
     return res.returncode
 
@@ -837,7 +840,7 @@ def run_jupyter(key):
 
     entity, key = get_entity_and_key(key)
     msg = f"{key} is not an EnvironmentSpecification key."
-    assert isinstance(entity, models.EnvironmentSpecification), msg
+    assert isinstance(entity, acm.models.EnvironmentSpecification), msg
 
     # run_command([f"docker stop $(docker ps --filter name={entity.name} -q)"], shell=True)
     find_cmd = ["docker", "ps", "--filter", f"name={entity.name}", "-q"]
@@ -852,12 +855,12 @@ def run_jupyter(key):
     print("To access the Notebook, click one of the provided links below.\n")
 
     port_dict = {8888: 8888}
-    container_id = core.start_idle_container(
+    container_id = acm.core.start_idle_container(
         entity.name, try_to_use_local_image=True, port_dict=port_dict
     )
 
-    core.logger.info(f"Ackrep command running in Container: {container_id}")
-    host_uid = core.get_host_uid()
+    acm.core.logger.info(f"Ackrep command running in Container: {container_id}")
+    host_uid = acm.core.get_host_uid()
     cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
 
     cmd.extend(
@@ -876,20 +879,20 @@ def run_jupyter(key):
     res = run_command(cmd, capture_output=False)
 
     print("Shutting down container...")
-    run_command(["docker", "stop", container_id], logger=core.logger, capture_output=True)
+    run_command(["docker", "stop", container_id], logger=acm.core.logger, capture_output=True)
 
     return res.returncode
 
 
 def download_artifacts():
-    core.download_and_store_artifacts(settings.ACKREP_DATA_BRANCH)
+    acm.core.download_and_store_artifacts(acm.settings.ACKREP_DATA_BRANCH)
     print(bgreen("Done."))
 
 
 def pull_and_show_envs():
     """this function pulls the most recent environment version and prints out information about this version
     it is primarily used inside the docker container to ensure image validity"""
-    entities = list(models.EnvironmentSpecification.objects.all())
+    entities = list(acm.models.EnvironmentSpecification.objects.all())
     print("\nEnvironment Infos:\n")
     for entity in entities:
         env_key = entity.key
@@ -898,7 +901,7 @@ def pull_and_show_envs():
         dockerfile_name = "Dockerfile_" + env_name
         # pull most recent image
         cmd = ["docker", "pull", f"ghcr.io/ackrep-org/{env_name}:latest"]
-        pull = run_command(cmd, core.logger, capture_output=True)
+        pull = run_command(cmd, acm.core.logger, capture_output=True)
         # get version info of image
         if os.environ.get("CI") == "true":
             dockerfile_path = f"../{dockerfile_name}"
@@ -915,7 +918,7 @@ def pull_and_show_envs():
             "-1",
             dockerfile_path,
         ]
-        res = run_command(cmd, core.logger, capture_output=True)
+        res = run_command(cmd, acm.core.logger, capture_output=True)
         infos = res.stdout.split('org.opencontainers.image.description "')[-1].split("|")
 
         print(f"{env_name} ({env_key}):")
@@ -923,8 +926,8 @@ def pull_and_show_envs():
         for info in infos:
             print(row_template.format(info))
         print()
-    default_key = settings.DEFAULT_ENVIRONMENT_KEY
-    default_name = core.get_entity(default_key).name
+    default_key = acm.settings.DEFAULT_ENVIRONMENT_KEY
+    default_name = acm.core.get_entity(default_key).name
     print(f"Default environment is {default_name} ({default_key})\n")
 
 
@@ -938,23 +941,25 @@ def get_entity_and_key(arg0):
         GenericEntity, str: entity, key
     """
     if len(arg0) == 5:
-        entity = core.get_entity(arg0)
+        entity = acm.core.get_entity(arg0)
         key = arg0
     else:
         metadatapath = arg0
         if not metadatapath.endswith("metadata.yml"):
             metadatapath = os.path.join(metadatapath, "metadata.yml")
-        meta_data = core.get_metadata_from_file(metadatapath)
+        meta_data = acm.core.get_metadata_from_file(metadatapath)
         key = meta_data["key"]
-        entity = core.get_entity(key)
+        entity = acm.core.get_entity(key)
     return entity, key
 
 
 def update_fallback_binaries():
+    import shutil
+
     fallback_bin_location = os.path.join(root_path, "ackrep_fallback_binaries")
 
-    entity_list = list(models.ProblemSolution.objects.all()) + list(
-        models.SystemModel.objects.all()
+    entity_list = list(acm.models.ProblemSolution.objects.all()) + list(
+        acm.models.SystemModel.objects.all()
     )
 
     for entity in entity_list:
@@ -966,19 +971,19 @@ def update_fallback_binaries():
             target_dir = os.path.join(fallback_bin_location, key, "plot.png")
             shutil.copy(plot_dir, target_dir)
         else:
-            core.logger.info(f"{entity} plot was not found.")
+            acm.core.logger.info(f"{entity} plot was not found.")
 
 
 def create_compleib_models(arg0):
-    automatic_model_creation.create_compleib_models_from_template(arg0)
+    acm.automatic_model_creation.create_compleib_models_from_template(arg0)
 
 
 def test_compleib_models():
-    entity_list = list(models.SystemModel.objects.all())
+    entity_list = list(acm.models.SystemModel.objects.all())
     com_models = [i for i in entity_list if "CO" in i.key]
     for e in com_models:
         print(bright(e))
-        res = core.check_generic(e.key)
+        res = acm.core.check_generic(e.key)
         if res.returncode == 0:
             print(bgreen("Success."))
         elif res.returncode == 2:
