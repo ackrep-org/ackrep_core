@@ -19,7 +19,8 @@ from pyerk.erkloader import load_mod_from_path, ModuleType
 from pyerk import builtin_entities
 from pyerk.auxiliary import *
 from . import models
-from ackrep_core_django_settings.settings import ERK_DATA_OCSE_MAIN_ABSPATH
+from ackrep_core_django_settings.settings import CONF
+ERK_DATA_OCSE_MAIN_ABSPATH = CONF.ERK_DATA_OCSE_MAIN_ABSPATH
 
 
 min_pyerk_version = "0.6.0"

@@ -18,7 +18,8 @@ from distutils.spawn import find_executable
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
-from ackrep_core_django_settings.settings import ERK_DATA_OCSE_MAIN_ABSPATH
+from ackrep_core_django_settings import settings
+ERK_DATA_OCSE_MAIN_ABSPATH = settings.CONF.ERK_DATA_OCSE_MAIN_ABSPATH
 """
 This module contains the tests of the core module (not ackrep_web).
 

@@ -27,7 +27,7 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     RUNNING_TESTS = False
 
     # TODO: This might be obsolete redundancy
-    ERK_DATA_PATH = settings.ERK_DATA_OCSE_MAIN_ABSPATH
+    ERK_DATA_PATH = settings.CONF.ERK_DATA_OCSE_MAIN_ABSPATH
     ERK_DATA_MOD_NAME = os.path.split(ERK_DATA_PATH)[1]
 
 
