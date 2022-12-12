@@ -64,18 +64,28 @@ def _create_new_config_file(configfile_path):
     #
     # <common-root>
     # │
-    # ├── ackrep
-    # │   ├── ackrep_data/    ← assume this (or a sibling) to be your current working directory
+    # ├── ackrep              ← assume this to be your current working directory
+    # │   ├── ackrep_data/
     # │   │
     # │   └── ...
     # └── erk
     #     └── erk-data/
 
-    path1 = Path.cwd().parent.parent.joinpath("erk", "erk-data", "ocse", "erkpackage.toml").as_posix()
+    ackrep_root_path = Path.cwd().as_posix()
+    ocse_path = Path.cwd().parent.joinpath("erk", "erk-data", "ocse", "erkpackage.toml").as_posix()
+    ackrep_data_path = os.path.join(ackrep_root_path, "ackrep_data")
+
+    if not os.path.isdir(ackrep_data_path):
+        msg = (
+            "Unexpectedly did not find subdirectory (`ackrep_data`) of current working dir. "
+            "This failing safety check means that your working dir is probably wrong."
+        )
+        raise FileNotFoundError(msg)
 
     default_configfile_content = twdd(f"""
 
-    ERK_DATA_OCSE_CONF_ABSPATH = "{path1}"
+    ACKREP_ROOT_PATH = "{ackrep_root_path}"
+    ERK_DATA_OCSE_CONF_PATH = "{ocse_path}"
     """)
 
     with open(configfile_path, "w", encoding="utf8") as txtfile:
@@ -106,7 +116,7 @@ def load_config_file(configfile_path: str = None, check=True, print_flag=False) 
     # this will raise an error if the relevant keys are missing
 
     if check:
-        relevant_keys = ["ERK_DATA_OCSE_CONF_ABSPATH"]
+        relevant_keys = ["ERK_DATA_OCSE_CONF_PATH"]
         missing_keys = [key for key in relevant_keys if key not in config_dict]
 
         if missing_keys:
@@ -119,6 +129,95 @@ def load_config_file(configfile_path: str = None, check=True, print_flag=False) 
         logging.logger.info(f'{str1:<30}{configfile_path} {bgreen("✓")}')
 
     return config_dict
+
+
+class FlexibleConfigHandler(object):
+    """
+    This singleton class provides access to config data if available and gives reasonable error messages if not
+    """
+
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super().__new__(cls)
+        return cls.instance
+
+    def __init__(self):
+
+        try:
+            self.config_dict = load_config_file()
+            self.config_file_found = True
+        except FileNotFoundError:
+            self.config_dict = {}
+            self.config_file_found = False
+
+        self.define_paths()
+        self.instance = self
+
+    # noinspection PyAttributeOutsideInit
+    def define_paths(self):
+        """
+        Define some important paths either based on the config file or based on envvars
+        :return:
+        """
+
+        if ackrep_root_path := os.environ.get("ACKREP_ROOT_PATH"):
+            self.ACKREP_ROOT_PATH = ackrep_root_path
+        elif ackrep_root_path := self.config_dict.get("ACKREP_ROOT_PATH"):
+            self.ACKREP_ROOT_PATH = ackrep_root_path
+
+        # ackrep_data (which might be different for unittests)
+        # this env-variable will be set e.g. by unit tests to make cli invocations from tests work
+        if ackrep_data_path := os.environ.get("ACKREP_DATA_PATH"):
+            self.ACKREP_DATA_PATH = ackrep_data_path
+        elif ackrep_data_path := self.config_dict.get("ACKREP_DATA_PATH"):
+            self.ACKREP_DATA_PATH = ackrep_data_path
+        elif ackrep_root_path:
+            self.ACKREP_DATA_PATH = os.path.join(self.ACKREP_ROOT_PATH, "ackrep_data")
+
+        # ackrep_ci_results (which might also be different for unitests)
+        # this env-variable will be set e.g. by unit tests to make cli invocations from tests work
+        if ackrep_ci_result_path := os.environ.get("ACKREP_CI_RESULT_PATH"):
+            self.ACKREP_CI_RESULT_PATH = ackrep_ci_result_path
+        elif ackrep_ci_result_path := self.config_dict.get("ACKREP_CI_RESULT_PATH"):
+            self.ACKREP_CI_RESULT_PATH = ackrep_ci_result_path
+        elif ackrep_root_path:
+            self.ACKREP_DATA_PATH = os.path.join(self.ACKREP_ROOT_PATH, "ackrep_ci_results")
+
+    def __getattr__(self, name):
+
+        from pathlib import Path
+
+        # this is necessary to make that class working with djangos settings-wrapping
+        if name == "_mask_wrapped":
+            raise AttributeError
+
+        if not self.config_file_found:
+            msg = (
+                f"ackrep config file {DEFAULT_CONFIGFILE_PATH} could not be found; "
+                f"Thus, {name} is not available. Maybe you have to run `ackrep --bootstrap-config`?"
+            )
+            raise FileNotFoundError(msg)
+
+        # handle some special cases
+
+        # note the difference between ..._MAIN_... and ..._CONF_...
+        if name == "ERK_DATA_OCSE_MAIN_PATH":
+            ocse_conf_path = self.ERK_DATA_OCSE_CONF_PATH
+
+            if not os.path.isfile(ocse_conf_path):
+                msg = f"Error on loading OCSE config file: {ocse_conf_path}"
+                raise FileNotFoundError(msg)
+
+            with open(ocse_conf_path, "rb") as fp:
+                erk_conf_dict = tomllib.load(fp)
+
+            ocse_main_rel_path = erk_conf_dict["main_module"]
+            ocse_main_mod_path = Path(ocse_conf_path).parent.joinpath(ocse_main_rel_path).as_posix()
+            return ocse_main_mod_path
+
+        # handle the general case
+        return self.config_dict[name]
+
 
 def bgreen(txt):
     return f"{Fore.GREEN}{Style.BRIGHT}{txt}{Style.RESET_ALL}"

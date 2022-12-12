@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 import os
 import sys
 from pathlib import Path
-from ackrep_core import config_handler
+import ackrep_core.config_handler
 
 try:
     # this will be part of standard library for python >= 3.11
@@ -240,63 +240,8 @@ SPARQL_PREFIX_MAPPING = {
 # ensure that values are also keys
 SPARQL_PREFIX_MAPPING.update((v, k) for k, v in list(SPARQL_PREFIX_MAPPING.items()))
 
-# TODO: remove this obsolete code (after all tests pass)
-# ERK_DATA_REL_PATH_CT = os.path.join("erk-data", "ocse", "control_theory1.py")
-
-tmp = config("ERK_DATA_OCSE_CONF_ABSPATH").replace("__thisdir__", Path(CONFIG_PATH).parent.as_posix())
-
 # the following handles the second config file. rationale: config.ini is for deployment-relevant configuration,
 # ackrepconf.toml is for non-secret local-relevant configuration (such as paths)
 # this obviously fails during `--bootsrap-config` because the config file does not yet exist
 
-
-class FlexibleConfigHandler(object):
-    """
-    This class provides access to config data if available and gives reasonable error messages if not
-    """
-
-    def __init__(self, config_dict, config_file_found):
-        self.config_file_found = config_file_found
-        self.config_dict = config_dict
-
-    def __getattr__(self, name):
-
-        # this is necessary to make that class working with djangos settings-wrapping
-        if name == "_mask_wrapped":
-            raise AttributeError
-
-        if not self.config_file_found:
-            msg = (
-                f"ackrep config file {config_handler.DEFAULT_CONFIGFILE_PATH} could not be found; "
-                f"Thus, {name} is not available. Maybe you have to run `ackrep --bootstrap-config`?"
-            )
-            raise FileNotFoundError(msg)
-
-        # handle some special cases
-        if name == "ERK_DATA_OCSE_MAIN_ABSPATH":
-            ocse_conf_path = self.ERK_DATA_OCSE_CONF_ABSPATH
-
-            if not os.path.isfile(ocse_conf_path):
-                msg = f"Error on loading OCSE config file: {ocse_conf_path}"
-                raise FileNotFoundError(msg)
-
-            with open(ocse_conf_path, "rb") as fp:
-                erk_conf_dict = tomllib.load(fp)
-
-            ocse_main_rel_path = erk_conf_dict["main_module"]
-            ocse_main_mod_path = Path(ocse_conf_path).parent.joinpath(ocse_main_rel_path).as_posix()
-            return ocse_main_mod_path
-
-        # handle the general case
-        return self.config_dict[name]
-
-
-try:
-    config_dict = config_handler.load_config_file()
-    config_file_found = True
-except FileNotFoundError:
-    config_dict = {}
-    config_file_found = False
-
-
-CONF = FlexibleConfigHandler(config_dict, config_file_found)
+CONF = ackrep_core.config_handler.FlexibleConfigHandler()
