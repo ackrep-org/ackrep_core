@@ -37,9 +37,9 @@ jobs: # A basic unit of work in a run
           name: Load ERK Modules
           command: |
             echo Cloning erk-data
-            cd ../
-            mkdir erk-data
-            cd erk-data
+            cd ~
+            mkdir -p erk/erk-data
+            cd erk/erk-data
             git clone https://github.com/ackrep-org/ocse.git
             cd ocse
             git checkout ut_ackrep_main
