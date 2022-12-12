@@ -177,12 +177,12 @@ class FlexibleConfigHandler(object):
 
         # ackrep_ci_results (which might also be different for unitests)
         # this env-variable will be set e.g. by unit tests to make cli invocations from tests work
-        if ackrep_ci_result_path := os.environ.get("ACKREP_CI_RESULT_PATH"):
-            self.ACKREP_CI_RESULT_PATH = ackrep_ci_result_path
-        elif ackrep_ci_result_path := self.config_dict.get("ACKREP_CI_RESULT_PATH"):
-            self.ACKREP_CI_RESULT_PATH = ackrep_ci_result_path
+        if ackrep_ci_result_path := os.environ.get("ACKREP_CI_RESULTS_PATH"):
+            self.ACKREP_CI_RESULTS_PATH = ackrep_ci_result_path
+        elif ackrep_ci_result_path := self.config_dict.get("ACKREP_CI_RESULTS_PATH"):
+            self.ACKREP_CI_RESULTS_PATH = ackrep_ci_result_path
         elif ackrep_root_path:
-            self.ACKREP_CI_RESULT_PATH = os.path.join(self.ACKREP_ROOT_PATH, "ackrep_ci_results")
+            self.ACKREP_CI_RESULTS_PATH = os.path.join(self.ACKREP_ROOT_PATH, "ackrep_ci_results")
 
     def __getattr__(self, name):
 
