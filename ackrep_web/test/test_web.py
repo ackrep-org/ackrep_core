@@ -1,3 +1,7 @@
+import os
+from textwrap import dedent as twdd
+from urllib.parse import quote, unquote
+
 from django.test import SimpleTestCase, TestCase as DjangoTestCase, LiveServerTestCase
 from django.urls import reverse
 from django.test.utils import override_settings
@@ -5,7 +9,6 @@ from unittest import skipUnless
 from ackrep_core.test._test_utils import load_repo_to_db_for_ut, reset_repo
 from ackrep_web.views import get_item
 import json
-import os
 from ackrep_core_django_settings import settings
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
@@ -168,51 +171,80 @@ class TestCases2(SimpleTestCase):
         for info in infos:
             self.assertContains(response, info)
 
-    def test_sparql_query(self):
+    def test_sparql_query1(self):
 
         url = reverse("search-sparql")
-        query = (
-            "query=PREFIX+%3A+<erk%3A%2Fbuiltins%23>%0D%0APREFIX+ocse%3A+<erk%3A%2Focse%2F0.2%23>%0D%0ASELECT"
-            "+%3Fs%0D%0AWHERE+{%0D%0A++++%3Fs+%3AR16+ocse%3AI7733.%0D%0A%0D%0A}%0D%0A"
-        )
-        response = self.client.get(f"{url}?{query}")
+
+        sparql_src = twdd(f"""
+        PREFIX : {settings.SPARQL_PREFIX_MAPPING[':']}
+        PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse:']}
+        SELECT ?s
+        WHERE {{
+            ?s :R16 ocse:I7733.
+        
+        }}
+        """)
+        response = self.client.get(f"{url}?query={quote(sparql_src)}")
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "UXMFA")
         self.assertContains(response, "utc_template_name=ackrep_web/search_sparql.html")
+
+        soup = BeautifulSoup(response.content.decode("utf8"), "lxml")
+        res = soup.find(id="utjd_n_results")
+        self.assertGreaterEqual(json.loads(res.string), 2)
 
     def test_sparql_query2(self):
         # test preprocessing of query
         url = reverse("search-sparql")
-        query = (
-            "query=PREFIX+%3A+%3Cerk%3A%2Fbuiltins%23%3E%0D%0APREFIX+ocse%3A+%3Cerk%3A%2Focse%2F0.2%23%3E%0D%0ASELECT"
-            "+%3Fs%0D%0AWHERE+%7B%0D%0A++++%3Fs+%3AR16__has_property+ocse%3AI7733__time_invariance."
-            "%0D%0A%0D%0A%7D%0D%0A"
-        )
-        response = self.client.get(f"{url}?{query}")
+        sparql_src = twdd(f"""
+        PREFIX : {settings.SPARQL_PREFIX_MAPPING[':']}
+        PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse:']}
+        SELECT ?s
+        WHERE {{
+            ?s :R16__has_property ocse:I7733__time_invariance.
+
+        }}
+        """)
+        response = self.client.get(f"{url}?query={quote(sparql_src)}")
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "UXMFA")
         self.assertContains(response, "utc_template_name=ackrep_web/search_sparql.html")
 
+        soup = BeautifulSoup(response.content.decode("utf8"), "lxml")
+        res = soup.find(id="utjd_n_results")
+        self.assertGreaterEqual(json.loads(res.string), 2)
+
     def test_sparql_query3(self):
         # test for correct display of sparql results in table form
         url = reverse("search-sparql")
-        query = (
-            "query=PREFIX+%3A+<erk%3A%2Fbuiltins%23>%0D%0APREFIX+ocse%3A+<erk%3A%2Focse%2F0.2%23>%0D%0APREFIX"
-            "+ack%3A+<erk%3A%2Fackrep%23>%0D%0ASELECT+%3Fs+%3Fp+%3Fo%0D%0AWHERE+{%0D%0A++++%3Fs+%3Fp+%3Fo.%0D%0A"
-            "%3Fs+%3AR4__is_instance_of+ocse%3AI5356__general_system_property.%0D%0A}%0D%0A"
-        )
-        response = self.client.get(f"{url}?{query}")
+
+        sparql_src = twdd(f"""
+        PREFIX : {settings.SPARQL_PREFIX_MAPPING[':']}
+        PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse:']}
+        PREFIX ack: {settings.SPARQL_PREFIX_MAPPING['ack:']}
+        SELECT ?s ?p ?o
+        WHERE {{
+            ?s ?p ?o.
+            ?s :R4__is_instance_of ocse:I5356__general_system_property.
+        }}
+        """)
+
+        response = self.client.get(f"{url}?query={quote(sparql_src)}")
         self.assertEqual(response.status_code, 200)
 
         soup = BeautifulSoup(response.content.decode("utf8"), "lxml")
+
+        soup = BeautifulSoup(response.content.decode("utf8"), "lxml")
+        res = soup.find(id="utjd_n_results")
+
+        n_results = json.loads(res.string)
+        self.assertGreaterEqual(n_results, 43)
+
         rows = soup.findAll("tr")
-
-        self.assertGreaterEqual(len(rows), 44)
-
+        self.assertEqual(len(rows), n_results + 1)
         row0 = rows[0].findAll("th")
-
         tablehead = ["s", "p", "o"]
         for i in range(3):
             self.assertEqual(row0[i].contents[0], tablehead[i])

@@ -184,6 +184,8 @@ MathJax.Hub.Config({
 <br>
 {% load extra_filters %}
 <h3>Results ({{table_data|length}}) </h3>
+{# insert unittest json data (udjd) #}
+{{ table_data|length|json_script:"utjd_n_results" }}
 {% if table_data %}
     <table class="res_table">
         <thead>
