@@ -607,6 +607,13 @@ class TestCases05(SimpleTestCase):
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
 
+    def test_01_get_docker_env_vars(self):
+
+        cmd_extension = core.get_docker_env_vars()
+
+        self.assertIn("db_for_unittests.sqlite3", cmd_extension[1])
+        self.assertIn("ackrep_data_for_unittests", cmd_extension[3])
+
     def test_run_interactive_environment(self):
         cmd = [
             "ackrep",
