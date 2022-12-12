@@ -4,6 +4,24 @@ Rationale:importing this module is fast, but it allows easy access to many other
 only if actually needed. This reduces the startup time e.g. of invocations of script.py.
 """
 
+# the following is to enable IDE autocompletion without actually importing modules
+
+# noinspection PyUnreachableCode
+if 0:
+    # noinspection PyUnresolvedReferences
+    from ackrep_core import (
+        core,
+        ackrep_parser,
+        automatic_model_creation,
+        config_handler,
+        logging,
+        model_utils,
+        models,
+        release,
+        system_model_management,
+        util,
+    )
+
 
 # use a dict here for fast lookup
 KNOWN_MODULES = {
@@ -16,7 +34,6 @@ KNOWN_MODULES = {
     "models": 1,
     "modules": 1,
     "release": 1,
-    "script": 1,
     "system_model_management": 1,
     "util": 1,
     }
