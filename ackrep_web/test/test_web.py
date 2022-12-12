@@ -309,11 +309,13 @@ class TestBugs(DjangoTestCase):
 class TestUI(LiveServerTestCase):
     """
     Itegration tests via browser automation (package: splinter)
+
+    Note: this class automatically launches a server in the background.
+    Its url is automatically determinded and avaliable as `self.live_server_url`.
     """
 
-    live_server_url = "http://127.0.0.1:8000"
-
     def setUp(self):
+        super().setUp()
         d = dict()
         d["loggingPrefs"] = {"browser": "ALL"}
         self.options_for_browser = dict(driver_name="chrome", headless=True, desired_capabilities=d)
@@ -324,6 +326,8 @@ class TestUI(LiveServerTestCase):
         # quit all browser instances (also those which where not created by setUp)
         for browser in self.browsers:
             browser.quit()
+
+        super().tearDown()
 
     def local_reverse(self, *args, **kwargs):
         return f"{self.live_server_url}{reverse(*args, **kwargs)}"
