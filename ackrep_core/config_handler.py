@@ -181,7 +181,7 @@ class FlexibleConfigHandler(object):
         elif ackrep_ci_result_path := self.config_dict.get("ACKREP_CI_RESULT_PATH"):
             self.ACKREP_CI_RESULT_PATH = ackrep_ci_result_path
         elif ackrep_root_path:
-            self.ACKREP_DATA_PATH = os.path.join(self.ACKREP_ROOT_PATH, "ackrep_ci_results")
+            self.ACKREP_CI_RESULT_PATH = os.path.join(self.ACKREP_ROOT_PATH, "ackrep_ci_results")
 
     def __getattr__(self, name):
 
