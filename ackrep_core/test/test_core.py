@@ -298,24 +298,6 @@ class TestCases03(SimpleTestCase):
         self.assertEqual(len(plots), 1)
         self.assertEqual("plot.png", plots[0])
 
-    def test_check_with_docker(self):
-        # first: run directly
-        # when testing locally, also test local image
-        if os.environ.get("CI") != "true":
-            res = core.check("UXMFA")
-            if res.returncode != 0:
-                print(res.stdout)
-            self.assertEqual(res.returncode, 0)
-        # test remote image
-        res = core.check("UXMFA", try_to_use_local_image=False)
-        if res.returncode != 0:
-            print(res.stdout)
-        self.assertEqual(res.returncode, 0)
-
-        # second: run via commandline
-        res = run_command(["ackrep", "-cwd", "UXMFA"])
-        self.assertEqual(res.returncode, 0)
-
     def test_check_key(self):
         res = run_command(["ackrep", "--key"])
         self.assertEqual(res.returncode, 0)
@@ -488,92 +470,6 @@ class TestCases03(SimpleTestCase):
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)
 
-    def test_error_messages(self):
-        ## test error message of check_system_model and execscript
-        # create syntax error in file
-        parameter_path = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
-        os.chdir(parameter_path)
-        file = open("parameters.py", "rt+")
-        lines = file.readlines()
-        for i, line in enumerate(lines):
-            if "=" in line:
-                lines[i] = line.replace("=", "=_")
-                break
-
-        file.seek(0)
-        file.writelines(lines)
-        file.close()
-
-        # test for retcode != 0
-        res = run_command(["ackrep", "-c", "UXMFA"])
-        self.assertEqual(res.returncode, 1)
-
-        # check error message for existance (and readability?)
-        expected_error_infos = ["SyntaxError", "parameters.py", "line"]
-        for info in expected_error_infos:
-            self.assertIn(info, res.stdout)
-
-        # reset unittest_repo
-        reset_repo(ackrep_data_test_repo_path)
-
-        ## test error message of check_solution and execscript
-        # create syntax error in file
-        parameter_path = os.path.join(
-            ackrep_data_test_repo_path, "problem_specifications", "double_integrator_transition"
-        )
-        os.chdir(parameter_path)
-        file = open("problem.py", "rt+")
-        lines = file.readlines()
-        for i, line in enumerate(lines):
-            if "=" in line:
-                lines[i] = line.replace("=", "=_")
-                break
-
-        file.seek(0)
-        file.writelines(lines)
-        file.close()
-
-        # test for retcode != 0
-        res = run_command(["ackrep", "-c", "UKJZI"])
-        self.assertEqual(res.returncode, 1)
-
-        # check error message for existance (and readability?)
-
-        expected_error_infos = ["SyntaxError", "problem.py", "line"]
-        for info in expected_error_infos:
-            self.assertIn(info, res.stdout)
-
-        # reset unittest_repo
-        reset_repo(ackrep_data_test_repo_path)
-
-        ## test error messages of notebooks
-        # test for retcode != 0 (entity already broken)
-        res = run_command(["ackrep", "-cwd", "ARMBC"])
-        self.assertEqual(res.returncode, 1)
-
-        # check error message for existance (and readability?)
-
-        expected_error_infos = ["ZeroDivisionError", "In [2]", "<cell line: 3>"]
-        for info in expected_error_infos:
-            self.assertIn(info, res.stdout)
-
-        # reset unittest_repo
-        reset_repo(ackrep_data_test_repo_path)
-
-    def test_run_interactive_environment(self):
-        cmd = [
-            "ackrep",
-            "--run-interactive-environment",
-            core.settings.DEFAULT_ENVIRONMENT_KEY,
-            "ackrep -c UXMFA; \
-            cd ../; ls; cd ackrep_data_for_unittests; ls",
-        ]
-        res = run_command(cmd, logger=core.logger, capture_output=True)
-        self.assertEqual(res.returncode, 0)
-        expected_directories = ["system_models", "Success"]
-        for info in expected_directories:
-            self.assertIn(info, res.stdout)
-
     def test_ackrep_parser1(self):
         # unload modules, since they would already be loaded due to load_repo_to_db
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
@@ -689,7 +585,134 @@ class TestCases04(DjangoTestCase):
         core.logger.setLevel(loglevel)
 
 
-class TestCases05(DjangoTestCase):
+class TestCases05(SimpleTestCase):
+    """
+    Docker related test cases
+
+
+    For info on base class choice see TestCases03.
+    """
+
+    databases = "__all__"
+
+    def setUp(self):
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
+        load_repo_to_db_for_ut(ackrep_data_test_repo_path)
+
+    def tearDown(self):
+        # optionally check if repo is clean
+        repo = Repo(ackrep_data_test_repo_path)
+        assert not repo.is_dirty()
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
+
+    def test_run_interactive_environment(self):
+        cmd = [
+            "ackrep",
+            "--run-interactive-environment",
+            core.settings.DEFAULT_ENVIRONMENT_KEY,
+            "ackrep -c UXMFA; \
+            cd ../; ls; cd ackrep_data_for_unittests; ls",
+        ]
+        res = run_command(cmd, logger=core.logger, capture_output=True)
+        self.assertEqual(res.returncode, 0)
+        expected_directories = ["system_models", "Success"]
+        for info in expected_directories:
+            self.assertIn(info, res.stdout)
+
+    def test_check_with_docker(self):
+        # first: run directly
+        # when testing locally, also test local image
+        if os.environ.get("CI") != "true":
+            res = core.check("UXMFA")
+            if res.returncode != 0:
+                print(res.stdout)
+            self.assertEqual(res.returncode, 0)
+        # test remote image
+        res = core.check("UXMFA", try_to_use_local_image=False)
+        if res.returncode != 0:
+            print(res.stdout)
+        self.assertEqual(res.returncode, 0)
+
+        # second: run via commandline
+        res = run_command(["ackrep", "-cwd", "UXMFA"])
+        self.assertEqual(res.returncode, 0)
+
+    def test_error_messages(self):
+        ## test error message of check_system_model and execscript
+        # create syntax error in file
+        parameter_path = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
+        os.chdir(parameter_path)
+        file = open("parameters.py", "rt+")
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if "=" in line:
+                lines[i] = line.replace("=", "=_")
+                break
+
+        file.seek(0)
+        file.writelines(lines)
+        file.close()
+
+        # test for retcode != 0
+        res = run_command(["ackrep", "-c", "UXMFA"])
+        self.assertEqual(res.returncode, 1)
+
+        # check error message for existance (and readability?)
+        expected_error_infos = ["SyntaxError", "parameters.py", "line"]
+        for info in expected_error_infos:
+            self.assertIn(info, res.stdout)
+
+        # reset unittest_repo
+        reset_repo(ackrep_data_test_repo_path)
+
+        ## test error message of check_solution and execscript
+        # create syntax error in file
+        parameter_path = os.path.join(
+            ackrep_data_test_repo_path, "problem_specifications", "double_integrator_transition"
+        )
+        os.chdir(parameter_path)
+        file = open("problem.py", "rt+")
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if "=" in line:
+                lines[i] = line.replace("=", "=_")
+                break
+
+        file.seek(0)
+        file.writelines(lines)
+        file.close()
+
+        # test for retcode != 0
+        res = run_command(["ackrep", "-c", "UKJZI"])
+        self.assertEqual(res.returncode, 1)
+
+        # check error message for existance (and readability?)
+
+        expected_error_infos = ["SyntaxError", "problem.py", "line"]
+        for info in expected_error_infos:
+            self.assertIn(info, res.stdout)
+
+        # reset unittest_repo
+        reset_repo(ackrep_data_test_repo_path)
+
+        ## test error messages of notebooks
+        # test for retcode != 0 (entity already broken)
+        res = run_command(["ackrep", "-cwd", "ARMBC"])
+        self.assertEqual(res.returncode, 1)
+
+        # check error message for existance (and readability?)
+
+        expected_error_infos = ["ZeroDivisionError", "In [2]", "<cell line: 3>"]
+        for info in expected_error_infos:
+            self.assertIn(info, res.stdout)
+
+        # reset unittest_repo
+        reset_repo(ackrep_data_test_repo_path)
+
+
+class TestCases06(DjangoTestCase):
     """
     ERK related test cases
     """
