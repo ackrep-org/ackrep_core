@@ -78,9 +78,10 @@ def _create_new_config_file(configfile_path):
     if not os.path.isdir(ackrep_data_path):
         msg = (
             "Unexpectedly did not find subdirectory (`ackrep_data`) of current working dir. "
-            "This failing safety check means that your working dir is probably wrong."
+            "This failing safety check means that your working dir is probably wrong (or still incomplete). "
+            "Proceeding anyway."
         )
-        raise FileNotFoundError(msg)
+        logging.logger.warn(msg)
 
     default_configfile_content = twdd(f"""
 
