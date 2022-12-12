@@ -42,7 +42,7 @@ jobs: # A basic unit of work in a run
             cd erk/erk-data
             git clone https://github.com/ackrep-org/ocse.git
             cd ocse
-            git checkout ut_ackrep_main
+            git checkout ut__ackrep__main
       - run:
           name: Load Test Data
           command: |
