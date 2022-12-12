@@ -11,7 +11,7 @@ from ipydex import IPS, activate_ips_on_exception
 # import fast modules from ackrep
 from ackrep_core import release
 from ackrep_core import config_handler
-from ackrep_core.util import bred, yellow, bgreen, timeout_handler, run_command, root_path, bright, data_path
+from ackrep_core.util import bred, yellow, bgreen, timeout_handler, run_command, bright
 
 # wrap access to modules which are slow to import
 from ackrep_core import modules as acm
@@ -342,14 +342,14 @@ def check_all_entities(unittest=False, fast=False):
     date = datetime.datetime.now()
     date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
     file_name = "ci_results__" + date_string + ".yaml"
-    file_path = os.path.join(acm.core.root_path, "artifacts", "ci_results", file_name)
-    os.makedirs(os.path.join(acm.core.root_path, "artifacts", "ci_results"), exist_ok=True)
+    file_path = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, "artifacts", "ci_results", file_name)
+    os.makedirs(os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, "artifacts", "ci_results"), exist_ok=True)
 
     content = {"commit_logs": {}}
     # save the commits of the current ci job
-    current_data_repo = os.path.split(data_path)[-1]
+    current_data_repo = os.path.split(acm.core.CONF.ACKREP_DATA_PATH)[-1]
     for repo_name in [current_data_repo, "ackrep_core"]:
-        repo = Repo(f"{root_path}/{repo_name}")
+        repo = Repo(f"{acm.core.CONF.ACKREP_ROOT_PATH}/{repo_name}")
         commit = repo.commit("HEAD")
         commit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(commit.committed_date))
         log_dict = {
@@ -404,8 +404,8 @@ def check_all_entities(unittest=False, fast=False):
             issues = ""
 
             # copy plot or notebook to collection directory
-            dest_dir_plots = os.path.join(acm.core.root_path, "artifacts", "ackrep_plots")
-            dest_dir_notebooks = os.path.join(acm.core.root_path, "artifacts", "ackrep_notebooks")
+            dest_dir_plots = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, "artifacts", "ackrep_plots")
+            dest_dir_notebooks = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, "artifacts", "ackrep_notebooks")
 
             if isinstance(entity, acm.models.ProblemSolution) or isinstance(entity, acm.models.SystemModel):
                 # copy entire folder since there could be multiple images with arbitrary names
@@ -484,7 +484,7 @@ def check(arg0: str, exitflag: bool = True):
             cmd = [f"core.check_generic(key={key}"]
             res = acm.core.check_generic(key=key)
         elif isinstance(entity, acm.models.Notebook):
-            path = os.path.join(acm.core.root_path, entity.base_path, entity.notebook_file)
+            path = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, entity.base_path, entity.notebook_file)
             cmd = ["jupyter", "nbconvert", "--execute", "--to", "html", path]
             res = run_command(cmd, logger=acm.logging.logger, capture_output=False)
         else:
@@ -524,7 +524,7 @@ def get_environment_version(entity: "acm.models.GenericEntity"):
             env_key = acm.settings.DEFAULT_ENVIRONMENT_KEY
         env_name = acm.core.get_entity(env_key).name
         dockerfile_name = "Dockerfile_" + env_name
-        path = os.path.join(acm.core.root_path, dockerfile_name)
+        path = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, dockerfile_name)
         with open(path, "r") as docker_file:
             lines = docker_file.readlines()
         if "LABEL" in lines[-1]:
@@ -584,7 +584,7 @@ def get_metadata_path_from_key(arg0: str, absflag: bool = True, exitflag: bool =
 
     path = os.path.join(entity.base_path, "metadata.yml")
     if absflag:
-        path = os.path.join(acm.core.root_path, path)
+        path = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, path)
     print(path)
 
     if exitflag:
@@ -674,7 +674,7 @@ def update_all_pdfs():
 def create_system_model_list_pdf(exitflag: bool = True):
     res = acm.system_model_management.create_system_model_list_pdf()
     if res.returncode == 0:
-        print(f"PDF is stored in {acm.core.root_path}/local_outputs/ .")
+        print(f"PDF is stored in {acm.core.CONF.ACKREP_ROOT_PATH}/local_outputs/ .")
         print(bgreen("Success."))
     else:
         print(bred("Fail."))
@@ -796,7 +796,7 @@ def prepare_script(arg0):
     _, key = get_entity_and_key(arg0)
 
     entity, c = acm.core.get_entity_context(key)
-    scriptpath = os.path.join(acm.core.root_path, "ackrep_data")
+    scriptpath = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, "ackrep_data")
     acm.core.create_execscript_from_template(entity, c, scriptpath=scriptpath)
 
     print(bgreen("Success."))
@@ -911,7 +911,7 @@ def pull_and_show_envs():
             dockerfile_path = f"../{dockerfile_name}"
         else:
             dockerfile_path = os.path.join(
-                root_path, "ackrep_deployment/dockerfiles/ackrep_core", dockerfile_name
+                acm.core.CONF.ACKREP_ROOT_PATH, "ackrep_deployment/dockerfiles/ackrep_core", dockerfile_name
             )
         cmd = [
             "docker",
@@ -960,7 +960,7 @@ def get_entity_and_key(arg0):
 def update_fallback_binaries():
     import shutil
 
-    fallback_bin_location = os.path.join(root_path, "ackrep_fallback_binaries")
+    fallback_bin_location = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, "ackrep_fallback_binaries")
 
     entity_list = list(acm.models.ProblemSolution.objects.all()) + list(
         acm.models.SystemModel.objects.all()
@@ -969,7 +969,7 @@ def update_fallback_binaries():
     for entity in entity_list:
         key = entity.key
         base_path = entity.base_path
-        plot_dir = os.path.join(root_path, base_path, "_data", "plot.png")
+        plot_dir = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, base_path, "_data", "plot.png")
         if os.path.isfile(plot_dir):
             os.makedirs(os.path.join(fallback_bin_location, key), exist_ok=True)
             target_dir = os.path.join(fallback_bin_location, key, "plot.png")

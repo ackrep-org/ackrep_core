@@ -38,24 +38,29 @@ python manage.py test --keepdb -v 2 --nocapture ackrep_web.test.test_web
 For more infos see doc/devdoc/README.md.
 """
 
+
+# set the environment variables and update the CONF object
+
 # inform the core module which path it should consinder as data repo
-ackrep_data_test_repo_path = core.data_path = os.path.join(core.root_path, "ackrep_data_for_unittests")
+ackrep_data_test_repo_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_data_for_unittests")
 # this must also be set as env var because the tests will call some functions of ackrep
 # via command line
 os.environ["ACKREP_DATA_PATH"] = ackrep_data_test_repo_path
 
 # due to the command line callings we also need to specify the test-database
-os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core", "db_for_unittests.sqlite3")
+os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_core", "db_for_unittests.sqlite3")
 
 # prevent cli commands to get stuck in unexpected IPython shell on error
 # (comment out for debugging)
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
-# inform the core module which path it should consinder as results repo
-ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
-    core.root_path, "ackrep_ci_results_for_unittests"
+# inform the core module which path it should consider as results repo
+ackrep_ci_results_test_repo_path = os.path.join(
+    core.CONF.ACKREP_ROOT_PATH, "ackrep_ci_results_for_unittests"
 )
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
+
+core.CONF.define_paths()
 
 
 class TestCases1(DjangoTestCase):

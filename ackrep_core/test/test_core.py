@@ -18,7 +18,7 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
 from ackrep_core_django_settings import settings
-ERK_DATA_OCSE_MAIN_ABSPATH = settings.CONF.ERK_DATA_OCSE_MAIN_ABSPATH
+ERK_DATA_OCSE_MAIN_PATH = settings.CONF.ERK_DATA_OCSE_MAIN_PATH
 """
 This module contains the tests of the core module (not ackrep_web).
 
@@ -40,25 +40,27 @@ See also devdocs for tipps on speeding tests.
 
 
 # inform the core module which path it should consinder as data repo
-ackrep_data_test_repo_path = core.data_path = os.path.join(core.root_path, "ackrep_data_for_unittests")
+ackrep_data_test_repo_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_data_for_unittests")
 # this must also be set as env var because the tests will call some functions of ackrep
 # via command line
 os.environ["ACKREP_DATA_PATH"] = ackrep_data_test_repo_path
 
 # due to the command line callings we also need to specify the test-database
-os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.root_path, "ackrep_core", "db_for_unittests.sqlite3")
+os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_core", "db_for_unittests.sqlite3")
 
 # prevent cli commands to get stuck in unexpected IPython shell on error
 # (comment out for debugging)
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
 # inform the core module which path it should consinder as results repo
-ackrep_ci_results_test_repo_path = core.ci_results_path = os.path.join(
-    core.root_path, "ackrep_ci_results_for_unittests"
+ackrep_ci_results_test_repo_path = core.CONF.ACKREP_CI_RESULTS_PATH = os.path.join(
+    core.CONF.ACKREP_ROOT_PATH, "ackrep_ci_results_for_unittests"
 )
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
-pyerk_ocse_path = ERK_DATA_OCSE_MAIN_ABSPATH
+core.CONF.define_paths()
+
+pyerk_ocse_path = ERK_DATA_OCSE_MAIN_PATH
 pyerk_ocse_name = "ocse/0.2"
 
 # use `git log -1` to display the full hash
@@ -278,7 +280,7 @@ class TestCases03(SimpleTestCase):
         self.assertEqual(res.returncode, 1)
 
         # test results.yaml
-        yaml_path = os.path.join(core.root_path, "artifacts", "ci_results")
+        yaml_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, "artifacts", "ci_results")
         yamls = os.listdir(yaml_path)
         core.logger.info(yamls)
         self.assertEqual(len(yamls), 1)
@@ -358,7 +360,7 @@ class TestCases03(SimpleTestCase):
         plot_file_path = files_dict[".png"][0]
         self.assertTrue(plot_file_path.endswith("plot.png"))
 
-        self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
+        self.assertTrue(os.path.isfile(os.path.join(core.CONF.ACKREP_ROOT_PATH, plot_file_path)))
 
     def test_get_system_model_data_files(self, key="UXMFA"):
         res = core.check_generic(key)
@@ -375,7 +377,7 @@ class TestCases03(SimpleTestCase):
         plot_file_path = files_dict[".png"][0]
         self.assertTrue(plot_file_path.endswith("plot.png"))
 
-        self.assertTrue(os.path.isfile(os.path.join(core.root_path, plot_file_path)))
+        self.assertTrue(os.path.isfile(os.path.join(core.CONF.ACKREP_ROOT_PATH, plot_file_path)))
 
         # reset unittest_repo
         reset_repo(ackrep_data_test_repo_path)

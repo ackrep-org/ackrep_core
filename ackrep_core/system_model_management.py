@@ -20,7 +20,7 @@ import copy
 from ackrep_core_django_settings import settings
 
 from . import core
-from .util import root_path, run_command
+from .util import run_command
 from . import models
 from ipydex import IPS
 
@@ -509,7 +509,7 @@ def update_parameter_tex(key):
     # Change Directory to the Folder of the Model.
     cwd = os.path.dirname(os.path.abspath(__file__))
     parent2_cwd = os.path.dirname(os.path.dirname(cwd))
-    path_base = os.path.join(root_path, parameters.base_path, "_data")
+    path_base = os.path.join(core.CONF.ACKREP_ROOT_PATH, parameters.base_path, "_data")
     os.chdir(path_base)
     # Write tabular to Parameter File.
     file = open("parameters.tex", "w")
@@ -526,7 +526,7 @@ def create_pdf(key, output_path=None):
     """
     system_model_entity = core.model_utils.get_entity(key)
     base_path = system_model_entity.base_path
-    tex_path = os.path.join(root_path, base_path, "_data")
+    tex_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, base_path, "_data")
     os.chdir(tex_path)
 
     assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel"
@@ -611,12 +611,12 @@ def import_parameters(key=None):
         yml_path = os.path.join(path, "metadata.yml")
         key = core.get_metadata_from_file(yml_path)["key"]
 
-    sys.path.insert(0, root_path)
+    sys.path.insert(0, core.CONF.ACKREP_ROOT_PATH)
 
     system_model_entity = core.model_utils.get_entity(key)
     base_path = system_model_entity.base_path
     mod_path = os.path.join(base_path, "parameters")
-    if not os.path.isfile(os.path.join(root_path, base_path, "parameters.py")):
+    if not os.path.isfile(os.path.join(core.CONF.ACKREP_ROOT_PATH, base_path, "parameters.py")):
         raise FileNotFoundError(f"Import of parameters.py failed. Path {base_path} does not lead to parameters.py.")
     mod_path = ".".join(mod_path.split(os.path.sep))
 
@@ -717,7 +717,7 @@ def create_system_model_list_pdf():
     assert res.returncode == 0, "Command 'pdflatex' not recognized. Check installation and availability in PATH."
 
     # put tex and pdf in root directory
-    output_dir = os.path.join(core.root_path, "local_outputs")
+    output_dir = os.path.join(core.CONF.ACKREP_ROOT_PATH, "local_outputs")
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
     os.chdir(output_dir)
@@ -739,7 +739,7 @@ def create_system_model_list_pdf():
         except:
             print(f"{sm} was not checked, plot might not be included.")
 
-        model_file_path = os.path.join(core.data_path, os.pardir, sm.base_path, "_data", "documentation.tex")
+        model_file_path = os.path.join(core.CONF.ACKREP_DATA_PATH, os.pardir, sm.base_path, "_data", "documentation.tex")
         model_file = open(model_file_path, "r")
         lines = model_file.readlines()
         begin = None
@@ -772,7 +772,7 @@ def create_system_model_list_pdf():
                 lines[i] = (
                     "\\input{"
                     + str(
-                        os.path.join(core.data_path, os.pardir, sm.base_path, "_data", "parameters.tex").replace(
+                        os.path.join(core.CONF.ACKREP_DATA_PATH, os.pardir, sm.base_path, "_data", "parameters.tex").replace(
                             "\\", "/"
                         )
                     )
@@ -781,7 +781,7 @@ def create_system_model_list_pdf():
             if "\\includegraphics" in v:
                 graphics_name = v.split("{")[1].split("}")[0]
                 new_path = str(
-                    os.path.join(core.data_path, os.pardir, sm.base_path, "_data", graphics_name).replace("\\", "/")
+                    os.path.join(core.CONF.ACKREP_DATA_PATH, os.pardir, sm.base_path, "_data", graphics_name).replace("\\", "/")
                 )
                 lines[i] = lines[i].replace(graphics_name, new_path)
             if "\\begin{thebibliography}" in v:
@@ -821,7 +821,7 @@ def create_system_model_list_pdf():
 def _import_png_to_tex(system_model_entity):
     line = "\n\\section{Simulation}\n"
 
-    png_path = os.path.join(core.data_path, os.pardir, system_model_entity.base_path, "_data")
+    png_path = os.path.join(core.CONF.ACKREP_DATA_PATH, os.pardir, system_model_entity.base_path, "_data")
     for file in os.listdir(png_path):
         if ".png" in file:
             path = os.path.join(png_path, file).replace("\\", "/")

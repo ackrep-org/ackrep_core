@@ -20,7 +20,6 @@ from pyerk import builtin_entities
 from pyerk.auxiliary import *
 from . import models
 from ackrep_core_django_settings.settings import CONF
-ERK_DATA_OCSE_MAIN_ABSPATH = CONF.ERK_DATA_OCSE_MAIN_ABSPATH
 
 
 min_pyerk_version = "0.6.0"
@@ -127,7 +126,7 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
 
 
 def ensure_ocse_is_loaded() -> ModuleType:
-    TEST_MOD_NAME = os.path.split(ERK_DATA_OCSE_MAIN_ABSPATH)[1]
+    TEST_MOD_NAME = os.path.split(CONF.ERK_DATA_OCSE_MAIN_PATH)[1]
 
     # noinspection PyShadowingNames
 
@@ -136,7 +135,7 @@ def ensure_ocse_is_loaded() -> ModuleType:
     if ocse_uri := core.ds.uri_prefix_mapping.b.get(ocse_prefix):
         ocse_mod = core.ds.uri_mod_dict[ocse_uri]
     else:
-        ocse_mod = load_mod_from_path(ERK_DATA_OCSE_MAIN_ABSPATH, prefix=ocse_prefix, modname=TEST_MOD_NAME)
+        ocse_mod = load_mod_from_path(CONF.ERK_DATA_OCSE_MAIN_PATH, prefix=ocse_prefix, modname=TEST_MOD_NAME)
 
     # ensure that ocse entities are available
 
