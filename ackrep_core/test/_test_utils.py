@@ -6,6 +6,7 @@ from ackrep_core import core
 # globally accessible variable to save whether the database has yet been initialized
 test_metadata = core.Container(db_initialized=False)
 
+# TODO: obsolete?
 # this function must not have "test" inside its name for not beeing interpreted as test case
 def load_repo_to_db_for_ut(repo_path: str = None) -> None:
     """

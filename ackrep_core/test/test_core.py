@@ -141,13 +141,7 @@ class TestCases01(DjangoTestCase):
         self.assertIn("warning", lines[-1])
 
 
-class TestCases02(DjangoTestCase):
-    """
-    These tests expect the database to be regenerated every time.
-
-    Database changes should not be persistent outside this each case.
-    -> Use DjangoTestCase as base class which ensures this behavior ("Transactions")
-    """
+class ErkHandlerMixin:
 
     def setUp(self):
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
@@ -155,8 +149,27 @@ class TestCases02(DjangoTestCase):
         core.load_repo_to_db(ackrep_data_test_repo_path)
 
     def tearDown(self) -> None:
+
+        repo = Repo(ackrep_data_test_repo_path)
+        assert not repo.is_dirty()
+
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
+            # prevent an error here to mask other error messages
+            cls = self.__class__
+            method_repr = f"{cls.__module__}:{cls.__qualname__}.{self._testMethodName}"
+            try:
+                p.unload_mod(mod_id)
+            except KeyError as err:
+                print(f"Error in tearDown of {method_repr}:",  err)
+
+
+class TestCases02(ErkHandlerMixin, DjangoTestCase):
+    """
+    These tests expect the database to be regenerated every time.
+
+    Database changes should not be persistent outside this each case.
+    -> Use DjangoTestCase as base class which ensures this behavior ("Transactions")
+    """
 
     def test_import_repo(self):
 
@@ -178,7 +191,7 @@ class TestCases02(DjangoTestCase):
         # core.load_repo_to_db(ackrep_data_test_repo_path)
 
 
-class TestCases03(SimpleTestCase):
+class TestCases03(ErkHandlerMixin, SimpleTestCase):
     """
     These tests expect the database to be loaded.
 
@@ -189,18 +202,6 @@ class TestCases03(SimpleTestCase):
     """
 
     databases = "__all__"
-
-    def setUp(self):
-        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
-        load_repo_to_db_for_ut(ackrep_data_test_repo_path)
-
-    def tearDown(self):
-        # optionally check if repo is clean
-        repo = Repo(ackrep_data_test_repo_path)
-        assert not repo.is_dirty()
-        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
 
     def test_resolve_keys(self):
         entity = core.model_utils.get_entity("UKJZI")
@@ -547,7 +548,7 @@ class TestCases03(SimpleTestCase):
         self.assertEqual(items5.difference(items2), set())
 
 
-class TestCases04(DjangoTestCase):
+class TestCases04(ErkHandlerMixin, DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.
 
@@ -556,13 +557,6 @@ class TestCases04(DjangoTestCase):
 
     [1] https://docs.djangoproject.com/en/4.0/topics/testing/tools/#testcase
     """
-
-    def setUp(self):
-        core.load_repo_to_db(ackrep_data_test_repo_path)
-
-    def tearDown(self) -> None:
-        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
 
     def test_import_parameters(self, key="UXMFA"):
         # test with correct data
@@ -585,7 +579,7 @@ class TestCases04(DjangoTestCase):
         core.logger.setLevel(loglevel)
 
 
-class TestCases05(SimpleTestCase):
+class TestCases05(ErkHandlerMixin, SimpleTestCase):
     """
     Docker related test cases
 
@@ -594,18 +588,6 @@ class TestCases05(SimpleTestCase):
     """
 
     databases = "__all__"
-
-    def setUp(self):
-        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
-        load_repo_to_db_for_ut(ackrep_data_test_repo_path)
-
-    def tearDown(self):
-        # optionally check if repo is clean
-        repo = Repo(ackrep_data_test_repo_path)
-        assert not repo.is_dirty()
-        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
 
     def test_01_get_docker_env_vars(self):
 
