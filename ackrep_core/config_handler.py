@@ -177,24 +177,6 @@ class FlexibleConfigHandler(object):
         elif ackrep_root_path:
             self.ACKREP_DATA_PATH = os.path.join(self.ACKREP_ROOT_PATH, "ackrep_data")
 
-        # erk_data (which might be different for unittests)
-        # this env-variable will be set e.g. by unit tests to make cli invocations from tests work
-        if erk_data_path := os.environ.get("ERK_DATA_PATH"):
-            self.ERK_DATA_PATH = erk_data_path
-        elif erk_data_path := self.config_dict.get("ERK_DATA_PATH"):
-            self.ERK_DATA_PATH = erk_data_path
-        elif self.ERK_DATA_OCSE_CONF_PATH:
-            self.ERK_DATA_PATH = os.path.split(self.ERK_DATA_OCSE_CONF_PATH)[0]
-
-        # erk_data main module (which might be different for unittests)
-        # this env-variable will be set e.g. by unit tests to make cli invocations from tests work
-        if erk_data_main_path := os.environ.get("ERK_DATA_MAIN_PATH"):
-            self.ERK_DATA_MAIN_PATH = erk_data_main_path
-        elif erk_data_main_path := self.config_dict.get("ERK_DATA_MAIN_PATH"):
-            self.ERK_DATA_MAIN_PATH = erk_data_main_path
-        elif os.path.isfile(self.ERK_DATA_OCSE_CONF_PATH):
-            self.ERK_DATA_MAIN_PATH = self.ERK_DATA_OCSE_MAIN_PATH
-
         # ackrep_ci_results (which might also be different for unitests)
         # this env-variable will be set e.g. by unit tests to make cli invocations from tests work
         if ackrep_ci_result_path := os.environ.get("ACKREP_CI_RESULTS_PATH"):
