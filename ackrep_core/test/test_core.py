@@ -18,7 +18,7 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
 from ackrep_core_django_settings import settings
-ERK_DATA_OCSE_UT_MAIN_PATH = settings.CONF.ERK_DATA_OCSE_UT_MAIN_PATH
+
 """
 This module contains the tests of the core module (not ackrep_web).
 
@@ -48,6 +48,11 @@ os.environ["ACKREP_DATA_PATH"] = ackrep_data_test_repo_path
 # due to the command line callings we also need to specify the test-database
 os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_core", "db_for_unittests.sqlite3")
 
+
+os.environ["ERK_DATA_PATH"] = pyerk_ocse_path = os.path.split(settings.CONF.ERK_DATA_OCSE_UT_MAIN_PATH)[0]
+
+os.environ["ERK_DATA_MAIN_PATH"] = pyerk_ocse_main_path = settings.CONF.ERK_DATA_OCSE_UT_MAIN_PATH
+
 # prevent cli commands to get stuck in unexpected IPython shell on error
 # (comment out for debugging)
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
@@ -60,7 +65,7 @@ os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
 core.CONF.define_paths()
 
-pyerk_ocse_path = ERK_DATA_OCSE_UT_MAIN_PATH
+
 pyerk_ocse_name = "ocse/0.2"
 
 # use `git log -1` to display the full hash
@@ -131,17 +136,16 @@ class TestCases01(DjangoTestCase):
         The name should ensure that this test runs first (do not waste time with further tests if this fails).
         """
         msg = "Test repo not found. It must be created manually."
-        path = os.path.split(pyerk_ocse_path)[0]
-        self.assertTrue(os.path.isdir(path), msg=msg)
+        self.assertTrue(os.path.isdir(pyerk_ocse_path), msg=msg)
 
         try:
-            repo = Repo(path)
+            repo = Repo(pyerk_ocse_path)
         except InvalidGitRepositoryError:
-            msg = f"The directory {path} is not a git repository!"
+            msg = f"The directory {pyerk_ocse_path} is not a git repository!"
             self.assertTrue(False, msg=msg)
             repo = None
 
-        msg = f"There are uncommited changes in the repo {path}"
+        msg = f"There are uncommited changes in the repo {pyerk_ocse_path}"
         self.assertFalse(repo.is_dirty(), msg=msg)
 
         ut_branch = repo.active_branch.name
@@ -505,7 +509,7 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
         # unload modules, since they would already be loaded due to load_repo_to_db
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
-        mod1 = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
+        mod1 = p.erkloader.load_mod_from_path(pyerk_ocse_main_path, prefix="ct", modname=pyerk_ocse_name)
         p1 = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
         res = core.ackrep_parser.load_ackrep_entities(p1)
         self.assertEqual(res, 0)
@@ -516,7 +520,7 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
             p.unload_mod(mod_id)
 
         n_items1 = len(p.ds.items)
-        _ = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
+        _ = p.erkloader.load_mod_from_path(pyerk_ocse_main_path, prefix="ct", modname=pyerk_ocse_name)
         n_items2 = len(p.ds.items)
         self.assertGreater(n_items2, n_items1)
 
@@ -545,7 +549,7 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
 
-        mod1 = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
+        mod1 = p.erkloader.load_mod_from_path(pyerk_ocse_main_path, prefix="ct", modname=pyerk_ocse_name)
 
         n_items1 = len(p.ds.items)
         items1 = set(p.ds.items.keys())

@@ -167,13 +167,13 @@ def reload_data_if_necessary(force: bool = False, speedup: bool = True) -> Conta
 
 
 def reload_modules_if_necessary(force: bool = False) -> int:
-    erk_data_mod_name = os.path.split(settings.CONF.ERK_DATA_OCSE_MAIN_PATH)[1]
+    erk_data_mod_name = os.path.split(settings.CONF.ERK_DATA_MAIN_PATH)[1]
     count = 0
 
     # load ocse
     if force or p.settings.OCSE_URI not in p.ds.uri_prefix_mapping.a:
         mod = p.erkloader.load_mod_from_path(
-            settings.CONF.ERK_DATA_OCSE_MAIN_PATH,
+            settings.CONF.ERK_DATA_MAIN_PATH,
             prefix="ct",
             modname=erk_data_mod_name,
         )

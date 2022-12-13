@@ -205,7 +205,7 @@ class ACKREP_OntologyManager(object):
         self.ds = None
 
     def load_ontology(self, startdir=None, entity_list=None):
-        _ = p.erkloader.load_mod_from_path(modpath=settings.CONF.ERK_DATA_OCSE_MAIN_PATH, prefix="ct")
+        _ = p.erkloader.load_mod_from_path(modpath=settings.CONF.ERK_DATA_MAIN_PATH, prefix="ct")
         ackrep_parser.load_ackrep_entities(startdir)
         self.ds = p.core.ds
         self.ds.rdfgraph = p.rdfstack.create_rdf_triples()
