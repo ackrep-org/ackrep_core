@@ -5,6 +5,7 @@ import time
 import datetime
 import signal
 import os
+import git
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -151,6 +152,12 @@ def main():
         "-tcm",
         "--test-compleib-models",
         help="test all compleib models",
+        action="store_true",
+    )
+    argparser.add_argument(
+        "-ccut",
+        "--checkout-corresponding-ocse-ut-repo",
+        help="try to find the ocse for ut repo locally and checkout the ut branch corresponding to current branch",
         action="store_true",
     )
     argparser.add_argument(
@@ -304,6 +311,8 @@ def main():
         create_compleib_models(args.only)
     elif args.test_compleib_models:
         test_compleib_models()
+    elif args.checkout_corresponding_ocse_ut_repo:
+        checkout_ut_repo()
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -994,3 +1003,37 @@ def test_compleib_models():
             print(yellow("Inaccurate."))
         else:
             print(bred("Fail."))
+
+def checkout_ut_repo():
+    core_repo = git.Repo(acm.core.core_pkg_path)
+    core_branch = core_repo.active_branch.name
+
+    # 1. find erk-data ut directory
+    path = acm.core.CONF.ERK_DATA_OCSE_MAIN_PATH
+    try:
+        erk_data_repo = git.Repo(path)
+    except git.InvalidGitRepositoryError as e:
+        acm.core.logger.error(f"InvalidGitRepositoryError: {path} is not a Repo!")
+
+    # 2. checkout corresponding branch
+    erk_data_branch = erk_data_repo.active_branch.name
+    erk_data_branches = [b.name for b in erk_data_repo.branches]
+
+    target_name = f"ut__ackrep__{core_branch}"
+    default_name = f"ut__ackrep__main"
+
+    ## corresponding branch exists
+    if target_name in erk_data_branches:
+        erk_data_repo.git.checkout(target_name)
+        erk_data_repo.git.pull()
+        acm.core.logger.info("UT branch checked out successfully.")
+    ## corresponsing branch does not exist, use default main branch
+    elif default_name in erk_data_branches:
+        erk_data_repo.git.checkout(default_name)
+        erk_data_repo.git.pull()
+        acm.core.logger.warning(f"Falling back to {default_name}.")
+    ## no ut branch found --> error
+    else:
+        acm.core.logger.error(acm.util.bred(f"No corresponding erk-data ut branch found!"))
+        raise git.CheckoutError(f"No unittest branch with the right name was found.")
+

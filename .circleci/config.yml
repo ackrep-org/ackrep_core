@@ -36,13 +36,12 @@ jobs: # A basic unit of work in a run
       - run:
           name: Load ERK Modules
           command: |
-            echo Cloning erk-data
+            echo Cloning erk-data-for-unittests
             cd ~
-            mkdir -p erk/erk-data
-            cd erk/erk-data
+            mkdir -p erk/erk-data-for-unittests
+            cd erk/erk-data-for-unittests
             git clone https://github.com/ackrep-org/ocse.git
-            cd ocse
-            git checkout ut_ackrep_main
+            ackrep --checkout-corresponding-ocse-ut-repo
       - run:
           name: Load Test Data
           command: |

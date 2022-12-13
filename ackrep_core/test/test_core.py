@@ -84,9 +84,9 @@ class TestCases01(DjangoTestCase):
     def setUp(self):
         pass
 
-    def test_00_unittest_repo(self):
+    def test_00_ackrep_data_unittest_repo(self):
         """
-        Test whether the repository to which the unittests refer is in a defined state.
+        Test whether the ackrep_data repository to which the unittests refer is in a defined state.
 
         Construct a list of all sha-strings which where commited in the current branch and assert that
         the expected string is among them. This heuristics assumes that it is OK if the data-repo is newer than
@@ -123,6 +123,46 @@ class TestCases01(DjangoTestCase):
         from pyerk import release
         pyerk_version = version.parse(release.__version__)
         self.assertTrue(pyerk_version >= version.parse("0.6.2"))
+
+    def test_01_pyerk_data_unittest_repo(self):
+        """
+        Test whether the erk-data repository to which the unittests refer is in a defined state.
+
+        The name should ensure that this test runs first (do not waste time with further tests if this fails).
+        """
+        msg = "Test repo not found. It must be created manually."
+        path = os.path.split(pyerk_ocse_path)[0]
+        self.assertTrue(os.path.isdir(path), msg=msg)
+
+        try:
+            repo = Repo(path)
+        except InvalidGitRepositoryError:
+            msg = f"The directory {path} is not a git repository!"
+            self.assertTrue(False, msg=msg)
+            repo = None
+
+        msg = f"There are uncommited changes in the repo {path}"
+        self.assertFalse(repo.is_dirty(), msg=msg)
+
+        ut_branch = repo.active_branch.name
+        core_branch = Repo(os.path.join(core.root_path, "ackrep_core")).active_branch.name
+        msg = f"Pyerk UT Repo is on branch {util.bred(ut_branch)} while your core project is on branch {util.bred(core_branch)}"
+
+        if not ut_branch == f"ut__ackrep__{core_branch}":
+            core.logger.warning(msg)
+
+
+
+
+        # Ensure that the repository is in the expected state. This actual state (and its hash) will change in the
+        # future. This test prevents that this happens without intention.
+        # repo_head_hash = repo.head.commit.hexsha
+        # msg = (
+        #     f"Repository {ackrep_data_test_repo_path} is in the wrong state. "
+        #     f"HEAD is {repo_head_hash[:7]} but should be {pyerk_ocse_path[:7]}."
+        # )
+
+        # self.assertEqual(repo_head_hash, pyerk_ocse_path, msg=msg)
 
     def test_logging(self):
         res = run_command(["ackrep", "--test-logging", "--log=10"])
