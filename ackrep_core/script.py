@@ -1010,11 +1010,12 @@ def checkout_ut_repo():
 
     # 1. find erk_data ut directory
     path = os.path.split(acm.core.CONF.ERK_DATA_OCSE_UT_CONF_PATH)[0]
+    acm.core.logger.info(f"ocse ut repo path: {path}")
     erk_data_repo = git.Repo(path)
 
     # 2. checkout corresponding branch
     erk_data_branch = erk_data_repo.active_branch.name
-    erk_data_branches = [b.name for b in erk_data_repo.branches]
+    erk_data_branches = erk_data_repo.git.branch("-r") # check remote branches
 
     target_name = f"ut__ackrep__{core_branch}"
     default_name = f"ut__ackrep__main"
@@ -1031,6 +1032,8 @@ def checkout_ut_repo():
         acm.core.logger.warning(f"Falling back to {default_name}.")
     ## no ut branch found --> error
     else:
-        acm.core.logger.error(acm.util.bred(f"No corresponding erk_data ut branch found!"))
-        raise git.CheckoutError(f"No unittest branch with the right name was found.")
+        acm.core.logger.error(acm.util.bred(
+            f"No corresponding erk_data ut branch ({target_name, default_name}) found in {erk_data_branches}!"
+        ))
+        raise ValueError(f"No unittest branch with the right name was found.")
 
