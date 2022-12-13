@@ -18,7 +18,7 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
 from ackrep_core_django_settings import settings
-ERK_DATA_OCSE_MAIN_PATH = settings.CONF.ERK_DATA_OCSE_MAIN_PATH
+ERK_DATA_OCSE_UT_MAIN_PATH = settings.CONF.ERK_DATA_OCSE_UT_MAIN_PATH
 """
 This module contains the tests of the core module (not ackrep_web).
 
@@ -60,7 +60,7 @@ os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
 core.CONF.define_paths()
 
-pyerk_ocse_path = ERK_DATA_OCSE_MAIN_PATH
+pyerk_ocse_path = ERK_DATA_OCSE_UT_MAIN_PATH
 pyerk_ocse_name = "ocse/0.2"
 
 # use `git log -1` to display the full hash
@@ -126,7 +126,7 @@ class TestCases01(DjangoTestCase):
 
     def test_01_pyerk_data_unittest_repo(self):
         """
-        Test whether the erk-data repository to which the unittests refer is in a defined state.
+        Test whether the erk_data repository to which the unittests refer is in a defined state.
 
         The name should ensure that this test runs first (do not waste time with further tests if this fails).
         """
@@ -145,7 +145,9 @@ class TestCases01(DjangoTestCase):
         self.assertFalse(repo.is_dirty(), msg=msg)
 
         ut_branch = repo.active_branch.name
-        core_branch = Repo(os.path.join(core.root_path, "ackrep_core")).active_branch.name
+        self.assertIn("ut__ackrep__", ut_branch)
+
+        core_branch = Repo(os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_core")).active_branch.name
         msg = f"Pyerk UT Repo is on branch {util.bred(ut_branch)} while your core project is on branch {util.bred(core_branch)}"
 
         if not ut_branch == f"ut__ackrep__{core_branch}":
@@ -299,18 +301,6 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
 
         # ensure repo is clean again
         # TODO: remove this if png is removed from repo
-        reset_repo(ackrep_data_test_repo_path)
-
-    def test_check_notebook(self):
-
-        # run via commandline
-        os.chdir(ackrep_data_test_repo_path)
-
-        # this assumes the acrep script to be available in $PATH
-        res = run_command(["ackrep", "-cwd", "7WIQH"])
-        self.assertEqual(res.returncode, 0)
-
-        # ensure repo is clean again
         reset_repo(ackrep_data_test_repo_path)
 
     @skipUnless(os.environ.get("CI") == "true", "only run test in CI (due to complicated image copying)")
@@ -667,6 +657,18 @@ class TestCases05(ErkHandlerMixin, SimpleTestCase):
         # second: run via commandline
         res = run_command(["ackrep", "-cwd", "UXMFA"])
         self.assertEqual(res.returncode, 0)
+
+    def test_check_notebook(self):
+
+        # run via commandline
+        os.chdir(ackrep_data_test_repo_path)
+
+        # this assumes the acrep script to be available in $PATH
+        res = run_command(["ackrep", "-cwd", "7WIQH"])
+        self.assertEqual(res.returncode, 0)
+
+        # ensure repo is clean again
+        reset_repo(ackrep_data_test_repo_path)
 
     def test_error_messages(self):
         ## test error message of check_system_model and execscript

@@ -69,10 +69,11 @@ def _create_new_config_file(configfile_path):
     # │   │
     # │   └── ...
     # └── erk
-    #     └── erk-data/
+    #     └── erk_data/
 
     ackrep_root_path = Path.cwd().as_posix()
-    ocse_path = Path.cwd().parent.joinpath("erk", "erk-data", "ocse", "erkpackage.toml").as_posix()
+    ocse_path = Path.cwd().parent.joinpath("erk", "erk_data", "ocse", "erkpackage.toml").as_posix()
+    ocse_ut_path = Path.cwd().parent.joinpath("erk", "erk_data_for_unittests", "ocse", "erkpackage.toml").as_posix()
     ackrep_data_path = os.path.join(ackrep_root_path, "ackrep_data")
 
     if not os.path.isdir(ackrep_data_path):
@@ -87,6 +88,7 @@ def _create_new_config_file(configfile_path):
 
     ACKREP_ROOT_PATH = "{ackrep_root_path}"
     ERK_DATA_OCSE_CONF_PATH = "{ocse_path}"
+    ERK_DATA_OCSE_UT_CONF_PATH = "{ocse_ut_path}"
     """)
 
     with open(configfile_path, "w", encoding="utf8") as txtfile:
@@ -204,6 +206,20 @@ class FlexibleConfigHandler(object):
         # note the difference between ..._MAIN_... and ..._CONF_...
         if name == "ERK_DATA_OCSE_MAIN_PATH":
             ocse_conf_path = self.ERK_DATA_OCSE_CONF_PATH
+
+            if not os.path.isfile(ocse_conf_path):
+                msg = f"Error on loading OCSE config file: {ocse_conf_path}"
+                raise FileNotFoundError(msg)
+
+            with open(ocse_conf_path, "rb") as fp:
+                erk_conf_dict = tomllib.load(fp)
+
+            ocse_main_rel_path = erk_conf_dict["main_module"]
+            ocse_main_mod_path = Path(ocse_conf_path).parent.joinpath(ocse_main_rel_path).as_posix()
+            return ocse_main_mod_path
+
+        if name == "ERK_DATA_OCSE_UT_MAIN_PATH":
+            ocse_conf_path = self.ERK_DATA_OCSE_UT_CONF_PATH
 
             if not os.path.isfile(ocse_conf_path):
                 msg = f"Error on loading OCSE config file: {ocse_conf_path}"

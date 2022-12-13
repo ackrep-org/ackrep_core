@@ -37,10 +37,10 @@ jobs: # A basic unit of work in a run
           name: Load ERK Modules
           command: |
             . venv/bin/activate
-            echo Cloning erk-data-for-unittests
+            echo Cloning erk_data_for_unittests
             cd ~
-            mkdir -p erk/erk-data-for-unittests
-            cd erk/erk-data-for-unittests
+            mkdir -p erk/erk_data_for_unittests
+            cd erk/erk_data_for_unittests
             git clone https://github.com/ackrep-org/ocse.git
             ackrep --checkout-corresponding-ocse-ut-repo
       - run:

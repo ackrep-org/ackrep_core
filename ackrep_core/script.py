@@ -1008,12 +1008,9 @@ def checkout_ut_repo():
     core_repo = git.Repo(acm.core.core_pkg_path)
     core_branch = core_repo.active_branch.name
 
-    # 1. find erk-data ut directory
-    path = acm.core.CONF.ERK_DATA_OCSE_MAIN_PATH
-    try:
-        erk_data_repo = git.Repo(path)
-    except git.InvalidGitRepositoryError as e:
-        acm.core.logger.error(f"InvalidGitRepositoryError: {path} is not a Repo!")
+    # 1. find erk_data ut directory
+    path = os.path.split(acm.core.CONF.ERK_DATA_OCSE_UT_CONF_PATH)[0]
+    erk_data_repo = git.Repo(path)
 
     # 2. checkout corresponding branch
     erk_data_branch = erk_data_repo.active_branch.name
@@ -1034,6 +1031,6 @@ def checkout_ut_repo():
         acm.core.logger.warning(f"Falling back to {default_name}.")
     ## no ut branch found --> error
     else:
-        acm.core.logger.error(acm.util.bred(f"No corresponding erk-data ut branch found!"))
+        acm.core.logger.error(acm.util.bred(f"No corresponding erk_data ut branch found!"))
         raise git.CheckoutError(f"No unittest branch with the right name was found.")
 

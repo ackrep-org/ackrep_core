@@ -349,7 +349,7 @@ def get_entity_from_string(string: str, enforce_class=False) -> Entity:
     except AttributeError:
         pass
 
-    # try imported modules (e.g. erk-data/control_theory1.py)
+    # try imported modules (e.g. erk_data/control_theory1.py)
     try:
         entity = getattr(mod, s)
     except AttributeError:
