@@ -36,6 +36,7 @@ jobs: # A basic unit of work in a run
       - run:
           name: Load ERK Modules
           command: |
+            . venv/bin/activate
             echo Cloning erk-data-for-unittests
             cd ~
             mkdir -p erk/erk-data-for-unittests
