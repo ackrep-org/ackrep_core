@@ -108,8 +108,8 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
     retcodes = []
     # parse entire repo
     if "ackrep_data" in os.path.split(ackrep_path)[1]:
-        retcodes.append(load_all_system_models(ackrep_path))
-        retcodes.append(load_all_problems_and_solutions(ackrep_path))
+        retcodes.append(load_all_system_models())
+        retcodes.append(load_all_problems_and_solutions())
 
     # assume path leads to entity folder
     else:
@@ -145,11 +145,11 @@ def ensure_ocse_is_loaded() -> ModuleType:
     return ocse_mod
 
 
-def load_all_problems_and_solutions(ackrep_path):
+def load_all_problems_and_solutions():
     retcodes = []
     entities = list(models.ProblemSolution.objects.all()) + list(models.ProblemSpecification.objects.all())
     for entity in entities:
-        retcode = load_problem_or_solution(os.path.join(ackrep_path, os.pardir, entity.base_path))
+        retcode = load_problem_or_solution(os.path.join(CONF.ACKREP_ROOT_PATH, entity.base_path))
         retcodes.append(retcode)
 
     # for n in ["problem_specifications", "problem_solutions"]:
@@ -173,10 +173,10 @@ def load_all_problems_and_solutions(ackrep_path):
     return sum(retcodes)
 
 
-def load_all_system_models(ackrep_path):
+def load_all_system_models():
     retcodes = []
     for entity in list(models.SystemModel.objects.all()):
-        retcode = load_system_model(os.path.join(ackrep_path, os.pardir, entity.base_path))
+        retcode = load_system_model(os.path.join(CONF.ACKREP_ROOT_PATH, entity.base_path))
         retcodes.append(retcode)
 
     # if sum(retcodes) == 0:
@@ -227,6 +227,10 @@ def load_problem_or_solution(entity_path: str):
 def load_system_model(entity_path: str):
 
     metadata_path = os.path.join(entity_path, "metadata.yml")
+
+    from ackrep_core import logging
+    logging.logger.info(f"{entity_path=}")
+    logging.logger.info(f"{metadata_path=}")
 
     with open(metadata_path, "r") as metadata_file:
         try:
