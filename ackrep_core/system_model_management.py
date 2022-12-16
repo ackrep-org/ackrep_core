@@ -739,7 +739,9 @@ def create_system_model_list_pdf():
         except:
             print(f"{sm} was not checked, plot might not be included.")
 
-        model_file_path = os.path.join(core.CONF.ACKREP_DATA_PATH, os.pardir, sm.base_path, "_data", "documentation.tex")
+        model_file_path = os.path.join(
+            core.CONF.ACKREP_DATA_PATH, os.pardir, sm.base_path, "_data", "documentation.tex"
+        )
         model_file = open(model_file_path, "r")
         lines = model_file.readlines()
         begin = None
@@ -772,16 +774,18 @@ def create_system_model_list_pdf():
                 lines[i] = (
                     "\\input{"
                     + str(
-                        os.path.join(core.CONF.ACKREP_DATA_PATH, os.pardir, sm.base_path, "_data", "parameters.tex").replace(
-                            "\\", "/"
-                        )
+                        os.path.join(
+                            core.CONF.ACKREP_DATA_PATH, os.pardir, sm.base_path, "_data", "parameters.tex"
+                        ).replace("\\", "/")
                     )
                     + "}\n"
                 )
             if "\\includegraphics" in v:
                 graphics_name = v.split("{")[1].split("}")[0]
                 new_path = str(
-                    os.path.join(core.CONF.ACKREP_DATA_PATH, os.pardir, sm.base_path, "_data", graphics_name).replace("\\", "/")
+                    os.path.join(core.CONF.ACKREP_DATA_PATH, os.pardir, sm.base_path, "_data", graphics_name).replace(
+                        "\\", "/"
+                    )
                 )
                 lines[i] = lines[i].replace(graphics_name, new_path)
             if "\\begin{thebibliography}" in v:

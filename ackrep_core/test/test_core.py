@@ -14,10 +14,12 @@ from ackrep_core.util import run_command, utf8decode
 from ipydex import IPS  # only for debugging
 
 from distutils.spawn import find_executable
+
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
 from ackrep_core_django_settings import settings
+
 ERK_DATA_OCSE_UT_MAIN_PATH = settings.CONF.ERK_DATA_OCSE_UT_MAIN_PATH
 """
 This module contains the tests of the core module (not ackrep_web).
@@ -68,7 +70,8 @@ default_repo_head_hash = "834aaad12256118d475de9eebfdaefb7746a28bc"  # 2022-09-1
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
 TEST_ACKREP_DATA_REPO_COMMIT_SHA = "14cfbc0023c18d774dc039e94d2d5fb455639649"
-TEST_ERK_DATA_REPO_COMMIT_SHA = "9e828d753cab7967ec61aabc0e7591322857628a" # 2022-12-16 branch ut__ackrep__main
+TEST_ERK_DATA_REPO_COMMIT_SHA = "9e828d753cab7967ec61aabc0e7591322857628a"  # 2022-12-16 branch ut__ackrep__main
+
 
 class TestCases01(DjangoTestCase):
     """
@@ -122,6 +125,7 @@ class TestCases01(DjangoTestCase):
     def test_01_pyerk_dependency(self):
         from packaging import version
         from pyerk import release
+
         pyerk_version = version.parse(release.__version__)
         self.assertTrue(pyerk_version >= version.parse("0.6.2"))
 
@@ -188,7 +192,6 @@ class TestCases01(DjangoTestCase):
 
 
 class ErkHandlerMixin:
-
     def setUp(self):
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
@@ -206,7 +209,7 @@ class ErkHandlerMixin:
             try:
                 p.unload_mod(mod_id)
             except KeyError as err:
-                print(f"Error in tearDown of {method_repr}:",  err)
+                print(f"Error in tearDown of {method_repr}:", err)
 
 
 class TestCases02(ErkHandlerMixin, DjangoTestCase):

@@ -27,6 +27,7 @@ from ipydex import Container
 
 from . import models
 from . import model_utils
+
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     from . import ackrep_parser
 
@@ -837,7 +838,14 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
         image_name = env_name  # since docker-compose doesnt use prefix
 
         assert os.path.isdir(f"{CONF.ACKREP_ROOT_PATH}/ackrep_deployment"), "docker-compose file not found"
-        cmd = ["docker-compose", "--file", f"{CONF.ACKREP_ROOT_PATH}/ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
+        cmd = [
+            "docker-compose",
+            "--file",
+            f"{CONF.ACKREP_ROOT_PATH}/ackrep_deployment/docker-compose.yml",
+            "run",
+            "-d",
+            "--rm",
+        ]
 
     # no local image -> use image from github
     # this is the default for everyone who doesnt build images locally

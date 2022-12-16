@@ -386,6 +386,7 @@ class PyerkEntity(BaseModel):
         if not envar_ACKREP_ENVIRONMENT_NAME:
             # defer this import until it is necessary
             from pyerk import settings as pyerk_settings
+
             if langtag is None:
                 langtag = pyerk_settings.DEFAULT_DATA_LANGUAGE
         # noinspection PyUnresolvedReferences

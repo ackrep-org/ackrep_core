@@ -36,7 +36,7 @@ KNOWN_MODULES = {
     "release": 1,
     "system_model_management": 1,
     "util": 1,
-    }
+}
 
 
 def __getattr__(name: str):
@@ -51,6 +51,7 @@ def __getattr__(name: str):
 
     if name == "settings":
         from django.conf import settings
+
         return settings
 
     if name not in KNOWN_MODULES:
@@ -58,5 +59,6 @@ def __getattr__(name: str):
         raise NameError(msg)
 
     import importlib
+
     mod = importlib.import_module(f"ackrep_core.{name}")
     return mod

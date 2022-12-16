@@ -10,6 +10,7 @@ from ackrep_core.test._test_utils import load_repo_to_db_for_ut, reset_repo
 from ackrep_web.views import get_item
 import json
 from ackrep_core_django_settings import settings
+
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 from bs4 import BeautifulSoup
@@ -58,9 +59,7 @@ os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.CONF.ACKREP_ROOT_PATH, "a
 os.environ["NO_IPS_EXCEPTHOOK"] = "True"
 
 # inform the core module which path it should consider as results repo
-ackrep_ci_results_test_repo_path = os.path.join(
-    core.CONF.ACKREP_ROOT_PATH, "ackrep_ci_results_for_unittests"
-)
+ackrep_ci_results_test_repo_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_ci_results_for_unittests")
 os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
 core.CONF.define_paths()
@@ -175,7 +174,8 @@ class TestCases2(SimpleTestCase):
 
         url = reverse("search-sparql")
 
-        sparql_src = twdd(f"""
+        sparql_src = twdd(
+            f"""
         PREFIX : {settings.SPARQL_PREFIX_MAPPING[':']}
         PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse:']}
         SELECT ?s
@@ -183,7 +183,8 @@ class TestCases2(SimpleTestCase):
             ?s :R16 ocse:I7733.
         
         }}
-        """)
+        """
+        )
         response = self.client.get(f"{url}?query={quote(sparql_src)}")
 
         self.assertEqual(response.status_code, 200)
@@ -197,7 +198,8 @@ class TestCases2(SimpleTestCase):
     def test_sparql_query2(self):
         # test preprocessing of query
         url = reverse("search-sparql")
-        sparql_src = twdd(f"""
+        sparql_src = twdd(
+            f"""
         PREFIX : {settings.SPARQL_PREFIX_MAPPING[':']}
         PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse:']}
         SELECT ?s
@@ -205,7 +207,8 @@ class TestCases2(SimpleTestCase):
             ?s :R16__has_property ocse:I7733__time_invariance.
 
         }}
-        """)
+        """
+        )
         response = self.client.get(f"{url}?query={quote(sparql_src)}")
 
         self.assertEqual(response.status_code, 200)
@@ -220,7 +223,8 @@ class TestCases2(SimpleTestCase):
         # test for correct display of sparql results in table form
         url = reverse("search-sparql")
 
-        sparql_src = twdd(f"""
+        sparql_src = twdd(
+            f"""
         PREFIX : {settings.SPARQL_PREFIX_MAPPING[':']}
         PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse:']}
         PREFIX ack: {settings.SPARQL_PREFIX_MAPPING['ack:']}
@@ -229,7 +233,8 @@ class TestCases2(SimpleTestCase):
             ?s ?p ?o.
             ?s :R4__is_instance_of ocse:I5356__general_system_property.
         }}
-        """)
+        """
+        )
 
         response = self.client.get(f"{url}?query={quote(sparql_src)}")
         self.assertEqual(response.status_code, 200)

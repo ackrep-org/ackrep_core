@@ -234,7 +234,7 @@ SPARQL_PREFIX_MAPPING = {
     ":": "<erk:/builtins#>",
     "ocse:": "<erk:/ocse/0.2/control_theory#>",
     "ma": "<erk:/ocse/0.2/math#>",
-    "ack:": "<erk:/ackrep#>"
+    "ack:": "<erk:/ackrep#>",
 }
 
 # ensure that values are also keys

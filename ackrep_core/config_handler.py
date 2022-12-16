@@ -84,12 +84,14 @@ def _create_new_config_file(configfile_path):
         )
         logging.logger.warn(msg)
 
-    default_configfile_content = twdd(f"""
+    default_configfile_content = twdd(
+        f"""
 
     ACKREP_ROOT_PATH = "{ackrep_root_path}"
     ERK_DATA_OCSE_CONF_PATH = "{ocse_path}"
     ERK_DATA_OCSE_UT_CONF_PATH = "{ocse_ut_path}"
-    """)
+    """
+    )
 
     with open(configfile_path, "w", encoding="utf8") as txtfile:
         txtfile.write(default_configfile_content)
@@ -111,10 +113,7 @@ def load_config_file(configfile_path: str = None, check=True, print_flag=False) 
 
     if not isinstance(config_dict, dict):
 
-        msg = (
-            f"Expected dict but got {type(config_dict)}. "
-            f"Perhaps wrong yaml syntax in {configfile_path}."
-        )
+        msg = f"Expected dict but got {type(config_dict)}. " f"Perhaps wrong yaml syntax in {configfile_path}."
         raise TypeError(msg)
     # this will raise an error if the relevant keys are missing
 
@@ -140,7 +139,7 @@ class FlexibleConfigHandler(object):
     """
 
     def __new__(cls):
-        if not hasattr(cls, 'instance'):
+        if not hasattr(cls, "instance"):
             cls.instance = super().__new__(cls)
         return cls.instance
 

@@ -28,9 +28,7 @@ if os.name != "nt":
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument(
-        "--version", help="version of the ackrep_core framework", action="store_true"
-    )
+    argparser.add_argument("--version", help="version of the ackrep_core framework", action="store_true")
     argparser.add_argument("--key", help="print a random key and exit", action="store_true")
     argparser.add_argument(
         "-c",
@@ -51,9 +49,7 @@ def main():
         help="check all entities (solutions and models) (may take some time)",
         action="store_true",
     )
-    argparser.add_argument(
-        "-da", "--download-artifacts", help="download artifacts from CI", action="store_true"
-    )
+    argparser.add_argument("-da", "--download-artifacts", help="download artifacts from CI", action="store_true")
     argparser.add_argument(
         "--update-parameter-tex",
         metavar="metadatafile",
@@ -87,9 +83,7 @@ def main():
         metavar="key",
         help="return path to metadata file (relative to repo root) for a given key",
     )
-    argparser.add_argument(
-        "--bootstrap-db", help="delete database and recreate it (without data)", action="store_true"
-    )
+    argparser.add_argument("--bootstrap-db", help="delete database and recreate it (without data)", action="store_true")
     argparser.add_argument(
         "--bootstrap-test-db",
         help="delete database for unittests and recreate it (without data)",
@@ -160,19 +154,13 @@ def main():
         help="try to find the ocse for ut repo locally and checkout the ut branch corresponding to current branch",
         action="store_true",
     )
-    argparser.add_argument(
-        "-n", "--new", help="interactively create new entity", action="store_true"
-    )
+    argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
-    argparser.add_argument(
-        "--qq", help="create new metada.yml based on interactive questionnaire", action="store_true"
-    )
+    argparser.add_argument("--qq", help="create new metada.yml based on interactive questionnaire", action="store_true")
 
     # for development only
-    argparser.add_argument(
-        "--dd", help="start interactive IPython shell for debugging", action="store_true"
-    )
+    argparser.add_argument("--dd", help="start interactive IPython shell for debugging", action="store_true")
     argparser.add_argument("--md", help="shortcut for `-m metadata.yml`", action="store_true")
     argparser.add_argument("-m", "--metadata", help="process metadata in yaml syntax (.yml file). ")
     argparser.add_argument(
@@ -181,9 +169,7 @@ def main():
         action="store_true",
     )
 
-    argparser.add_argument(
-        "--show-entity-info", metavar="key", help="print out some info about the entity"
-    )
+    argparser.add_argument("--show-entity-info", metavar="key", help="print out some info about the entity")
 
     argparser.add_argument(
         "--log",
@@ -347,6 +333,7 @@ def check_all_entities(unittest=False, fast=False):
 
     import yaml
     from git import Repo
+
     # setup ci_results folder
     date = datetime.datetime.now()
     date_string = date.strftime("%Y_%m_%d__%H_%M_%S")
@@ -442,9 +429,7 @@ def check_all_entities(unittest=False, fast=False):
             issues = res.stdout
         date_string = date.strftime("%Y-%m-%d %H:%M:%S")
 
-        content = {
-            key: {"result": result, "issues": issues, "runtime": runtime, "date": date_string}
-        }
+        content = {key: {"result": result, "issues": issues, "runtime": runtime, "date": date_string}}
 
         if "Calculated with " in res.stdout:
             version = res.stdout.split("Calculated with ")[-1].split("\n\n")[0]
@@ -501,9 +486,7 @@ def check(arg0: str, exitflag: bool = True):
     except TimeoutError as exc:
         msg = f"Entity calculation reached timeout ({acm.settings.ENTITY_TIMEOUT}s)."
         acm.logging.logger.error(msg)
-        res = subprocess.CompletedProcess(
-            cmd, returncode=1, stdout="", stderr=f"Entity check timed out.\n{exc}"
-        )
+        res = subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr=f"Entity check timed out.\n{exc}")
 
     # cancel timeout
     if not os.name == "nt":
@@ -696,6 +679,7 @@ def create_system_model_list_pdf(exitflag: bool = True):
 
 def dialoge_entity_type():
     import questionary
+
     entities = acm.models.get_entities()
 
     # noinspection PyProtectedMember
@@ -868,9 +852,7 @@ def run_jupyter(key):
     print("To access the Notebook, click one of the provided links below.\n")
 
     port_dict = {8888: 8888}
-    container_id = acm.core.start_idle_container(
-        entity.name, try_to_use_local_image=True, port_dict=port_dict
-    )
+    container_id = acm.core.start_idle_container(entity.name, try_to_use_local_image=True, port_dict=port_dict)
 
     acm.logging.logger.info(f"Ackrep command running in Container: {container_id}")
     host_uid = acm.core.get_host_uid()
@@ -971,9 +953,7 @@ def update_fallback_binaries():
 
     fallback_bin_location = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, "ackrep_fallback_binaries")
 
-    entity_list = list(acm.models.ProblemSolution.objects.all()) + list(
-        acm.models.SystemModel.objects.all()
-    )
+    entity_list = list(acm.models.ProblemSolution.objects.all()) + list(acm.models.SystemModel.objects.all())
 
     for entity in entity_list:
         key = entity.key
@@ -1004,6 +984,7 @@ def test_compleib_models():
         else:
             print(bred("Fail."))
 
+
 def checkout_ut_repo():
     core_repo = git.Repo(acm.core.core_pkg_path)
     core_branch = core_repo.active_branch.name
@@ -1015,7 +996,7 @@ def checkout_ut_repo():
 
     # 2. checkout corresponding branch
     erk_data_branch = erk_data_repo.active_branch.name
-    erk_data_branches = erk_data_repo.git.branch("-r") # check remote branches
+    erk_data_branches = erk_data_repo.git.branch("-r")  # check remote branches
 
     target_name = f"ut__ackrep__{core_branch}"
     default_name = f"ut__ackrep__main"
@@ -1032,8 +1013,9 @@ def checkout_ut_repo():
         acm.core.logger.warning(f"Falling back to {default_name}.")
     ## no ut branch found --> error
     else:
-        acm.core.logger.error(acm.util.bred(
-            f"No corresponding erk_data ut branch ({target_name, default_name}) found in {erk_data_branches}!"
-        ))
+        acm.core.logger.error(
+            acm.util.bred(
+                f"No corresponding erk_data ut branch ({target_name, default_name}) found in {erk_data_branches}!"
+            )
+        )
         raise ValueError(f"No unittest branch with the right name was found.")
-

@@ -229,6 +229,7 @@ def load_system_model(entity_path: str):
     metadata_path = os.path.join(entity_path, "metadata.yml")
 
     from ackrep_core import logging
+
     logging.logger.info(f"{entity_path=}")
     logging.logger.info(f"{metadata_path=}")
 
