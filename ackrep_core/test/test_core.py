@@ -67,8 +67,8 @@ pyerk_ocse_name = "ocse/0.2"
 default_repo_head_hash = "834aaad12256118d475de9eebfdaefb7746a28bc"  # 2022-09-13 branch for_unittests
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "14cfbc0023c18d774dc039e94d2d5fb455639649"
-
+TEST_ACKREP_DATA_REPO_COMMIT_SHA = "14cfbc0023c18d774dc039e94d2d5fb455639649"
+TEST_ERK_DATA_REPO_COMMIT_SHA = "9e828d753cab7967ec61aabc0e7591322857628a" # 2022-12-16 branch ut__ackrep__main
 
 class TestCases01(DjangoTestCase):
     """
@@ -108,15 +108,16 @@ class TestCases01(DjangoTestCase):
         msg = f"There are uncommited changes in the repo {ackrep_data_test_repo_path}"
         self.assertFalse(repo.is_dirty(), msg=msg)
 
-        log_list = repo.git.log("--pretty=oneline").split("\n")
+        # test for hash in last 5 commits
+        log_list = repo.git.log("-5", "--pretty=oneline").split("\n")
         sha_list = [line.split(" ")[0] for line in log_list]
 
         msg = (
             f"Repository {ackrep_data_test_repo_path} is in the wrong state. "
-            f"Current branch does unexpectedly not contain commit {TEST_DATA_REPO_COMMIT_SHA[:7]}."
+            f"Current branch does unexpectedly not contain commit {TEST_ACKREP_DATA_REPO_COMMIT_SHA[:7]}."
         )
 
-        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
+        self.assertIn(TEST_ACKREP_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
     def test_01_pyerk_dependency(self):
         from packaging import version
@@ -124,9 +125,13 @@ class TestCases01(DjangoTestCase):
         pyerk_version = version.parse(release.__version__)
         self.assertTrue(pyerk_version >= version.parse("0.6.2"))
 
-    def test_01_pyerk_data_unittest_repo(self):
+    def test_02_pyerk_data_unittest_repo(self):
         """
         Test whether the erk_data repository to which the unittests refer is in a defined state.
+
+        Construct a list of all sha-strings which where commited in the current branch and assert that
+        the expected string is among them. This heuristics assumes that it is OK if the data-repo is newer than
+        expected. But the tests fails if it is older (or on an unexpeced branch).
 
         The name should ensure that this test runs first (do not waste time with further tests if this fails).
         """
@@ -144,6 +149,7 @@ class TestCases01(DjangoTestCase):
         msg = f"There are uncommited changes in the repo {path}"
         self.assertFalse(repo.is_dirty(), msg=msg)
 
+        # check branch name
         ut_branch = repo.active_branch.name
         self.assertIn("ut__ackrep__", ut_branch)
 
@@ -153,18 +159,16 @@ class TestCases01(DjangoTestCase):
         if not ut_branch == f"ut__ackrep__{core_branch}":
             core.logger.warning(msg)
 
+        # test for hash in last 5 commits
+        log_list = repo.git.log("-5", "--pretty=oneline").split("\n")
+        sha_list = [line.split(" ")[0] for line in log_list]
 
+        msg = (
+            f"Repository {pyerk_ocse_path} is in the wrong state. "
+            f"Current branch does unexpectedly not contain commit {TEST_ERK_DATA_REPO_COMMIT_SHA[:7]}."
+        )
 
-
-        # Ensure that the repository is in the expected state. This actual state (and its hash) will change in the
-        # future. This test prevents that this happens without intention.
-        # repo_head_hash = repo.head.commit.hexsha
-        # msg = (
-        #     f"Repository {ackrep_data_test_repo_path} is in the wrong state. "
-        #     f"HEAD is {repo_head_hash[:7]} but should be {pyerk_ocse_path[:7]}."
-        # )
-
-        # self.assertEqual(repo_head_hash, pyerk_ocse_path, msg=msg)
+        self.assertIn(TEST_ERK_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
     def test_logging(self):
         res = run_command(["ackrep", "--test-logging", "--log=10"])
