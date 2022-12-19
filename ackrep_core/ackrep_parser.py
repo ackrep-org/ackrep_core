@@ -1,10 +1,16 @@
+"""
+This module was originally part of pyerk and served to parse ackrep-specific information to pyerk-entities
+"""
+
 import os
 import re as regex
+from packaging import version
 import yaml
 from yaml.parser import ParserError
 from ipydex import IPS
 from typing import Union
 
+import pyerk
 from pyerk.core import Item, Relation, Entity
 from pyerk import core
 from pyerk import aux
@@ -13,6 +19,12 @@ from pyerk.erkloader import load_mod_from_path, ModuleType
 from pyerk import builtin_entities
 from pyerk.auxiliary import *
 from . import models
+from ackrep_core_django_settings.settings import CONF
+
+
+min_pyerk_version = "0.6.0"
+msg = f"Your version of pyerk is too old. At least {min_pyerk_version} reququired!"
+assert version.parse(pyerk.__version__) >= version.parse(min_pyerk_version), msg
 
 __URI__ = "erk:/ackrep"
 
@@ -96,8 +108,8 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
     retcodes = []
     # parse entire repo
     if "ackrep_data" in os.path.split(ackrep_path)[1]:
-        retcodes.append(load_all_system_models(ackrep_path))
-        retcodes.append(load_all_problems_and_solutions(ackrep_path))
+        retcodes.append(load_all_system_models())
+        retcodes.append(load_all_problems_and_solutions())
 
     # assume path leads to entity folder
     else:
@@ -114,8 +126,7 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
 
 
 def ensure_ocse_is_loaded() -> ModuleType:
-    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
-    TEST_MOD_NAME = "control_theory1"
+    TEST_MOD_NAME = os.path.split(CONF.ERK_DATA_OCSE_MAIN_PATH)[1]
 
     # noinspection PyShadowingNames
 
@@ -124,7 +135,7 @@ def ensure_ocse_is_loaded() -> ModuleType:
     if ocse_uri := core.ds.uri_prefix_mapping.b.get(ocse_prefix):
         ocse_mod = core.ds.uri_mod_dict[ocse_uri]
     else:
-        ocse_mod = load_mod_from_path(TEST_DATA_PATH, prefix=ocse_prefix, modname=TEST_MOD_NAME)
+        ocse_mod = load_mod_from_path(CONF.ERK_DATA_OCSE_MAIN_PATH, prefix=ocse_prefix, modname=TEST_MOD_NAME)
 
     # ensure that ocse entities are available
 
@@ -134,11 +145,11 @@ def ensure_ocse_is_loaded() -> ModuleType:
     return ocse_mod
 
 
-def load_all_problems_and_solutions(ackrep_path):
+def load_all_problems_and_solutions():
     retcodes = []
     entities = list(models.ProblemSolution.objects.all()) + list(models.ProblemSpecification.objects.all())
     for entity in entities:
-        retcode = load_problem_or_solution(os.path.join(ackrep_path, os.pardir, entity.base_path))
+        retcode = load_problem_or_solution(os.path.join(CONF.ACKREP_ROOT_PATH, entity.base_path))
         retcodes.append(retcode)
 
     # for n in ["problem_specifications", "problem_solutions"]:
@@ -162,10 +173,10 @@ def load_all_problems_and_solutions(ackrep_path):
     return sum(retcodes)
 
 
-def load_all_system_models(ackrep_path):
+def load_all_system_models():
     retcodes = []
     for entity in list(models.SystemModel.objects.all()):
-        retcode = load_system_model(os.path.join(ackrep_path, os.pardir, entity.base_path))
+        retcode = load_system_model(os.path.join(CONF.ACKREP_ROOT_PATH, entity.base_path))
         retcodes.append(retcode)
 
     # if sum(retcodes) == 0:
@@ -216,6 +227,11 @@ def load_problem_or_solution(entity_path: str):
 def load_system_model(entity_path: str):
 
     metadata_path = os.path.join(entity_path, "metadata.yml")
+
+    from ackrep_core import logging
+
+    logging.logger.info(f"{entity_path=}")
+    logging.logger.info(f"{metadata_path=}")
 
     with open(metadata_path, "r") as metadata_file:
         try:
@@ -334,7 +350,7 @@ def get_entity_from_string(string: str, enforce_class=False) -> Entity:
     except AttributeError:
         pass
 
-    # try imported modules (e.g. erk-data/control_theory1.py)
+    # try imported modules (e.g. erk_data/control_theory1.py)
     try:
         entity = getattr(mod, s)
     except AttributeError:
@@ -353,7 +369,7 @@ def get_entity_from_string(string: str, enforce_class=False) -> Entity:
             # we have to determine if `entity` is a metaclass or a subclass of metaclass
             # this is relevant for entities, that have to be specified by additional relations
             has_super_class = entity.R3 is not None
-            is_instance_of_metaclass = builtin_entities.is_instance_of_generalized_metaclass(entity)
+            is_instance_of_metaclass = builtin_entities.allows_instantiation(entity)
             assert has_super_class or is_instance_of_metaclass, f"The item {entity} has to be a class, not an instance."
 
         # if entity is class

@@ -21,15 +21,11 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
     from pyerk.auxiliary import get_erk_root_dir
 
-ERK_ROOT_DIR = get_erk_root_dir()
+    # Flag to determine if tests are running
+    RUNNING_TESTS = False
 
-# Flag to determine if tests are running
-RUNNING_TESTS = False
-
-# TODO: This should be read from a config file
-ERK_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
-ERK_DATA_MOD_NAME = "control_theory1"
-
+    # TODO: This might be obsolete redundancy
+    ERK_ROOT_DIR = get_erk_root_dir()
 
 
 def _entity_sort_key(entity, subqueries) -> Tuple[int, str, int]:
@@ -171,14 +167,15 @@ def reload_data_if_necessary(force: bool = False, speedup: bool = True) -> Conta
 
 
 def reload_modules_if_necessary(force: bool = False) -> int:
+    erk_data_mod_name = os.path.split(settings.CONF.ERK_DATA_OCSE_MAIN_PATH)[1]
     count = 0
 
     # load ocse
     if force or p.settings.OCSE_URI not in p.ds.uri_prefix_mapping.a:
         mod = p.erkloader.load_mod_from_path(
-            ERK_DATA_PATH,
+            settings.CONF.ERK_DATA_OCSE_MAIN_PATH,
             prefix="ct",
-            modname=ERK_DATA_MOD_NAME,
+            modname=erk_data_mod_name,
         )
         count += 1
 

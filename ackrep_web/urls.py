@@ -1,9 +1,8 @@
-from django.conf.urls import url
 from django.urls import path, re_path
 from . import views
 
 urlpatterns = [
-    url(r"^$", views.LandingPageView.as_view(), name="landing-page"),
+    path(r"", views.LandingPageView.as_view(), name="landing-page"),
     path("entities", views.EntityListView.as_view(), name="entity-list"),
     path("not-yet-implemented", views.NotYetImplementedView.as_view(), name="not-yet-implemented"),
     path("clear-database", views.ClearDatabaseView.as_view(), name="clear-database"),

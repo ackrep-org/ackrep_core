@@ -77,7 +77,7 @@ class EntityListView(View):
 class ImportCanonicalView(View):
     # noinspection PyMethodMayBeStatic
     def post(self, request):
-        entity_list = core.load_repo_to_db(core.data_path)
+        entity_list = core.load_repo_to_db(core.CONF.ACKREP_DATA_PATH)
 
         return redirect("imported-entities")
 
@@ -173,7 +173,7 @@ class EntityDetailView(View):
         if c.is_executable_entity:
             exitflag = False
             c.result = "pending"
-            results_base_path = os.path.join(core.ci_results_path, "history")
+            results_base_path = os.path.join(core.CONF.ACKREP_CI_RESULTS_PATH, "history")
             # filter all ci_results yamls and sort them newest to oldest
             filename_list = sorted(
                 filter(lambda item: "ci_results" in item, os.listdir(results_base_path)), reverse=True
@@ -319,7 +319,7 @@ class Webhook(View):
             else:
                 return d
 
-        path = os.path.join(core.ci_results_path, "history")
+        path = os.path.join(core.CONF.ACKREP_CI_RESULTS_PATH, "history")
         try:
             file_name = sorted(os.listdir(path), reverse=True)[0]
             name, ending = file_name.split(".")
@@ -434,26 +434,27 @@ class SearchSparqlView(View):
         SELECT ?s
         WHERE {{
             ?s :R16__has_property ocse:I7733__time_invariance.
-
         }}
         """
         )
         qsrc = context["query"] = request.GET.get("query", example_query)
 
         try:
-            ackrep_entities, onto_entities = core.AOM.run_sparql_query_and_translate_result(qsrc)
+            table_head, table_data = core.AOM.run_sparql_query_and_translate_result(qsrc)
         except Exception as e:
             context["err"] = f"The following error occurred: {str(e)}"
             if settings.DEVMODE:
                 context["stacktrace"] = traceback.format_exc()
+            table_head = []
+            table_data = []
 
-            ackrep_entities, onto_entities = [], []
+        # onto_entities_no_dupl = hide_duplicate_sparql_res(onto_entities)
 
-        onto_entities_no_dupl = hide_duplicate_sparql_res(onto_entities)
-
-        context["ackrep_entities"] = ackrep_entities
-        context["onto_entities"] = onto_entities
-        context["onto_entities_no_dupl"] = onto_entities_no_dupl
+        context["table_head"] = table_head
+        context["table_data"] = table_data
+        if table_head:
+            context["col_width"] = f"{100 / len(table_head)}%"
+        # context["onto_entities_no_dupl"] = onto_entities_no_dupl
         context["c"] = util.Container()  # this could be used for further options
 
         return TemplateResponse(request, "ackrep_web/search_sparql.html", context)
@@ -496,39 +497,6 @@ def get_item(request):
             payload.append(res)
 
     return JsonResponse({"status": 200, "data": payload})
-
-
-# todo: obsolete?
-def search_and_render(q: str, entity_list: list, payload: list) -> Tuple[list, list]:
-    filters = [Q(uri__icontains=q), Q(label__content__icontains=q), Q(description__icontains=q)]
-    for f in filters:
-        e_list = list(PyerkEntity.objects.filter(f))
-        e_list.sort(key=_entity_sort_key)
-        render_list = list(set(e_list) - set(entity_list))
-        entity_list.extend(render_list)
-
-    for idx, db_entity in enumerate(render_list):
-        db_entity: PyerkEntity
-        try:
-            res = render_entity_inline(
-                db_entity, idx=idx, script_tag="script", include_description=True, highlight_text=q
-            )
-        except KeyError:
-            # there seemse to be a bug related to data reloading and automatic key generation
-            # IPS()
-            raise
-
-        payload.append(res)
-
-    return entity_list, payload
-
-
-def hide_duplicate_sparql_res(res: list) -> list:
-    new_list = []
-    for entry in res:
-        if not entry in new_list:
-            new_list.append(entry)
-    return new_list
 
 
 class NotYetImplementedView(View):
@@ -605,7 +573,7 @@ class EntityOverView(View):
             table_dict[e.key]["Key"] = e.key
             table_dict[e.key]["Name"] = e.name
 
-        results_base_path = os.path.join(core.ci_results_path, "history")
+        results_base_path = os.path.join(core.CONF.ACKREP_CI_RESULTS_PATH, "history")
         # filter all ci_results yamls and sort them oldest to newest
         filename_list = sorted(filter(lambda item: "ci_results" in item, os.listdir(results_base_path)))
         # iterate all result files
@@ -752,7 +720,7 @@ class EntityOverView(View):
         {table_string}
         """
 
-        base_path = os.path.join(core.root_path, "ackrep_core/ackrep_web/templates/ackrep_web/_temp")
+        base_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_core/ackrep_web/templates/ackrep_web/_temp")
         os.makedirs(base_path, exist_ok=True)
         path = os.path.join(base_path, "table.html")
         with open(path, "w") as html_file:
@@ -764,9 +732,9 @@ class EntityOverView(View):
 
 def _create_source_code_link(entity):
     try:
-        repo = Repo(core.data_path)
+        repo = Repo(core.CONF.ACKREP_DATA_PATH)
     except InvalidGitRepositoryError:
-        msg = f"The directory {core.data_path} is not a git repository!"
+        msg = f"The directory {core.CONF.ACKREP_DATA_PATH} is not a git repository!"
         raise InvalidGitRepositoryError(msg)
 
     base_url = settings.ACKREP_DATA_BASE_URL
@@ -779,7 +747,7 @@ def _create_source_code_link(entity):
 
 def _get_source_code(entity):
     c = core.Container()
-    abs_base_path = os.path.join(core.root_path, entity.base_path)
+    abs_base_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, entity.base_path)
     c.object_list = []
 
     for i, file in enumerate(os.listdir(abs_base_path)):

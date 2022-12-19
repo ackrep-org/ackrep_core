@@ -28,26 +28,22 @@ jobs: # A basic unit of work in a run
           paths:
             - "venv"
       - run:
+          name: bootstrap Config
+          command: |
+            . venv/bin/activate
+            cd ..
+            ackrep --bootstrap-config
+      - run:
           name: Load ERK Modules
           command: |
             . venv/bin/activate
-            echo Cloning pyerk
-            cd ../../
-            mkdir erk
-            cd erk
-            git clone https://github.com/ackrep-org/pyerk-core.git
-            cd pyerk-core
-            git checkout develop
-            pip install -r requirements.txt
-            pip install -e .
-            echo Cloning erk-data
-            cd ../
-            mkdir erk-data
-            cd erk-data
-            git clone https://github.com/ackrep-org/erk-data-control-theory.git
-            mv erk-data-control-theory control-theory
-            cd control-theory
-            git checkout develop
+            echo Cloning erk_data_for_unittests
+            cd ~
+            mkdir -p erk/erk_data_for_unittests
+            cd erk/erk_data_for_unittests
+            git clone https://github.com/ackrep-org/ocse.git
+            ackrep --checkout-corresponding-ocse-ut-repo
+            cp -r ~/erk/erk_data_for_unittests ~/erk/erk_data
       - run:
           name: Load Test Data
           command: |

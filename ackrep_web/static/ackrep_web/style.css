@@ -120,7 +120,7 @@ footer {
 
 .styled_form textarea {
     resize: none;
-    height: 10em;
+    height: 12em;
 }
 
 .styled_form button {
@@ -396,4 +396,32 @@ li.copied {
     background: linen !important;
     color: maroon !important;
     text-decoration: italic;
+}
+
+.res_table {
+    border-bottom: 1px Solid Black;
+    border-right: 1px Solid Black;
+    border-collapse : collapse;
+    padding: 5px;
+}
+.res_table td, .res_table th {
+    border-left: 1px Solid Black;
+    border-top: 1px Solid Black;
+    border-bottom:none;
+    border-right:none;
+    max-width: 400px;
+    word-wrap: break-word;
+    padding: 5px;
+    background-clip: padding-box; /* fixes issue with disappearing borders due to background color*/
+}
+/* .res_table thead {
+    position: sticky;
+    top: 54;
+    z-index: 2;
+} */
+.res_table  th,
+.res_table  tr td {
+    background-color: #FFF;
+    border: 1px solid black;
+    padding: 5px;
 }

@@ -6,7 +6,7 @@ from scipy.integrate import solve_ivp, odeint
 import matplotlib.pyplot as plt
 import sympy as sp
 import re
-from util import *
+from ackrep_core.util import bgreen
 import time
 from numpy.linalg import LinAlgError
 
@@ -19,7 +19,7 @@ row_template = "    {}s\n  {}"
 
 
 def create_compleib_models_from_template(target=None):
-    lib_folder = os.path.join(core.data_path, "system_models", "compleib_models", "src")
+    lib_folder = os.path.join(core.CONF.ACKREP_DATA_PATH, "system_models", "compleib_models", "_src")
     lib_path = os.path.join(lib_folder, "COMPleib.m")
     td = {"t1": {}, "t2": {}, "t3": {}, "t4": {}, "t5": {}, "t6": {}, "t7": {}, "t8": {}}
     ts = time.time()
@@ -232,7 +232,7 @@ def create_compleib_models_from_template(target=None):
             file_names = ["system_model.py", "simulation.py", "parameters.py", "metadata.yml", "documentation.tex"]
             for name in file_names:
                 template_path = f"templates/{name}.template"
-                folder_path = os.path.join(core.data_path, "system_models", "compleib_models", handle)
+                folder_path = os.path.join(core.CONF.ACKREP_DATA_PATH, "system_models", "compleib_models", handle)
                 if "docu" in name:
                     folder_path = os.path.join(folder_path, "_data")
                 os.makedirs(folder_path, exist_ok=True)

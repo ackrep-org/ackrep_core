@@ -12,6 +12,15 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import sys
+from pathlib import Path
+import ackrep_core.config_handler
+
+try:
+    # this will be part of standard library for python >= 3.11
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
 import deploymentutils as du
 
 
@@ -21,6 +30,7 @@ import deploymentutils as du
 #   - DEVMODE explicitly activated by ENV-Variable DJANGO_DEVMODE
 # Also, for  some management commands (on the production server) we want to explicitly switch off DEVMODE
 
+# TODO: This should be `ACKREP_DEVMODE`
 # export DJANGO_DEVMODE=True; py3 manage.py <some_command>
 env_devmode = os.getenv("DJANGO_DEVMODE")
 if env_devmode is None:
@@ -45,7 +55,7 @@ else:
         class UnsafeConfiguration(BaseException):
             pass
 
-        msg = f"Using the example config is not allowed outside development mode.{DEVMODE} " + str(sys.argv)
+        # msg = f"Using the example config is not allowed outside development mode.{DEVMODE} " + str(sys.argv)
         # raise UnsafeConfiguration(msg)
 
         # TODO:
@@ -64,8 +74,8 @@ CONFIG_PATH = config.path
 # SECURITY WARNING: keep the secret key used in production secret!
 # (the following key is only used for local testing but not for production deployment)
 SECRET_KEY = config("SECRET_KEY")
-SECRET_CIRCLECI_WEBHOOK_KEY = config("SECRET_CIRCLECI_WEBHOOK_KEY")
-SECRET_CIRCLECI_API_KEY = config("SECRET_CIRCLECI_API_KEY")
+SECRET_CIRCLECI_WEBHOOK_KEY = config("SECRET_CIRCLECI_WEBHOOK_KEY", default="unknown")
+SECRET_CIRCLECI_API_KEY = config("SECRET_CIRCLECI_API_KEY", default="unknown")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # note this might be influenced by DEVMODE
@@ -203,8 +213,8 @@ BACKUP_PATH = os.path.join(BASE_DIR, "db_backups")
 
 TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
 
-ACKREP_DATA_BASE_URL = config("ACKREP_DATA_BASE_URL")
-ACKREP_DATA_BRANCH = config("ACKREP_DATA_BRANCH")
+ACKREP_DATA_BASE_URL = config("ACKREP_DATA_BASE_URL", default="unknown")
+ACKREP_DATA_BRANCH = config("ACKREP_DATA_BRANCH", default="unknown")
 
 DEFAULT_ENVIRONMENT_KEY = "CDAMA"  # "YJBOX"
 
@@ -218,11 +228,20 @@ except FileNotFoundError:
 
 BASE_URL_FOR_PDF = "http://127.0.0.1:8000/"
 
+# While this is also pyerk-related it makes sense to configure these prefixes in ackrep because they are used
+# here. The erk module might be used also in different contexts where these prefixes would not apply.
 SPARQL_PREFIX_MAPPING = {
     ":": "<erk:/builtins#>",
-    "<erk:/builtins#>": ":",
-    "ocse:": "<erk:/ocse/0.2#>",
-    "<erk:/ocse/0.2#>": "ocse:",
+    "ocse:": "<erk:/ocse/0.2/control_theory#>",
+    "ma": "<erk:/ocse/0.2/math#>",
     "ack:": "<erk:/ackrep#>",
-    "<erk:/ackrep#>": "ack:",
 }
+
+# ensure that values are also keys
+SPARQL_PREFIX_MAPPING.update((v, k) for k, v in list(SPARQL_PREFIX_MAPPING.items()))
+
+# the following handles the second config file. rationale: config.ini is for deployment-relevant configuration,
+# ackrepconf.toml is for non-secret local-relevant configuration (such as paths)
+# this obviously fails during `--bootsrap-config` because the config file does not yet exist
+
+CONF = ackrep_core.config_handler.FlexibleConfigHandler()

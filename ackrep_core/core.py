@@ -4,12 +4,8 @@ import os, sys
 import pathlib
 import time
 import shutil
-import logging
-from typing import List
 from jinja2 import Environment, FileSystemLoader
-from ipydex import Container  # for functionality
 from git import Repo
-import re
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
@@ -20,7 +16,7 @@ from ackrep_core_django_settings import settings
 # noinspection PyUnresolvedReferences
 from django.conf import settings
 from django.core import management
-from django.db import connection as django_db_connection, connections as django_db_connections
+from django.db import connection as django_db_connection
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception  # for debugging only
@@ -41,9 +37,6 @@ from .model_utils import get_entity_dict_from_db, get_entity_types, resolve_keys
 from .util import (
     mod_path,
     core_pkg_path,
-    root_path,
-    data_path,
-    ci_results_path,
     ObjectContainer,
     ResultContainer,
     InconsistentMetaDataError,
@@ -52,20 +45,10 @@ from .util import (
     run_command,
 )
 
-from . import util
+from .logging import logger
+from ackrep_core.config_handler import FlexibleConfigHandler
 
-
-# initialize logging with default loglevel (might be overwritten by command line option)
-# see https://docs.python.org/3/howto/logging-cookbook.html
-defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
-logger = logging.getLogger("ackrep_logger")
-FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
-DATEFORMAT = "%H:%M:%S"
-formatter = logging.Formatter(fmt=FORMAT, datefmt=DATEFORMAT)
-handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(defaul_loglevel)
+CONF = FlexibleConfigHandler()
 
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
@@ -100,28 +83,6 @@ required_generic_meta_data = {
 
 
 db_name = django_db_connection.settings_dict["NAME"]
-
-
-def send_debug_report(send=None):
-    """
-    Send debug information such as relevant environmental variables to designated output (logger or stdout).
-
-    :param send:    Function to be used for sending the message. Default: logger.debug. Alternatively: print.
-    """
-
-    if send is None:
-        send = logger.debug
-
-    row_template = "  {:<30}: {}"
-
-    send("** ENVIRONMENT VARS: **")
-    for k, v in os.environ.items():
-        if k.startswith("ACKREP_"):
-            send(row_template.format(k, v))
-
-    send("** DB CONNECTION:  **")
-    send(django_db_connections["default"].get_connection_params())
-    send("\n")
 
 
 def gen_random_entity_key():
@@ -241,42 +202,67 @@ class ACKREP_OntologyManager(object):
         self.OM: Container = None
         self.ocse_entity_mapping = {}
         self.ontology_loaded = False
+        self.ds = None
 
     def load_ontology(self, startdir=None, entity_list=None):
-        ERK_ROOT_DIR = p.aux.get_erk_root_dir()
-        TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
-        mod1 = p.erkloader.load_mod_from_path(modpath=TEST_DATA_PATH, prefix="ct")
+        _ = p.erkloader.load_mod_from_path(modpath=settings.CONF.ERK_DATA_OCSE_MAIN_PATH, prefix="ct")
         ackrep_parser.load_ackrep_entities(startdir)
         self.ds = p.core.ds
         self.ds.rdfgraph = p.rdfstack.create_rdf_triples()
         self.ontology_loaded = True
 
-    def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> list:
+    def run_sparql_query_and_translate_result(self, qsrc, raw=False) -> (list, list):
         if not self.ontology_loaded:
             self.load_ontology()
         self.ds = p.core.ds
         qsrc = self.ds.preprocess_query(qsrc)
         res = self.ds.rdfgraph.query(qsrc)
-        erk_entitites = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+        erk_entitites = list(p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res))
+        erk_entitites.sort(key=_sort_sparql_results)
 
-        ackrep_entities = []
-        onto_entites = []
+        table_data = []
+        table_head = [str(var) for var in res.vars]
         for tuples in erk_entitites:
+            row = []
             for i, e in enumerate(tuples):
                 # entity is system model
                 try:
                     re = e.get_relations("ct__R2950__has_corresponding_ackrep_key")
                     entity_key = re[0].relation_tuple[2]
+
                     assert isinstance(entity_key, str)
                     entity = get_entity(entity_key)
-                    ackrep_entities.append(("?" + str(res.vars[i]), entity))
+                    row.append(entity)
                 except:
                     try:
                         entity = [e.short_key, e.R1]
                     except:
                         entity = e
-                    onto_entites.append(("?" + str(res.vars[i]), entity))
-        return ackrep_entities, onto_entites
+                    row.append(entity)
+            table_data.append(row)
+
+        return table_head, table_data
+
+
+def _sort_sparql_results(res_tuple):
+    """sort res tuples with ackrep entities on top"""
+    relevance = 0
+    for entity in res_tuple:
+        if hasattr(entity, "get_relations") and entity.get_relations("ct__R2950__has_corresponding_ackrep_key"):
+            relevance -= 5
+
+    uri = res_tuple[0].uri
+    _, sk = uri.split(p.settings.URI_SEP)
+
+    if sk[1].isdigit():
+        num = int(sk[1:])
+        letter = sk[0]
+        # return
+    else:
+        num = int(sk[2:])
+        letter = f"x{sk[0]}"
+
+    return relevance, letter, num
 
 
 def load_repo_to_db(startdir, check_consistency=True):
@@ -334,7 +320,7 @@ def crawl_files_and_load_to_db(startdir, merge_request=None):
         base_path_abs = os.path.abspath(os.path.dirname(md_path))
         # make path relative to ackrep root path, meaning the directory that contains 'ackrep_core' and 'ackrep_data'
         # example: C:\dev\ackrep\ackrep_data\problem_solutions\solution1 --> ackrep_data\problem_solutions\solution1
-        base_path_rel = os.path.relpath(base_path_abs, root_path)
+        base_path_rel = os.path.relpath(base_path_abs, CONF.ACKREP_ROOT_PATH)
         e.base_path = base_path_rel
         logger.debug((e.key, e.base_path))
 
@@ -366,9 +352,9 @@ def get_data_files(base_path, endswith_str=None, create_media_links=False):
     :return:
     """
     if "_data" in base_path:
-        startdir = os.path.join(root_path, base_path, "_data")
+        startdir = os.path.join(CONF.ACKREP_ROOT_PATH, base_path, "_data")
     else:
-        startdir = os.path.join(root_path, base_path)
+        startdir = os.path.join(CONF.ACKREP_ROOT_PATH, base_path)
 
     if not os.path.isdir(startdir):
         return []
@@ -387,7 +373,7 @@ def get_data_files(base_path, endswith_str=None, create_media_links=False):
 
     # convert absolute paths into relative paths (w.r.t. `root_path`)
 
-    files = [f.replace(f"{root_path}{os.path.sep}", "") for f in abs_files]
+    files = [f.replace(f"{CONF.ACKREP_ROOT_PATH}{os.path.sep}", "") for f in abs_files]
 
     if create_media_links:
         result = []
@@ -419,7 +405,7 @@ def make_method_build(method_package, accept_existing=True):
     :return: full_build_path
     """
 
-    full_base_path = os.path.join(root_path, method_package.base_path)
+    full_base_path = os.path.join(CONF.ACKREP_ROOT_PATH, method_package.base_path)
     full_build_path = os.path.join(full_base_path, "_build")
     full_source_path = os.path.join(full_base_path, "src")
 
@@ -489,7 +475,7 @@ def get_entity_context(key: str):
     c = Container()  # this will be our easily accessible context dict for the template
 
     if isinstance(entity, models.ProblemSolution):
-        c.solution_path = os.path.join(root_path, entity.base_path)
+        c.solution_path = os.path.join(CONF.ACKREP_ROOT_PATH, entity.base_path)
         assert len(entity.oc.solved_problem_list) >= 1
 
         if entity.oc.solved_problem_list == 0:
@@ -507,7 +493,7 @@ def get_entity_context(key: str):
             raise NotImplementedError(msg)
 
         # TODO: handle the filename (see also template)
-        c.problem_spec_path = os.path.join(root_path, problem_spec.base_path)
+        c.problem_spec_path = os.path.join(CONF.ACKREP_ROOT_PATH, problem_spec.base_path)
 
         # list of the build_paths
         c.method_package_list = []
@@ -517,7 +503,7 @@ def get_entity_context(key: str):
             c.method_package_list.append(full_build_path)
 
     elif isinstance(entity, models.SystemModel):
-        c.system_model_path = os.path.join(root_path, entity.base_path)
+        c.system_model_path = os.path.join(CONF.ACKREP_ROOT_PATH, entity.base_path)
     else:
         raise NotImplementedError
 
@@ -560,7 +546,7 @@ def create_execscript_from_template(entity: models.GenericEntity, c: Container, 
     # determine whether the entity comes from ackrep_data or ackrep_data_for_unittests or ackrep_data_import
     data_repo_path = pathlib.Path(entity.base_path).parts[0]
     if scriptpath is None:
-        scriptpath = os.path.join(root_path, data_repo_path, scriptname)
+        scriptpath = os.path.join(CONF.ACKREP_ROOT_PATH, data_repo_path, scriptname)
     else:
         scriptpath = os.path.join(scriptpath, scriptname)
 
@@ -598,7 +584,7 @@ def run_execscript(scriptpath):
 def clone_external_data_repo(url, mr_key):
     """Clone git repository from url into external_repos/[MERGE_REQUEST_KEY], return path"""
 
-    external_repo_dir = os.path.join(root_path, "external_repos")
+    external_repo_dir = os.path.join(CONF.ACKREP_ROOT_PATH, "external_repos")
     if not os.path.isdir(external_repo_dir):
         os.mkdir(external_repo_dir)
 
@@ -815,7 +801,7 @@ def look_for_running_container(env_name):
                 logger.info(f"data_path inside container: {data_path_container}")
 
                 # no db or wrong db in container:
-                if data_path_container != data_path.split("/")[-1]:
+                if data_path_container != CONF.ACKREP_DATA_PATH.split("/")[-1]:
                     logger.info("Running container has wrong db loaded. Shutting down.")
                     cmd = ["docker", "stop", container_id]
                     res = run_command(cmd, logger=logger, capture_output=True)
@@ -850,8 +836,15 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
         logger.info("running local image")
         image_name = env_name  # since docker-compose doesnt use prefix
 
-        assert os.path.isdir(f"{root_path}/ackrep_deployment"), "docker-compose file not found"
-        cmd = ["docker-compose", "--file", f"{root_path}/ackrep_deployment/docker-compose.yml", "run", "-d", "--rm"]
+        assert os.path.isdir(f"{CONF.ACKREP_ROOT_PATH}/ackrep_deployment"), "docker-compose file not found"
+        cmd = [
+            "docker-compose",
+            "--file",
+            f"{CONF.ACKREP_ROOT_PATH}/ackrep_deployment/docker-compose.yml",
+            "run",
+            "-d",
+            "--rm",
+        ]
 
     # no local image -> use image from github
     # this is the default for everyone who doesnt build images locally
@@ -865,7 +858,7 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
         res = run_command(pull_cmd, logger=logger, capture_output=True)
         assert res.returncode == 0, f"Unable to pull image from remote. Does '{image_name}' exist?"
 
-        logger.info("stopping old containers")
+        logger.info("stopping old containers (if necessary)")
         # stop all running containers with env_name to ensure name uniqueness
         find_cmd = ["docker", "ps", "--filter", f"name={env_name}", "-q"]
         res = run_command(find_cmd, logger=logger, capture_output=True)
@@ -874,6 +867,9 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
             for i in ids:
                 stop_cmd = ["docker", "stop", i]
                 run_command(stop_cmd, logger=logger, capture_output=True)
+
+        # give some additional time such that the container can finish stopping
+        time.sleep(1)
 
         cmd = ["docker", "run", "-d", "-ti", "--rm", "--name", env_name]
         # * Note: even though we are running the container in the background (detached -d), we still have to
@@ -941,10 +937,10 @@ def get_docker_env_vars():
     # nominal case
     else:
         logger.info(
-            f"env var ACKREP_DATABASE_PATH, ACKREP_DATA_PATH no set, using defaults: db.sqlite3 and {data_path}"
+            f"env var ACKREP_DATABASE_PATH, ACKREP_DATA_PATH no set, using defaults: db.sqlite3 and {CONF.ACKREP_DATA_PATH}"
         )
         database_path = os.path.join("/code/ackrep_core", "db.sqlite3")
-        ackrep_data_path = os.path.join("/code", data_path)
+        ackrep_data_path = os.path.join("/code", CONF.ACKREP_DATA_PATH)
         cmd_extension = ["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"]
     logger.info(f"ACKREP_DATABASE_PATH {database_path}")
     logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
@@ -973,9 +969,9 @@ def get_volume_mapping():
 
     # nominal case
     if os.environ.get("CI") != "true":
-        logger.info(f"data path: {data_path}")
-        target = os.path.split(data_path)[1]
-        cmd_extension = ["-v", f"{data_path}:/code/{target}"]
+        logger.info(f"data path: {CONF.ACKREP_DATA_PATH}")
+        target = os.path.split(CONF.ACKREP_DATA_PATH)[1]
+        cmd_extension = ["-v", f"{CONF.ACKREP_DATA_PATH}:/code/{target}"]
     # circleci unittest case
     else:
         # volumes cant be mounted in cirlceci, this is the workaround,
@@ -1000,7 +996,7 @@ def get_port_mapping(port_dict):
 def download_and_store_artifacts(branch_name):
     """download artifacts using the directory structure established in CI"""
     save_cwd = os.getcwd()
-    os.chdir(root_path)
+    os.chdir(CONF.ACKREP_ROOT_PATH)
 
     circle_token = settings.SECRET_CIRCLECI_API_KEY
     cmd = [
@@ -1019,7 +1015,7 @@ def download_and_store_artifacts(branch_name):
     assert res.returncode == 0, "Unable to collect results from circleci."
 
     # it is assumed, that the last CI reports on github and the manually downloaded one (artifact) are identical
-    repo = Repo(f"{root_path}/ackrep_ci_results")
+    repo = Repo(f"{CONF.ACKREP_ROOT_PATH}/ackrep_ci_results")
     # run_command(["git", "-C", "./ackrep_ci_results", "fetch"], capture_output=False)
     # run_command(["git", "-C", "./ackrep_ci_results", "status"], capture_output=False)
     # for file in repo.untracked_files:
