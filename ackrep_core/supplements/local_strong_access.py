@@ -80,13 +80,13 @@ entity_list = list(models.SystemModel.objects.all())
 
 for e in entity_list:
     key = e.key
-    key = 'XHINE'
-    ent = core.get_entity(key)
+    # key = 'XHINE'
+    # ent = core.get_entity(key)
 
     # get path of the model
     cwd = os.getcwd()
     main_directory = os.path.split(cwd)[0]
-    model_path = main_directory + "\\" + ent.base_path
+    model_path = main_directory + "\\" + e.base_path
     
     # get model
     sys.path.append(model_path)
