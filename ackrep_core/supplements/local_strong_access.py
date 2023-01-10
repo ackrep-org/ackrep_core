@@ -4,11 +4,38 @@ import symbtools as st
 import symbtools.modeltools as mt
 import sys
 import os
+import functools
+import time
 
+from threading import Thread
 from importlib import reload
 from ackrep_core import models, core
 from ackrep_core.system_model_management import GenericModel
 
+def timeout(timeout):
+    def deco(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            res = [Exception('function [%s] timeout [%s seconds] exceeded!' % (func.__name__, timeout))]
+            def newFunc():
+                try:
+                    res[0] = func(*args, **kwargs)
+                except Exception as e:
+                    res[0] = e
+            t = Thread(target=newFunc)
+            t.daemon = True
+            try:
+                t.start()
+                t.join(timeout)
+            except Exception as je:
+                print ('error starting thread')
+                raise je
+            ret = res[0]
+            if isinstance(ret, BaseException):
+                raise ret
+            return ret
+        return wrapper
+    return deco
 
 def locally_strongly_accessible(model: GenericModel):
     """
@@ -16,10 +43,10 @@ def locally_strongly_accessible(model: GenericModel):
 
     :reutrn: tuple of flag - boolean, msg - string
     """
-    if not isinstance(model, GenericModel):
+    if not isinstance(model, GenericModel):                     # models with not useable representation
         flag = None
         msg = "model representation not useable"
-    elif not model.uu_symb:                                       # models without input
+    elif not model.uu_symb:                                     # models without input
         flag = None
         msg = "model has no input"
     else:
@@ -40,12 +67,15 @@ def locally_strongly_accessible(model: GenericModel):
             if any(d):                                          # check if model is linearly dependent on u
                 flag = None
                 msg = "not linearly dependent on u"
-            else: 
-                flag, msg = calculate_access(ff, gg, xx)
+            else:
+                try:
+                    flag, msg = calculate_access(ff, gg, xx)
+                except:
+                    flag, msg = [None, "timeout"]
 
     return (flag, msg)
 
-
+@timeout(600)
 def calculate_access(ff, gg, xx):
     """
     determines if the model is locally strongly accessible or not
@@ -75,13 +105,16 @@ def calculate_access(ff, gg, xx):
     return [flag, msg]
 
 
+t = time.localtime()
+current_time = time.strftime("%H:%M:%S", t)
+print(current_time)
+
+
 access_list = []
 entity_list = list(models.SystemModel.objects.all())
 
 for e in entity_list:
     key = e.key
-    # key = 'XHINE'
-    # ent = core.get_entity(key)
 
     # get path of the model
     cwd = os.getcwd()
@@ -102,3 +135,8 @@ for e in entity_list:
     access_list.append([key, access_entity])
 
 print(access_list)
+
+
+t = time.localtime()
+current_time = time.strftime("%H:%M:%S", t)
+print(current_time)
