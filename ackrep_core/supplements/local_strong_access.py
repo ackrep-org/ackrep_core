@@ -39,7 +39,7 @@ def timeout(timeout):
 
 def locally_strongly_accessible(model: GenericModel):
     """
-    proofs model if it is locally strongly accessible
+    checks if model is locally strongly accessible
 
     :reutrn: tuple of flag - boolean, msg - string
     """
