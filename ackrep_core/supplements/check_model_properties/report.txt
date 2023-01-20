@@ -1,0 +1,35 @@
+Results 
+ 5CVFG, None, 9.884, timeout 
+ XHINE, None, 4.224, timeout 
+ SRSTF, True, 0.413, local strong access 
+ KAHFE, True, 0.187, local strong access 
+ GKKTM, False, 0.145, no local strong access 
+ OK5BV, True, 0.27, local strong access 
+ DFRJY, True, 0.047, local strong access 
+ JBTRZ, None, 0.0, model representation not useable 
+ 9TM8C, True, 0.156, local strong access 
+ CK7EX, None, 0.0, model representation not useable 
+ AEYHV, None, 6.031, timeout 
+ 1VY9F, None, 0.0, model representation not useable 
+ R9XXK, None, 0.0, model representation not useable 
+ AVCTR, True, 0.861, local strong access 
+ U6B7N, True, 0.054, local strong access 
+ IG3GA, None, 0.0, model representation not useable 
+ BID9I, None, 1.061, timeout 
+ UXMFA, None, 0.0, model has no input 
+ DRZGT, None, 0.0, model has no input 
+ YHS5B, None, 0.203, not linearly dependent on u 
+ CAS0M, True, 0.031, local strong access 
+ IMLSG, None, 1.391, timeout 
+ VVAHU, None, 16.323, timeout 
+ IXSV2, True, 0.11, local strong access 
+ OHW5Z, None, 1.151, timeout 
+ FD5RW, None, 0.0, model has no input 
+ OV6ND, True, 0.14, local strong access 
+ BZJ3K, None, 3.287, timeout 
+ HBWN5, None, 14.357, timeout 
+ AJ0PV, True, 1.326, local strong access 
+ IKNYP, None, 0.0, model representation not useable 
+ JPCL5, None, 0.0, model has no input 
+ 
+ total time: 8.7 minutes

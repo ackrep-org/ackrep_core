@@ -1,22 +1,20 @@
-from more_itertools import nth
-import sympy as sp
 import symbtools as st
-import symbtools.modeltools as mt
-import sys
-import os
 import functools
-import time
 
 from threading import Thread
-from importlib import reload
-from ackrep_core import models, core
 from ackrep_core.system_model_management import GenericModel
+
+class TimeoutException(Exception):
+    pass
+
+# source of decorator for the timeout:
+# https://stackoverflow.com/questions/21827874/timeout-a-function-windows
 
 def timeout(timeout):
     def deco(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            res = [Exception('function [%s] timeout [%s seconds] exceeded!' % (func.__name__, timeout))]
+            res = [TimeoutException('function [%s] timeout [%s seconds] exceeded!' % (func.__name__, timeout))]
             def newFunc():
                 try:
                     res[0] = func(*args, **kwargs)
@@ -69,14 +67,14 @@ def locally_strongly_accessible(model: GenericModel):
                 msg = "not linearly dependent on u"
             else:
                 try:
-                    flag, msg = calculate_access(ff, gg, xx)
-                except:
+                    flag, msg = calculate_access(ff, gg, xx, model)
+                except TimeoutException:
                     flag, msg = [None, "timeout"]
 
     return (flag, msg)
 
 @timeout(600)
-def calculate_access(ff, gg, xx):
+def calculate_access(ff, gg, xx, model):
     """
     determines if the model is locally strongly accessible or not
 
@@ -103,40 +101,3 @@ def calculate_access(ff, gg, xx):
         D = st.col_stack(D, lb_fg)
     
     return [flag, msg]
-
-
-t = time.localtime()
-current_time = time.strftime("%H:%M:%S", t)
-print(current_time)
-
-
-access_list = []
-entity_list = list(models.SystemModel.objects.all())
-
-for e in entity_list:
-    key = e.key
-
-    # get path of the model
-    cwd = os.getcwd()
-    main_directory = os.path.split(cwd)[0]
-    model_path = main_directory + "\\" + e.base_path
-    
-    # get model
-    sys.path.append(model_path)
-    if e == entity_list[0]:
-        import system_model
-    else: 
-        system_model = reload(system_model)
-    model = system_model.Model()
-    sys.path.remove(model_path)
-
-    access_entity = locally_strongly_accessible(model)
-
-    access_list.append([key, access_entity])
-
-print(access_list)
-
-
-t = time.localtime()
-current_time = time.strftime("%H:%M:%S", t)
-print(current_time)
