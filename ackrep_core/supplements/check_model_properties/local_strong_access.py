@@ -70,6 +70,8 @@ def locally_strongly_accessible(model: GenericModel):
                     flag, msg = calculate_access(ff, gg, xx, model)
                 except TimeoutException:
                     flag, msg = [None, "timeout"]
+                except ValueError as e:
+                    flag, msg = [None, str(e)]
 
     return (flag, msg)
 
