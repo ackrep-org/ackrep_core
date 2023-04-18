@@ -203,8 +203,12 @@ class FlexibleConfigHandler(object):
         # handle some special cases
 
         # note the difference between ..._MAIN_... and ..._CONF_...
+        # TODO: explain this difference in comments or docs
         if name == "ERK_DATA_OCSE_MAIN_PATH":
-            ocse_conf_path = self.ERK_DATA_OCSE_CONF_PATH
+            if os.environ.get("ACKREP_UNITTEST") == "True":
+                ocse_conf_path = self.ERK_DATA_OCSE_UT_CONF_PATH
+            else:
+                ocse_conf_path = self.ERK_DATA_OCSE_CONF_PATH
 
             if not os.path.isfile(ocse_conf_path):
                 msg = f"Error on loading OCSE config file: {ocse_conf_path}"

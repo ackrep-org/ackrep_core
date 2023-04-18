@@ -20,6 +20,10 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
 
 from ackrep_core_django_settings import settings
 
+
+os.environ["ACKREP_UNITTEST"] = "True"
+
+
 ERK_DATA_OCSE_UT_MAIN_PATH = settings.CONF.ERK_DATA_OCSE_UT_MAIN_PATH
 """
 This module contains the tests of the core module (not ackrep_web).
@@ -200,7 +204,7 @@ class ErkHandlerMixin:
     def tearDown(self) -> None:
 
         repo = Repo(ackrep_data_test_repo_path)
-        assert not repo.is_dirty()
+        assert not repo.is_dirty(), f"dirty repo: {repo}"
 
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             # prevent an error here to mask other error messages
