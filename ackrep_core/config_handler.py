@@ -61,6 +61,7 @@ def _create_new_config_file(configfile_path):
     os.makedirs(containing_dir, exist_ok=True)
 
     # assuming the directory structure:
+    # CAUTION: beware the underscores and dashes
     #
     # <common-root>
     # │
@@ -69,20 +70,37 @@ def _create_new_config_file(configfile_path):
     # │   │
     # │   └── ...
     # └── erk
-    #     └── erk_data/
+    # │   ├── erk-data/
+    # │   ├── erk-data-for-unittests/
+    #     └── ...
 
+    cwd = Path.cwd().as_posix()
     ackrep_root_path = Path.cwd().as_posix()
-    ocse_path = Path.cwd().parent.joinpath("erk", "erk_data", "ocse", "erkpackage.toml").as_posix()
-    ocse_ut_path = Path.cwd().parent.joinpath("erk", "erk_data_for_unittests", "ocse", "erkpackage.toml").as_posix()
+    ocse_path = Path.cwd().parent.joinpath("erk", "erk-data", "ocse", "erkpackage.toml").as_posix()
+    ocse_ut_path = Path.cwd().parent.joinpath("erk", "erk-data-for-unittests", "ocse", "erkpackage.toml").as_posix()
     ackrep_data_path = os.path.join(ackrep_root_path, "ackrep_data")
-
-    if not os.path.isdir(ackrep_data_path):
-        msg = (
-            "Unexpectedly did not find subdirectory (`ackrep_data`) of current working dir. "
-            "This failing safety check means that your working dir is probably wrong (or still incomplete). "
-            "Proceeding anyway."
-        )
+    
+    
+    check_paths = [
+        ("ACKREP_ROOT_PATH", ackrep_root_path),
+        ("ERK_DATA_OCSE_CONF_PATH", ocse_path),
+        ("ERK_DATA_OCSE_UT_CONF_PATH", ocse_ut_path),
+        ("ACKREP_DATA_PATH", ackrep_data_path)
+        
+    ]
+    
+    if os.path.split(cwd)[-1] != "ackrep":
+        msg = f"The current workdir ist not `ackrep` (as expected) but instead {cwd}."
         logging.logger.warn(msg)
+    
+    for name, pathstr in check_paths:
+        if not os.path.exists(pathstr):
+            msg = (
+                f"Unexpectedly did not find path `{pathstr}` ({name}) "
+                f"This failing safety check means that your working dir ({cwd}) is probably wrong (or still incomplete). "
+                "Proceeding anyway."
+            )
+            logging.logger.warn(msg)
 
     default_configfile_content = twdd(
         f"""
