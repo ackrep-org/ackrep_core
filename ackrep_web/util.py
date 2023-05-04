@@ -307,3 +307,21 @@ def get_sparql_text(code_entity: Union[PyerkEntity, object]) -> str:
     text = prefix + key + "__" + desc
 
     return text
+
+
+def insert_settings_context_preprocessor(request):
+    """This function is called for every request.
+
+    see settings.TEMPLATES["OPTIONS"]["context_processors"] for details.
+    Also see: https://docs.djangoproject.com/en/4.2/ref/templates/api/#writing-your-own-context-processors
+    """
+
+    # select some settings which should be availabe in all templates
+
+    keys = ["DEVMODE"]
+
+    partial_context = { (f"SETTINGS_{k}", getattr(settings, k, None)) for k in keys }
+
+    print("called me")
+
+    return partial_context
