@@ -266,6 +266,7 @@ def _sort_sparql_results(res_tuple):
 
 
 def load_repo_to_db(startdir, check_consistency=True):
+    logger.info(f"Using db: {db_name}")
     logger.info("Completely rebuilding DB from file system")
 
     clear_db()

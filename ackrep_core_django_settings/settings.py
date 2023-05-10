@@ -68,6 +68,14 @@ CONFIG_PATH = config.path
 
 # TODO: save the config path and DEVMODE to logfile
 
+
+# the following handles the second config file. rationale: config.ini is for deployment-relevant configuration,
+# ackrepconf.toml is for non-secret local-relevant configuration (such as paths)
+# this obviously fails during `--bootsrap-config` because the config file does not yet exist
+
+CONF = ackrep_core.config_handler.FlexibleConfigHandler()
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
@@ -138,7 +146,7 @@ TEMPLATES = [
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
 # allow for separate databases, e.g. to handle unittests that make cli calls to `ackrep`
-database_path = os.environ.get("ACKREP_DATABASE_PATH")
+database_path = CONF.ACKREP_DATABASE_PATH
 if not (database_path):
     # use default db name
     database_path = os.path.join(BASE_DIR, "db.sqlite3")
@@ -146,8 +154,9 @@ if not (database_path):
     test_db_settings = {
         "TEST": {
             "ENGINE": "django.db.backends.sqlite3",
-            # TODO: ensure that this is consistent with test_core.py
-            "NAME": os.path.join(BASE_DIR, "db_for_unittests.sqlite3"),
+            
+            # this is always the test database
+            "NAME": CONF.ACKREP_DATABASE_PATH,
         }
     }
 else:
@@ -156,6 +165,8 @@ else:
     test_db_settings = {
         "TEST": {
             "ENGINE": "django.db.backends.sqlite3",
+            
+            # this might be the production db or the test db
             "NAME": database_path,
         }
     }
@@ -240,9 +251,3 @@ SPARQL_PREFIX_MAPPING = {
 
 # ensure that values are also keys
 SPARQL_PREFIX_MAPPING.update((v, k) for k, v in list(SPARQL_PREFIX_MAPPING.items()))
-
-# the following handles the second config file. rationale: config.ini is for deployment-relevant configuration,
-# ackrepconf.toml is for non-secret local-relevant configuration (such as paths)
-# this obviously fails during `--bootsrap-config` because the config file does not yet exist
-
-CONF = ackrep_core.config_handler.FlexibleConfigHandler()

@@ -1,6 +1,8 @@
 import os
 import yaml
 
+os.environ["ACKREP_UNITTEST"] = "True"
+
 from unittest import skipIf, skipUnless
 from django.test import TestCase as DjangoTestCase, SimpleTestCase
 from django.conf import settings
@@ -19,10 +21,6 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
 from ackrep_core_django_settings import settings
-
-
-os.environ["ACKREP_UNITTEST"] = "True"
-
 
 ERK_DATA_OCSE_UT_MAIN_PATH = settings.CONF.ERK_DATA_OCSE_UT_MAIN_PATH
 """
@@ -52,7 +50,8 @@ ackrep_data_test_repo_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_da
 os.environ["ACKREP_DATA_PATH"] = ackrep_data_test_repo_path
 
 # due to the command line callings we also need to specify the test-database
-os.environ["ACKREP_DATABASE_PATH"] = os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_core", "db_for_unittests.sqlite3")
+os.environ["ACKREP_DATABASE_PATH"] = core.CONF.ACKREP_DATABASE_PATH
+assert core.CONF.ACKREP_DATABASE_PATH.endswith("db_for_unittests.sqlite3")
 
 # prevent cli commands to get stuck in unexpected IPython shell on error
 # (comment out for debugging)
@@ -200,6 +199,7 @@ class ErkHandlerMixin:
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
         core.load_repo_to_db(ackrep_data_test_repo_path)
+        assert "db_for_unittests" in core.db_name
 
     def tearDown(self) -> None:
 
@@ -683,6 +683,13 @@ class TestCases05(ErkHandlerMixin, SimpleTestCase):
 
     def test_error_messages(self):
         ## test error message of check_system_model and execscript
+        # first: check nominal behavior
+        repo = Repo(ackrep_data_test_repo_path)
+        self.assertFalse(repo.is_dirty())
+        res = run_command(["ackrep", "-c", "UXMFA"])
+        print(res.stdout)
+        self.assertEqual(res.returncode, 0)
+        
         # create syntax error in file
         parameter_path = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
         os.chdir(parameter_path)

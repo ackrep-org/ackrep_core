@@ -79,8 +79,7 @@ def _create_new_config_file(configfile_path):
     ocse_path = Path.cwd().parent.joinpath("erk", "erk-data", "ocse", "erkpackage.toml").as_posix()
     ocse_ut_path = Path.cwd().parent.joinpath("erk", "erk-data-for-unittests", "ocse", "erkpackage.toml").as_posix()
     ackrep_data_path = os.path.join(ackrep_root_path, "ackrep_data")
-    
-    
+
     check_paths = [
         ("ACKREP_ROOT_PATH", ackrep_root_path),
         ("ERK_DATA_OCSE_CONF_PATH", ocse_path),
@@ -202,6 +201,18 @@ class FlexibleConfigHandler(object):
             self.ACKREP_CI_RESULTS_PATH = ackrep_ci_result_path
         elif ackrep_root_path:
             self.ACKREP_CI_RESULTS_PATH = os.path.join(self.ACKREP_ROOT_PATH, "ackrep_ci_results")
+
+
+        # database paths with hardcoded filenames
+        self.ACKREP_UT_DATABASE_PATH  = os.path.join(ackrep_root_path, "ackrep_core", "db_for_unittests.sqlite3")
+        
+        if os.environ.get("ACKREP_DATABASE_PATH"):
+            self.ACKREP_DATABASE_PATH  = os.environ.get("ACKREP_DATABASE_PATH")
+        elif os.environ.get("ACKREP_UNITTEST") == "True":
+            self.ACKREP_DATABASE_PATH = self.ACKREP_UT_DATABASE_PATH
+        else:
+            self.ACKREP_DATABASE_PATH = os.path.join(ackrep_root_path, "ackrep_core", "db.sqlite3")
+
 
     def __getattr__(self, name):
 
