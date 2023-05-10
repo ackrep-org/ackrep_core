@@ -318,9 +318,9 @@ def insert_settings_context_preprocessor(request):
 
     # select some settings which should be availabe in all templates
 
-    keys = ["DEVMODE"]
+    keys = ["DEVMODE", "SPARQL_PREFIX_MAPPING"]
 
-    partial_context = { (f"SETTINGS_{k}", getattr(settings, k, None)) for k in keys }
+    partial_context = dict( (f"SETTINGS_{k}", getattr(settings, k, None)) for k in keys )
 
     print("called me")
 

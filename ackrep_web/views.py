@@ -429,8 +429,8 @@ class SearchSparqlView(View):
         example_query = twdd(
             f"""
         PREFIX : <{p.rdfstack.ERK_URI}>
-        PREFIX ocse: <erk:/ocse/0.2#>
-        PREFIX ack: <erk:/ackrep#>
+        PREFIX ocse: <{settings.SPARQL_PREFIX_MAPPING['ocse']}#>
+        PREFIX ack: <{settings.SPARQL_PREFIX_MAPPING['ack']}#>
         SELECT ?s
         WHERE {{
             ?s :R16__has_property ocse:I7733__time_invariance.

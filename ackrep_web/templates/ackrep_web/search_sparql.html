@@ -2,7 +2,6 @@
 {% load static %}
 {% block content %}
 
-# !! replace `erk:/ocse/0.2` with {{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}
 
 <h3>Search entities in ontology</h3>
 
@@ -92,7 +91,7 @@ MathJax.Hub.Config({
     Find the entity with a given key (e.g. UXMFA):
     <code style="display:block; white-space:pre-wrap">
     PREFIX : &lt;erk:/builtins#&gt;
-    PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+    PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
     SELECT ?entity
     WHERE {
         ?entity ocse:R2950__has_corresponding_ackrep_key "UXMFA".
@@ -102,7 +101,7 @@ MathJax.Hub.Config({
     Get all relations of all exising system models:
     <code style="display:block; white-space:pre-wrap">
         PREFIX : &lt;erk:/builtins#&gt;
-        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?relation
         WHERE {
             ?entity ?relation ?o.
@@ -112,7 +111,7 @@ MathJax.Hub.Config({
     Get all relations that have a system model as first argument:
     <code style="display:block; white-space:pre-wrap">
         PREFIX : &lt;erk:/builtins#&gt;
-        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?relation
         WHERE {
             ?relation :R8__has_domain_of_argument_1 ocse:I7641__general_system_model.
@@ -124,7 +123,7 @@ MathJax.Hub.Config({
     Get all pyerk items:
     <code style="display:block; white-space:pre-wrap">
         PREFIX : &lt;erk:/builtins#&gt;
-        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?item
         WHERE {
             ?item (:R4__is_instance_of|:R3__is_subclass_of)* :I1__general_item
@@ -135,7 +134,7 @@ MathJax.Hub.Config({
     Find all system models that are represented by a partial differential equation:
     <code style="display:block; white-space:pre-wrap">
         PREFIX : &lt;erk:/builtins#&gt;
-        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?entity
         WHERE {
             ?entity :R4__is_instance_of ocse:I7641__general_system_model.
@@ -147,7 +146,7 @@ MathJax.Hub.Config({
     Find all system models that have system order of 3 and are autonomous
     <code style="display:block; white-space:pre-wrap">
         PREFIX : &lt;erk:/builtins#&gt;
-        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?model
         WHERE
         {
@@ -162,7 +161,7 @@ MathJax.Hub.Config({
     Select all ackrep entities that use linear state feedback:
     <code style="display:block; white-space:pre-wrap">
         PREFIX : &lt;erk:/builtins#&gt;
-        PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+        PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?entity ?tag
         WHERE {
             ?entity ocse:R1070__has_old_tag ?tag.
@@ -173,7 +172,7 @@ MathJax.Hub.Config({
     Select all entites, that have both of the tags "Convergence_To_Desired_Trajectory" and "Trajectory_Generation":
     <code style="display:block; white-space:pre-wrap">
     PREFIX : &lt;erk:/builtins#&gt;
-    PREFIX ocse: &lt;erk:/ocse/0.2#&gt;
+    PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
     SELECT ?entity
     WHERE {
         ?entity ocse:R1070__has_old_tag ?tag1.

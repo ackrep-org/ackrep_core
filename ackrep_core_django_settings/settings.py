@@ -232,10 +232,10 @@ BASE_URL_FOR_PDF = "http://127.0.0.1:8000/"
 # While this is also pyerk-related it makes sense to configure these prefixes in ackrep because they are used
 # here. The erk module might be used also in different contexts where these prefixes would not apply.
 SPARQL_PREFIX_MAPPING = {
-    ":": "<erk:/builtins#>",
-    "ocse:": "<erk:/ocse/0.2/control_theory#>",
-    "ma": "<erk:/ocse/0.2/math#>",
-    "ack:": "<erk:/ackrep#>",
+    ":": "erk:/builtins",
+    "ocse": "erk:/ocse/0.2/control_theory",
+    "ma": "erk:/ocse/0.2/math",
+    "ack": "erk:/ackrep",
 }
 
 # ensure that values are also keys
