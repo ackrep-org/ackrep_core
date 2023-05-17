@@ -1,0 +1,62 @@
+5CVFG, acrobot, locally_strongly_accessible, True, 235.454, local strong access
+5CVFG, acrobot, exact_input_state_linearization, False, 178.112, exact input state linearization does not exist
+XHINE, ball beam, locally_strongly_accessible, True, 28.807, local strong access
+XHINE, ball beam, exact_input_state_linearization, False, 12.618, exact input state linearization does not exist
+SRSTF, ball in tube, locally_strongly_accessible, True, 0.855, local strong access
+SRSTF, ball in tube, exact_input_state_linearization, True, 0.505, exact input state linearization exists
+KAHFE, boost converter, locally_strongly_accessible, True, 0.38, local strong access
+KAHFE, boost converter, exact_input_state_linearization, True, 0.157, exact input state linearization exists
+GKKTM, brockett integrator, locally_strongly_accessible, False, 0.165, no local strong access
+GKKTM, brockett integrator, exact_input_state_linearization, False, 0.18, exact input state linearization does not exist
+OK5BV, buck-boost converter, locally_strongly_accessible, True, 0.175, local strong access
+OK5BV, buck-boost converter, exact_input_state_linearization, True, 0.358, exact input state linearization exists
+DFRJY, buck converter, locally_strongly_accessible, True, 0.039, local strong access
+DFRJY, buck converter, exact_input_state_linearization, True, 0.135, exact input state linearization exists
+JBTRZ, distillation column, locally_strongly_accessible, None, 0.0, model representation not useable
+JBTRZ, distillation column, exact_input_state_linearization, None, 0.001, model representation not useable
+9TM8C, flyback converter, locally_strongly_accessible, True, 0.276, local strong access
+9TM8C, flyback converter, exact_input_state_linearization, True, 0.243, exact input state linearization exists
+CK7EX, four-bar linkage, locally_strongly_accessible, None, 0.0, model representation not useable
+CK7EX, four-bar linkage, exact_input_state_linearization, None, 0.0, model representation not useable
+AEYHV, furuta pendulum, locally_strongly_accessible, True, 224.463, local strong access
+AEYHV, furuta pendulum, exact_input_state_linearization, False, 171.883, exact input state linearization does not exist
+1VY9F, Heat Equation, locally_strongly_accessible, None, 0.0, model representation not useable
+1VY9F, Heat Equation, exact_input_state_linearization, None, 0.0, model representation not useable
+R9XXK, hysteresis system, locally_strongly_accessible, None, 0.0, model representation not useable
+R9XXK, hysteresis system, exact_input_state_linearization, None, 0.0, model representation not useable
+AVCTR, iwp, locally_strongly_accessible, True, 1.773, local strong access
+AVCTR, iwp, exact_input_state_linearization, True, 1.645, exact input state linearization exists
+U6B7N, kapitza's pendulum, locally_strongly_accessible, True, 0.308, local strong access
+U6B7N, kapitza's pendulum, exact_input_state_linearization, True, 0.134, exact input state linearization exists
+IG3GA, linear transport system, locally_strongly_accessible, None, 0.0, model representation not useable
+IG3GA, linear transport system, exact_input_state_linearization, None, 0.012, model representation not useable
+BID9I, loading bridge, locally_strongly_accessible, True, 34.768, local strong access
+BID9I, loading bridge, exact_input_state_linearization, False, 5.227, exact input state linearization does not exist
+UXMFA, lorenz system, locally_strongly_accessible, None, 0.0, model has no input
+UXMFA, lorenz system, exact_input_state_linearization, None, 0.003, model has no input
+DRZGT, lotka volterra, locally_strongly_accessible, None, 0.0, model has no input
+DRZGT, lotka volterra, exact_input_state_linearization, None, 0.0, model has no input
+YHS5B, modular multilevel converter (MMC), locally_strongly_accessible, None, 0.504, not input affine
+YHS5B, modular multilevel converter (MMC), exact_input_state_linearization, None, 1.443, not input affine
+CAS0M, n integrator chain, locally_strongly_accessible, True, 0.033, local strong access
+CAS0M, n integrator chain, exact_input_state_linearization, True, 0.068, exact input state linearization exists
+VVAHU, pendubot, locally_strongly_accessible, True, 178.392, local strong access
+VVAHU, pendubot, exact_input_state_linearization, False, 125.492, exact input state linearization does not exist
+IXSV2, permanent magnet DC motor, locally_strongly_accessible, True, 0.078, local strong access
+IXSV2, permanent magnet DC motor, exact_input_state_linearization, True, 0.072, exact input state linearization exists
+OHW5Z, PVTOL with 2 forces, locally_strongly_accessible, True, 1.137, local strong access
+OHW5Z, PVTOL with 2 forces, exact_input_state_linearization, False, 1.015, exact input state linearization does not exist
+FD5RW, roessler attractor, locally_strongly_accessible, None, 0.0, model has no input
+FD5RW, roessler attractor, exact_input_state_linearization, None, 0.001, model has no input
+OV6ND, stable PTn system, locally_strongly_accessible, True, 0.072, local strong access
+OV6ND, stable PTn system, exact_input_state_linearization, True, 0.084, exact input state linearization exists
+BZJ3K, tora, locally_strongly_accessible, True, 9.481, local strong access
+BZJ3K, tora, exact_input_state_linearization, False, 30.588, exact input state linearization does not exist
+HBWN5, triple pendulum, locally_strongly_accessible, None, 608.273, timeout
+HBWN5, triple pendulum, exact_input_state_linearization, None, 600.023, timeout
+AJ0PV, two mass floating bodies, locally_strongly_accessible, True, 1.287, local strong access
+AJ0PV, two mass floating bodies, exact_input_state_linearization, True, 5.303, exact input state linearization exists
+IKNYP, wave equation 1D, locally_strongly_accessible, None, 0.0, model representation not useable
+IKNYP, wave equation 1D, exact_input_state_linearization, None, 0.014, model representation not useable
+JPCL5, winkler system, locally_strongly_accessible, None, 0.0, model has no input
+JPCL5, winkler system, exact_input_state_linearization, None, 0.042, model has no input
