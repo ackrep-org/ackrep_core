@@ -22,17 +22,25 @@ timestamp = dt.datetime.now().strftime("__%Y_%m_%d__%H_%M_%S")
 report_name = "report" + timestamp + ".txt"
 filepath = os.path.join(os.path.split(os.path.abspath(__file__))[0], report_name)
 
+
+ackrep_core_path = core.settings.BASE_DIR
+
+# go one level up; this is the root of _data, _core, _deployment, etc
+ackrep_project_path = os.path.dirname(ackrep_core_path)
+
+
 for e in entity_list:
     key = e.key
 
     # only check double crane model:
-    # if key != "IMLSG":
-    #     continue
+    if key != "IMLSG":
+        print(f"{e.key=}, {e.name=}")
+        continue
 
     # get path of the model
     cwd = os.getcwd()
-    main_directory = os.path.split(cwd)[0]
-    model_path = os.path.join(main_directory, e.base_path)
+    model_path = os.path.join(ackrep_project_path, e.base_path)
+
     # get model
     sys.path.append(model_path)
 
