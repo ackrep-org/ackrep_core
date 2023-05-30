@@ -85,13 +85,13 @@ def _create_new_config_file(configfile_path):
         ("ERK_DATA_OCSE_CONF_PATH", ocse_path),
         ("ERK_DATA_OCSE_UT_CONF_PATH", ocse_ut_path),
         ("ACKREP_DATA_PATH", ackrep_data_path)
-        
+
     ]
-    
+
     if os.path.split(cwd)[-1] != "ackrep":
         msg = f"The current workdir ist not `ackrep` (as expected) but instead {cwd}."
         logging.logger.warn(msg)
-    
+
     for name, pathstr in check_paths:
         if not os.path.exists(pathstr):
             msg = (
@@ -155,12 +155,18 @@ class FlexibleConfigHandler(object):
     This singleton class provides access to config data if available and gives reasonable error messages if not
     """
 
+    is_initialized = False
+
     def __new__(cls):
         if not hasattr(cls, "instance"):
             cls.instance = super().__new__(cls)
         return cls.instance
 
     def __init__(self):
+
+        # prevent multiple calls
+        if self.is_initialized:
+            return
 
         try:
             self.config_dict = load_config_file()
@@ -171,6 +177,7 @@ class FlexibleConfigHandler(object):
 
         self.define_paths()
         self.instance = self
+        self.is_initialized = True
 
     # noinspection PyAttributeOutsideInit
     def define_paths(self):
@@ -205,13 +212,31 @@ class FlexibleConfigHandler(object):
 
         # database paths with hardcoded filenames
         self.ACKREP_UT_DATABASE_PATH  = os.path.join(ackrep_root_path, "ackrep_core", "db_for_unittests.sqlite3")
-        
+
         if os.environ.get("ACKREP_DATABASE_PATH"):
             self.ACKREP_DATABASE_PATH  = os.environ.get("ACKREP_DATABASE_PATH")
         elif os.environ.get("ACKREP_UNITTEST") == "True":
             self.ACKREP_DATABASE_PATH = self.ACKREP_UT_DATABASE_PATH
         else:
             self.ACKREP_DATABASE_PATH = os.path.join(ackrep_root_path, "ackrep_core", "db.sqlite3")
+
+        if ocse_conf_path := self._get_ocse_conf_path("ERK_DATA_OCSE_MAIN_PATH"):
+            os.environ["PYERK_CONF_PATH"] = ocse_conf_path
+
+    def _get_ocse_conf_path(self, name) -> str:
+
+        # note the difference between ..._MAIN_... and ..._CONF_...
+        # TODO: explain this difference in comments or docs
+
+        if name == "ERK_DATA_OCSE_MAIN_PATH":
+            if os.environ.get("ACKREP_UNITTEST") == "True":
+                ocse_conf_path = self.ERK_DATA_OCSE_UT_CONF_PATH
+            else:
+                ocse_conf_path = self.ERK_DATA_OCSE_CONF_PATH
+
+        if name == "ERK_DATA_OCSE_UT_MAIN_PATH":
+            ocse_conf_path = self.ERK_DATA_OCSE_UT_CONF_PATH
+        return ocse_conf_path
 
 
     def __getattr__(self, name):
@@ -230,28 +255,8 @@ class FlexibleConfigHandler(object):
             raise FileNotFoundError(msg)
 
         # handle some special cases
-
-        # note the difference between ..._MAIN_... and ..._CONF_...
-        # TODO: explain this difference in comments or docs
-        if name == "ERK_DATA_OCSE_MAIN_PATH":
-            if os.environ.get("ACKREP_UNITTEST") == "True":
-                ocse_conf_path = self.ERK_DATA_OCSE_UT_CONF_PATH
-            else:
-                ocse_conf_path = self.ERK_DATA_OCSE_CONF_PATH
-
-            if not os.path.isfile(ocse_conf_path):
-                msg = f"Error on loading OCSE config file: {ocse_conf_path}"
-                raise FileNotFoundError(msg)
-
-            with open(ocse_conf_path, "rb") as fp:
-                erk_conf_dict = tomllib.load(fp)
-
-            ocse_main_rel_path = erk_conf_dict["main_module"]
-            ocse_main_mod_path = Path(ocse_conf_path).parent.joinpath(ocse_main_rel_path).as_posix()
-            return ocse_main_mod_path
-
-        if name == "ERK_DATA_OCSE_UT_MAIN_PATH":
-            ocse_conf_path = self.ERK_DATA_OCSE_UT_CONF_PATH
+        if name in ["ERK_DATA_OCSE_MAIN_PATH", "ERK_DATA_OCSE_UT_MAIN_PATH"]:
+            ocse_conf_path = self._get_ocse_conf_path(name)
 
             if not os.path.isfile(ocse_conf_path):
                 msg = f"Error on loading OCSE config file: {ocse_conf_path}"

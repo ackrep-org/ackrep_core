@@ -7,6 +7,10 @@ import shutil
 from jinja2 import Environment, FileSystemLoader
 from git import Repo
 
+# loading ackrep config befor loading pyerk
+from ackrep_core.config_handler import FlexibleConfigHandler
+CONF = FlexibleConfigHandler()
+
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
     import pyerk as p
@@ -46,9 +50,6 @@ from .util import (
 )
 
 from .logging import logger
-from ackrep_core.config_handler import FlexibleConfigHandler
-
-CONF = FlexibleConfigHandler()
 
 
 last_loaded_entities = []  # TODO: HACK! Data should be somehow be passed directly to import result view
