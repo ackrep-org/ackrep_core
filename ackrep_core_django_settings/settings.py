@@ -102,7 +102,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_bleach",
-    "django_nose",
     "ackrep_core",
     "ackrep_web",
 ]
@@ -154,7 +153,7 @@ if not (database_path):
     test_db_settings = {
         "TEST": {
             "ENGINE": "django.db.backends.sqlite3",
-            
+
             # this is always the test database
             "NAME": CONF.ACKREP_DATABASE_PATH,
         }
@@ -165,7 +164,7 @@ else:
     test_db_settings = {
         "TEST": {
             "ENGINE": "django.db.backends.sqlite3",
-            
+
             # this might be the production db or the test db
             "NAME": database_path,
         }
@@ -222,8 +221,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # path where db-backups are dumped to
 BACKUP_PATH = os.path.join(BASE_DIR, "db_backups")
-
-TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
 
 ACKREP_DATA_BASE_URL = config("ACKREP_DATA_BASE_URL", default="unknown")
 ACKREP_DATA_BRANCH = config("ACKREP_DATA_BRANCH", default="unknown")
