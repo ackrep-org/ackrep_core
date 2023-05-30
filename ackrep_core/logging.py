@@ -7,12 +7,16 @@ import sys
 import logging  # logging module from python std lib
 
 
+# initialize logging with default loglevel (might be overwritten by command line option)
+# see https://docs.python.org/3/howto/logging-cookbook.html
 
 defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
 FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+DATEFORMAT = "%H:%M:%S"
 logging.basicConfig(
     level=defaul_loglevel,
-    format = FORMAT,
+    format=FORMAT,
+    datefmt=DATEFORMAT,
     handlers=[
         # lg.FileHandler("ackrep.log"),
         logging.StreamHandler(sys.stdout)
@@ -20,16 +24,7 @@ logging.basicConfig(
 )
 
 
-logger = logging.getLogger("ackrep_logger")
-
-# initialize logging with default loglevel (might be overwritten by command line option)
-# see https://docs.python.org/3/howto/logging-cookbook.html
-DATEFORMAT = "%H:%M:%S"
-formatter = logging.Formatter(fmt=FORMAT, datefmt=DATEFORMAT)
-handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(defaul_loglevel)
+logger = logging.getLogger("ackrep")
 
 
 def send_debug_report(send=None):
