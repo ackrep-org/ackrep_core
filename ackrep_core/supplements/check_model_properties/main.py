@@ -1,11 +1,23 @@
 import os
 import time
+import sys
+import logging as lg
+from packaging import version
 import datetime as dt
 from ackrep_core import models, core
-import sys
+
 from importlib import reload
 from ipydex import IPS, activate_ips_on_exception
 from ackrep_core.supplements.check_model_properties.properties import *
+import symbtools as st
+
+
+logger = lg.getLogger("ackrep-check-model-props")
+logger.info("started")
+
+st_version = version.parse(st.__version__)
+if st_version >= version.parse("0.3.4"):
+    logger.warning("The version of symbtools is unexpectedly low. Continuing anyway.")
 
 activate_ips_on_exception()
 
@@ -32,10 +44,11 @@ ackrep_project_path = os.path.dirname(ackrep_core_path)
 for e in entity_list:
     key = e.key
 
+    # useful for debugging
     # only check double crane model:
-    if key != "IMLSG":
-        print(f"{e.key=}, {e.name=}")
-        continue
+    # if key != "IMLSG":
+    #     print(f"{e.key=}, {e.name=}")
+    #     continue
 
     # get path of the model
     cwd = os.getcwd()
@@ -62,7 +75,7 @@ for e in entity_list:
         result_data = [key, e.name, f.__name__, str(flag), str(round(deltat, 3)), msg]
         result_list.append(result_data)
 
-        print(result_data)
+        logger.info(result_data)
 
         with open(filepath, "a") as f:
             f.write(", ".join([str(i) for i in result_data]) + "\n")
@@ -72,5 +85,3 @@ for e in entity_list:
 t_total = (time.time() - t) / 60
 with open(filepath, "a") as f:
     f.write("\ntotal time: " + str(round(t_total, 2)) + " minutes")
-
-
