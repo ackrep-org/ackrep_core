@@ -328,6 +328,4 @@ def insert_settings_context_preprocessor(request):
 
     partial_context = dict( (f"SETTINGS_{k}", getattr(settings, k, None)) for k in keys )
 
-    print("called me")
-
     return partial_context

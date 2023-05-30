@@ -38,7 +38,6 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
     import pyerk as p
 
-
 from django.http import JsonResponse
 from django.db.models import Q
 from ackrep_core.models import PyerkEntity
@@ -447,6 +446,8 @@ class SearchSparqlView(View):
                 context["stacktrace"] = traceback.format_exc()
             table_head = []
             table_data = []
+        else:
+            context["err"] = None
 
         # onto_entities_no_dupl = hide_duplicate_sparql_res(onto_entities)
 
