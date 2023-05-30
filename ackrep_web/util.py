@@ -304,7 +304,8 @@ def create_lss(ent: p.Entity, rel_key: str) -> LanguageSpecifiedString:
 
 
 def get_sparql_text(code_entity: Union[PyerkEntity, object]) -> str:
-    uri = "<" + code_entity.base_uri + "#>"
+    # uri = "<" + code_entity.base_uri + "#>"
+    uri = code_entity.base_uri
     prefix = settings.SPARQL_PREFIX_MAPPING[uri]
     key = code_entity.short_key
     desc = code_entity.R1.replace(" ", "_")
