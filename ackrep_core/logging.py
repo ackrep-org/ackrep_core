@@ -6,12 +6,24 @@ import os
 import sys
 import logging  # logging module from python std lib
 
+
+
+defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
+FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(
+    level=defaul_loglevel,
+    format = FORMAT,
+    handlers=[
+        # lg.FileHandler("ackrep.log"),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+
 logger = logging.getLogger("ackrep_logger")
 
 # initialize logging with default loglevel (might be overwritten by command line option)
 # see https://docs.python.org/3/howto/logging-cookbook.html
-defaul_loglevel = os.environ.get("ACKREP_LOG_LEVEL", logging.INFO)
-FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
 DATEFORMAT = "%H:%M:%S"
 formatter = logging.Formatter(fmt=FORMAT, datefmt=DATEFORMAT)
 handler = logging.StreamHandler(sys.stdout)
