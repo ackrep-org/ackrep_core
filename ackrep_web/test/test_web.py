@@ -176,11 +176,11 @@ class TestCases2(SimpleTestCase):
         sparql_src = twdd(
             f"""
         PREFIX : {settings.SPARQL_PREFIX_MAPPING[':']}
-        PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse:']}
+        PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse']}
         SELECT ?s
         WHERE {{
             ?s :R16 ocse:I7733.
-        
+
         }}
         """
         )
@@ -200,7 +200,7 @@ class TestCases2(SimpleTestCase):
         sparql_src = twdd(
             f"""
         PREFIX : {settings.SPARQL_PREFIX_MAPPING[':']}
-        PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse:']}
+        PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse']}
         SELECT ?s
         WHERE {{
             ?s :R16__has_property ocse:I7733__time_invariance.
@@ -225,8 +225,8 @@ class TestCases2(SimpleTestCase):
         sparql_src = twdd(
             f"""
         PREFIX : {settings.SPARQL_PREFIX_MAPPING[':']}
-        PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse:']}
-        PREFIX ack: {settings.SPARQL_PREFIX_MAPPING['ack:']}
+        PREFIX ocse: {settings.SPARQL_PREFIX_MAPPING['ocse']}
+        PREFIX ack: {settings.SPARQL_PREFIX_MAPPING['ack']}
         SELECT ?s ?p ?o
         WHERE {{
             ?s ?p ?o.
