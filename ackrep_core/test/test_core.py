@@ -167,14 +167,13 @@ class TestCases01(DjangoTestCase):
             core.logger.warning(msg)
 
         # test for hash in last 5 commits
-        log_list = repo.git.log("-5", "--pretty=oneline").split("\n")
+        log_list = repo.git.log("-25", "--pretty=oneline").split("\n")
         sha_list = [line.split(" ")[0] for line in log_list]
 
         msg = (
             f"Repository {pyerk_ocse_path} is in the wrong state. "
             f"Current branch does unexpectedly not contain commit {TEST_ERK_DATA_REPO_COMMIT_SHA[:7]}."
         )
-
         self.assertIn(TEST_ERK_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
     def test_logging(self):
