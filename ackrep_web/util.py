@@ -157,10 +157,15 @@ def represent_entity_as_dict(code_entity: Union[PyerkEntity, object]) -> dict:
 
 
 def reload_data_if_necessary(force: bool = False, speedup: bool = True) -> Container:
+
+    res = None
+    if not force and p.settings.OCSE_URI in p.ds.uri_prefix_mapping.a:
+        return Container()
+
+    # we indeed have to reload
     res = Container()
     res.modules = reload_modules_if_necessary(force=force)
 
-    # TODO: test if db needs to be reloaded
     res.db = load_erk_entities_to_db(speedup=speedup)
 
     return res
