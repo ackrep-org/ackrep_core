@@ -15,7 +15,7 @@ from ackrep_core.util import run_command, utf8decode
 
 from ipydex import IPS  # only for debugging
 
-from distutils.spawn import find_executable
+from shutil import which as find_executable
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
@@ -689,7 +689,7 @@ class TestCases05(ErkHandlerMixin, SimpleTestCase):
         res = run_command(["ackrep", "-c", "UXMFA"])
         print(res.stdout)
         self.assertEqual(res.returncode, 0)
-        
+
         # create syntax error in file
         parameter_path = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
         os.chdir(parameter_path)
