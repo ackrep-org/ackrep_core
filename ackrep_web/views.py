@@ -48,6 +48,9 @@ from .util import (
 )
 
 
+# print("\n"*3, "----------- import views ---------", "\n"*3)
+
+
 class LandingPageView(View):
 
     # noinspection PyMethodMayBeStatic

@@ -164,6 +164,10 @@ def reload_data_if_necessary(force: bool = False, speedup: bool = True) -> Conta
 
     res = None
 
+    # print("\n"*1, f"{GLOBALS.DATA_LOADED=}", "\n"*1)
+
+
+
     if not force and GLOBALS.DATA_LOADED:
         # TODO: introduce logger here
         # print("do not reload")

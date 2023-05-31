@@ -212,7 +212,6 @@ class FlexibleConfigHandler(object):
         elif ackrep_root_path:
             self.ACKREP_CI_RESULTS_PATH = os.path.join(self.ACKREP_ROOT_PATH, "ackrep_ci_results")
 
-
         # database paths with hardcoded filenames
         self.ACKREP_UT_DATABASE_PATH  = os.path.join(ackrep_root_path, "ackrep_core", "db_for_unittests.sqlite3")
 

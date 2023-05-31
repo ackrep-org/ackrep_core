@@ -7,7 +7,7 @@ import shutil
 from jinja2 import Environment, FileSystemLoader
 from git import Repo
 
-# loading ackrep config befor loading pyerk
+# loading ackrep config before loading pyerk
 from ackrep_core.config_handler import FlexibleConfigHandler
 CONF = FlexibleConfigHandler()
 
