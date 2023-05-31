@@ -175,6 +175,9 @@ class FlexibleConfigHandler(object):
             self.config_dict = {}
             self.config_file_found = False
 
+            # this is currently the best option as it provides a better error message than just leaving the dict empty
+            raise
+
         self.define_paths()
         self.instance = self
         self.is_initialized = True
