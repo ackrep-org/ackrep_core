@@ -464,6 +464,8 @@ class SearchSparqlView(View):
 # /search/?q=...
 def get_item(request):
     """generate response for dynamical pyerk entity search bar"""
+
+    # TODO: smart dynamic reload would be desireable but causes currently causes problems
     reload_data_if_necessary()
     q = request.GET.get("q")
 

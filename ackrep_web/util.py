@@ -14,6 +14,10 @@ import re
 from ackrep_core_django_settings import settings
 from ackrep_core.models import PyerkEntity, LanguageSpecifiedString
 
+# will be changed from views
+GLOBALS = Container()
+GLOBALS.DATA_LOADED = False
+
 activate_ips_on_exception()
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
@@ -159,6 +163,12 @@ def represent_entity_as_dict(code_entity: Union[PyerkEntity, object]) -> dict:
 def reload_data_if_necessary(force: bool = False, speedup: bool = True) -> Container:
 
     res = None
+
+    if not force and GLOBALS.DATA_LOADED:
+        # TODO: introduce logger here
+        # print("do not reload")
+        return res
+
     if not force and p.settings.OCSE_URI in p.ds.uri_prefix_mapping.a:
         return Container()
 
@@ -167,6 +177,8 @@ def reload_data_if_necessary(force: bool = False, speedup: bool = True) -> Conta
     res.modules = reload_modules_if_necessary(force=force)
 
     res.db = load_erk_entities_to_db(speedup=speedup)
+
+    GLOBALS.DATA_LOADED = True
 
     return res
 
@@ -306,9 +318,17 @@ def create_lss(ent: p.Entity, rel_key: str) -> LanguageSpecifiedString:
 def get_sparql_text(code_entity: Union[PyerkEntity, object]) -> str:
     # uri = "<" + code_entity.base_uri + "#>"
     uri = code_entity.base_uri
-    prefix = settings.SPARQL_PREFIX_MAPPING[uri]
+    try:
+        prefix = settings.SPARQL_PREFIX_MAPPING[uri]
+    except KeyError:
+        # IPS()
+        raise
     key = code_entity.short_key
     desc = code_entity.R1.replace(" ", "_")
+
+    # make prefix robust against different conventions
+    if not prefix.endswith(":"):
+        prefix = f"{prefix}:"
 
     text = prefix + key + "__" + desc
 
