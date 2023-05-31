@@ -243,6 +243,7 @@ SPARQL_PREFIX_MAPPING = {
     ":": "erk:/builtins",
     "ocse": "erk:/ocse/0.2/control_theory",
     "ma": "erk:/ocse/0.2/math",
+    "ag": "erk:/ocse/0.2/agents",
     "ack": "erk:/ackrep",
 }
 
