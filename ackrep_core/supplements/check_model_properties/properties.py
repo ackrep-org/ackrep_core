@@ -2,6 +2,7 @@ import symbtools as st
 import sympy as sp
 import functools
 from ipydex import IPS
+from abc import abstractmethod
 
 from threading import Thread
 from ackrep_core.system_model_management import GenericModel
@@ -37,129 +38,143 @@ def timeout(timeout):
         return wrapper
     return deco
 
-def locally_strongly_accessible(model: GenericModel):
-    """
-    checks if model is locally strongly accessible
 
-    :reutrn: tuple of flag - boolean, msg - string
-    """
-    if not isinstance(model, GenericModel):                     # models with not useable representation
-        flag = None
-        msg = "model representation not useable"
-    elif not model.uu_symb:                                     # models without input
-        flag = None
-        msg = "model has no input"
-    else:
-        eqns: st.MatrixBase = model.get_rhs_symbolic()
-        if not eqns:                                            # models without function get_rhs_symbolic()
+class Property():
+    erk_key = None
+
+    @abstractmethod
+    def check_property(self):
+        raise NotImplementedError
+
+
+class LocalStrongAccess(Property):
+    erk_key = "I7178"
+
+    def check_property(self, model: GenericModel):
+        """
+        checks if model is locally strongly accessible
+
+        :reutrn: tuple of flag - boolean, msg - string
+        """
+        if not isinstance(model, GenericModel):                     # models with not useable representation
             flag = None
             msg = "model representation not useable"
+        elif not model.uu_symb:                                     # models without input
+            flag = None
+            msg = "model has no input"
         else:
-            xx = model.xx_symb
-            uu = model.uu_symb
-
-            ff = eqns.subz0(uu)
-            gg: st.MatrixBase = eqns - ff
-
-            GG = gg.jacobian(uu)
-            d = (GG - GG.subz0(uu)).srn                         # d != 0 where gg depends nonlinearly on u
-
-            if any(d):                                          # check if model is linearly dependent on u
+            eqns: st.MatrixBase = model.get_rhs_symbolic()
+            if not eqns:                                            # models without function get_rhs_symbolic()
                 flag = None
-                msg = "not input affine"
+                msg = "model representation not useable"
             else:
-                flag, msg = calculate_access(ff, gg, xx, model)
+                xx = model.xx_symb
+                uu = model.uu_symb
 
-    return (flag, msg)
+                ff = eqns.subz0(uu)
+                gg: st.MatrixBase = eqns - ff
 
-@timeout(600)
-def calculate_access(ff, gg, xx, model):
-    """
-    determines if the model is locally strongly accessible or not
+                GG = gg.jacobian(uu)
+                d = (GG - GG.subz0(uu)).srn                         # d != 0 where gg depends nonlinearly on u
 
-    :return: list of flag - boolean, msg - string
-    """
-    ff = ff.subs(model.pp_subs_list)
-    gg = gg.subs(model.pp_subs_list)
+                if any(d):                                          # check if model is linearly dependent on u
+                    flag = None
+                    msg = "not input affine"
+                else:
+                    flag, msg = self.calculate_access(ff, gg, xx, model)
 
-    n = len(xx)
+        return (flag, msg)
 
-    lb_f1g = st.lie_bracket(ff, gg, xx)
-    D = st.col_stack(gg, lb_f1g)
+    @timeout(600)
+    def calculate_access(self, ff, gg, xx, model):
+        """
+        determines if the model is locally strongly accessible or not
 
-    for i in range(n):
-        if st.generic_rank(D) == n:
-            flag = True
-            msg = "local strong access"
-            break
-        else:
-            flag = False
-            msg = "no local strong access"
+        :return: list of flag - boolean, msg - string
+        """
+        ff = ff.subs(model.pp_subs_list)
+        gg = gg.subs(model.pp_subs_list)
 
-        lb_fg = st.lie_bracket(ff, D[:, -1], xx)
-        D = st.col_stack(D, lb_fg)
+        n = len(xx)
 
-    return [flag, msg]
+        lb_f1g = st.lie_bracket(ff, gg, xx)
+        D = st.col_stack(gg, lb_f1g)
 
-@timeout(600)
-def exact_input_state_linearization(model: GenericModel):
-    """
-    Check if the model of the form $\dot{x}=f(x) + g(x)u$ has an exact input state lineraization in $p$. The criterion
-    presented in [1, chap. 4.2] uses the distribution $\Delta_i(x) = \span\{g(x), ad_{-f}g(x),...,ad_{-f}^{i-1}g(x)\}$
-    to evaluate two conditions:
-    1. $ \text{dim}\Delta(p)$
-    2. $ \Delta_{n-1}$ ist involutiv in einer Umgebung von p.
+        for i in range(n):
+            if st.generic_rank(D) == n:
+                flag = True
+                msg = "local strong access"
+                break
+            else:
+                flag = False
+                msg = "no local strong access"
 
-    [1] K. Röbenack, Nichtlineare Regelungssysteme: Theorie und Anwendung der exakten Linearisierung.
-    Berlin, Heidelberg: Springer Berlin Heidelberg, 2017. doi: 10.1007/978-3-662-44091-9.
-    """
-    if not isinstance(model, GenericModel):                     # models with not useable representation
-        flag = None
-        msg = "model representation not useable"
-    elif not model.uu_symb:                                     # models without input
-        flag = None
-        msg = "model has no input"
-    else:
-        eqns: st.MatrixBase = model.get_rhs_symbolic()
-        if not eqns:                                            # models without function get_rhs_symbolic()
+            lb_fg = st.lie_bracket(ff, D[:, -1], xx)
+            D = st.col_stack(D, lb_fg)
+
+        return [flag, msg]
+class ExactInputStateLinearization(Property):
+    erk_key = "I5358"
+
+    @timeout(600)
+    def check_property(self, model: GenericModel):
+        """
+        Check if the model of the form $\dot{x}=f(x) + g(x)u$ has an exact input state lineraization in $p$. The criterion
+        presented in [1, chap. 4.2] uses the distribution $\Delta_i(x) = \span\{g(x), ad_{-f}g(x),...,ad_{-f}^{i-1}g(x)\}$
+        to evaluate two conditions:
+        1. $ \text{dim}\Delta(p)$
+        2. $ \Delta_{n-1}$ ist involutiv in einer Umgebung von p.
+
+        [1] K. Röbenack, Nichtlineare Regelungssysteme: Theorie und Anwendung der exakten Linearisierung.
+        Berlin, Heidelberg: Springer Berlin Heidelberg, 2017. doi: 10.1007/978-3-662-44091-9.
+        """
+        if not isinstance(model, GenericModel):                     # models with not useable representation
             flag = None
             msg = "model representation not useable"
+        elif not model.uu_symb:                                     # models without input
+            flag = None
+            msg = "model has no input"
         else:
-            xx = model.xx_symb
-            uu = model.uu_symb
-
-            ff = eqns.subz0(uu)
-            gg: st.MatrixBase = sp.simplify(eqns - ff)
-
-            GG = gg.jacobian(uu)
-            d = (GG - GG.subz0(uu)).srn                         # d != 0 where gg depends nonlinearly on u
-
-            if any(d):                                          # check if model is linearly dependent on u
+            eqns: st.MatrixBase = model.get_rhs_symbolic()
+            if not eqns:                                            # models without function get_rhs_symbolic()
                 flag = None
-                msg = "not input affine"
-            else:                                               # actually calculate linearization
-                ff = ff.subs(model.pp_subs_list)
-                gg = gg.subs(model.pp_subs_list)
+                msg = "model representation not useable"
+            else:
+                xx = model.xx_symb
+                uu = model.uu_symb
 
-                n = model.n
+                ff = eqns.subz0(uu)
+                gg: st.MatrixBase = sp.simplify(eqns - ff)
 
-                # build distribution
-                delta_n_list = [gg]
-                for i in range(1,n):
-                    delta_n_list.append(st.lie_bracket(-ff, gg, xx, order=i))
-                delta_n = sp.Matrix([delta_n_list])
+                GG = gg.jacobian(uu)
+                d = (GG - GG.subz0(uu)).srn                         # d != 0 where gg depends nonlinearly on u
 
-                cond1 = False
-                cond2 = False
+                if any(d):                                          # check if model is linearly dependent on u
+                    flag = None
+                    msg = "not input affine"
+                else:                                               # actually calculate linearization
+                    ff = ff.subs(model.pp_subs_list)
+                    gg = gg.subs(model.pp_subs_list)
 
-                # condition 1, dim(delta_n) == n
-                cond1 = st.generic_rank(delta_n) == n
+                    n = model.n
 
-                # condition 2, delta_n-1 involutiv
-                delta_n1 = sp.Matrix([delta_n_list[:-1]])
-                cond2, _ = st.involutivity_test(delta_n1, xx)
+                    # build distribution
+                    delta_n_list = [gg]
+                    for i in range(1,n):
+                        delta_n_list.append(st.lie_bracket(-ff, gg, xx, order=i))
+                    delta_n = sp.Matrix([delta_n_list])
 
-                flag = cond1 and cond2
-                msg = f"exact input state linearization {'exists' if flag else 'does not exist'}"
+                    cond1 = False
+                    cond2 = False
 
-    return flag, msg
+                    # condition 1, dim(delta_n) == n
+                    cond1 = st.generic_rank(delta_n) == n
+
+                    # condition 2, delta_n-1 involutiv
+                    delta_n1 = sp.Matrix([delta_n_list[:-1]])
+                    cond2, _ = st.involutivity_test(delta_n1, xx)
+
+                    flag = cond1 and cond2
+                    msg = f"exact input state linearization {'exists' if flag else 'does not exist'}"
+
+        return flag, msg

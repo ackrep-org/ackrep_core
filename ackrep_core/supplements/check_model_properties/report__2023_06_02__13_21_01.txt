@@ -1,4 +1,0 @@
-XHINE, ball beam, locally_strongly_accessible, True, 25.23, local strong access
-XHINE, ball beam, exact_input_state_linearization, False, 10.702, exact input state linearization does not exist
-
-total time: 0.61 minutes

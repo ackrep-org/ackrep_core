@@ -1031,8 +1031,34 @@ def checkout_ut_repo():
 
 def update_metadata_from_property_report(path):
     import yaml
+    import pyerk as p
+    from django.db.models import Q
+    from ackrep_core.models import PyerkEntity
+    from ackrep_web.util import reload_data_if_necessary
+
+    p.erkloader.load_mod_from_path(modpath=acm.core.settings.CONF.ERK_DATA_OCSE_MAIN_PATH, prefix="ct")
+    reload_data_if_necessary()
 
     with open(path, "r") as f:
         property_dict = yaml.load(f)
     for key, value in property_dict.items():
-        pass
+        # key = entity key, value = dict(properties)
+        for prop, data in value.items():
+            subqueries = prop.split("_")
+            filters = []
+            # every word in the query should appear at least once in uri, label or description
+            for sq in subqueries:
+                filters.append(Q(uri__icontains=sq))
+            total_filter = None
+            for f in filters:
+                if total_filter == None:
+                    total_filter = f
+                else:
+                    total_filter = total_filter & f
+
+            entity_list = list(PyerkEntity.objects.filter(total_filter))
+            if len(entity_list) == 1:
+                acm.core.logger.warn(f"Entity not unique or none was found. {entity_list}")
+
+            print(entity_list)
+            # TODO check why every result appears double

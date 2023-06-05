@@ -28,7 +28,7 @@ result_list = []
 entity_list = list(models.SystemModel.objects.all())
 report = "Results"
 
-test_list = [locally_strongly_accessible, exact_input_state_linearization]
+test_list = [LocalStrongAccess, ExactInputStateLinearization]
 
 # text file
 timestamp = dt.datetime.now().strftime("__%Y_%m_%d__%H_%M_%S")
@@ -69,20 +69,21 @@ for e in entity_list:
     model = system_model.Model()
     sys.path.remove(model_path)
 
-    for f in test_list:
+    for prop_class in test_list:
+        prop = prop_class()
         t0 = time.time()
         try:
-            flag, msg = f(model)
+            flag, msg = prop.check_property(model)
         except TimeoutException:
             flag, msg = [None, "timeout"]
         deltat = time.time() - t0
-        result_data = [key, e.name, f.__name__, str(flag), str(round(deltat, 3)), msg]
+        result_data = [key, e.name, prop.__name__, str(flag), str(round(deltat, 3)), msg]
         result_list.append(result_data)
 
         # now add data to dictionary for automated metadata completion
         if key not in result_dict.keys():
             result_dict[key] = {}
-        result_dict[key][f.__name__] = {"result": flag, "duration": round(deltat, 3), "message": msg}
+        result_dict[key][prop.erk_key] = {"result": flag, "duration": round(deltat, 3), "message": msg}
 
 
         logger.info(result_data)
