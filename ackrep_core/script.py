@@ -154,6 +154,13 @@ def main():
         help="try to find the ocse for ut repo locally and checkout the ut branch corresponding to current branch",
         action="store_true",
     )
+    argparser.add_argument(
+        "-upmd",
+        "--update-metadata-from-property-report",
+        help="load the results of a property report and write it to the corresponding model metadata",
+        metavar="yamlpath",
+    )
+
     argparser.add_argument("-n", "--new", help="interactively create new entity", action="store_true")
     argparser.add_argument("-l", "--load-repo-to-db", help="load repo to database", metavar="path")
     argparser.add_argument("-e", "--extend", help="extend database with repo", metavar="path")
@@ -299,6 +306,8 @@ def main():
         test_compleib_models()
     elif args.checkout_corresponding_ocse_ut_repo:
         checkout_ut_repo()
+    elif args.update_metadata_from_property_report:
+        update_metadata_from_property_report(args.update_metadata_from_property_report)
     else:
         print("This is the ackrep_core command line tool\n")
         argparser.print_help()
@@ -1019,3 +1028,11 @@ def checkout_ut_repo():
             )
         )
         raise ValueError(f"No unittest branch with the right name was found.")
+
+def update_metadata_from_property_report(path):
+    import yaml
+
+    with open(path, "r") as f:
+        property_dict = yaml.load(f)
+    for key, value in property_dict.items():
+        pass

@@ -1,0 +1,9 @@
+XHINE:
+  exact_input_state_linearization:
+    duration: 10.702
+    message: exact input state linearization does not exist
+    result: false
+  locally_strongly_accessible:
+    duration: 25.23
+    message: local strong access
+    result: true
