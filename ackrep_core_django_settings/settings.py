@@ -153,7 +153,6 @@ if not (database_path):
     test_db_settings = {
         "TEST": {
             "ENGINE": "django.db.backends.sqlite3",
-
             # this is always the test database
             "NAME": CONF.ACKREP_DATABASE_PATH,
         }
@@ -164,7 +163,6 @@ else:
     test_db_settings = {
         "TEST": {
             "ENGINE": "django.db.backends.sqlite3",
-
             # this might be the production db or the test db
             "NAME": database_path,
         }

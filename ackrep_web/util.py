@@ -166,8 +166,6 @@ def reload_data_if_necessary(force: bool = False, speedup: bool = True) -> Conta
 
     # print("\n"*1, f"{GLOBALS.DATA_LOADED=}", "\n"*1)
 
-
-
     if not force and GLOBALS.DATA_LOADED:
         # TODO: introduce logger here
         # print("do not reload")
@@ -350,6 +348,6 @@ def insert_settings_context_preprocessor(request):
 
     keys = ["DEVMODE", "SPARQL_PREFIX_MAPPING"]
 
-    partial_context = dict( (f"SETTINGS_{k}", getattr(settings, k, None)) for k in keys )
+    partial_context = dict((f"SETTINGS_{k}", getattr(settings, k, None)) for k in keys)
 
     return partial_context
