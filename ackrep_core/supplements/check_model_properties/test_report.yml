@@ -1,0 +1,9 @@
+XHINE:
+  I5358:
+    duration: 12.071
+    message: exact input state linearization does not exist
+    result: false
+  I7178:
+    duration: 26.976
+    message: local strong access
+    result: true
