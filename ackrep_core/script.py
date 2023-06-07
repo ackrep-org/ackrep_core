@@ -1029,7 +1029,8 @@ def checkout_ut_repo():
         )
         raise ValueError(f"No unittest branch with the right name was found.")
 
-def update_metadata_from_property_report(path):
+
+def update_metadata_from_property_report(property_path):
     import yaml
     import pyerk as p
     from django.db.models import Q
@@ -1039,26 +1040,72 @@ def update_metadata_from_property_report(path):
     p.erkloader.load_mod_from_path(modpath=acm.core.settings.CONF.ERK_DATA_OCSE_MAIN_PATH, prefix="ct")
     reload_data_if_necessary()
 
-    with open(path, "r") as f:
-        property_dict = yaml.load(f)
+    # load property yaml
+    with open(property_path, "r") as f:
+        property_dict = yaml.load(f, Loader=yaml.FullLoader)
+
+    # iterate property dict
+    # key = entity key, value = dict(properties)
     for key, value in property_dict.items():
-        # key = entity key, value = dict(properties)
+        # load metadata of system model
+        entity, key = get_entity_and_key(key)
+        metadata_path = os.path.join(acm.core.CONF.ACKREP_ROOT_PATH, entity.base_path, "metadata.yml")
+        with open(metadata_path, "r") as f:
+            meta_dict = yaml.load(f, Loader=yaml.FullLoader)
+
+        # iterate properties
+        # key = erk key of property, value = property data
         for prop, data in value.items():
-            subqueries = prop.split("_")
-            filters = []
-            # every word in the query should appear at least once in uri, label or description
-            for sq in subqueries:
-                filters.append(Q(uri__icontains=sq))
-            total_filter = None
-            for f in filters:
-                if total_filter == None:
-                    total_filter = f
+
+            positive_relation = 'R8303["has general system property"]'
+            negative_relation = 'R6458["does not have general system property"]'
+
+            if data["result"] == False:
+                # switch meaning positive and negative relations and recycle same code
+                buf = positive_relation
+                positive_relation = negative_relation
+                negative_relation = buf
+
+            if data["result"] is not None:
+
+                # only filter uri
+                property_list = list(PyerkEntity.objects.filter(Q(uri__icontains=prop)))
+                if len(property_list) != 1:
+                    acm.core.logger.warn(f"Entity not unique or none was found. {property_list}")
+                property_key_label = (
+                    property_list[0].__str__().split("#")[-1].replace("__", '["').replace("_", " ") + '"]'
+                )
+
+                # check if property is already set
+                ## make sure meta data entry exists
+                if not "erk_data" in meta_dict.keys():
+                    acm.core.logger.warn(f"Model {entity, key} has no metadata yet! Adding some automatically.")
+                    meta_dict["erk_data"] = {}
+
+                # metadata has no properties: add current prop
+                if not positive_relation in meta_dict["erk_data"].keys():
+                    meta_dict["erk_data"][positive_relation] = [property_key_label]
+                    # print("new property added")
+                # metadata already has current prop: do nothing
+                elif property_key_label in meta_dict["erk_data"][positive_relation]:
+                    # print("prop already exists")
+                    pass
+                # just add property to existing ones
                 else:
-                    total_filter = total_filter & f
+                    meta_dict["erk_data"][positive_relation].append(property_key_label)
+                    # print("property added to others")
 
-            entity_list = list(PyerkEntity.objects.filter(total_filter))
-            if len(entity_list) == 1:
-                acm.core.logger.warn(f"Entity not unique or none was found. {entity_list}")
+                # metadata has opposite relation
+                if (
+                    negative_relation in meta_dict["erk_data"].keys()
+                    and property_key_label in meta_dict["erk_data"][negative_relation]
+                ):
+                    # TODO check if opposite property was here before (and remove it)
+                    acm.core.logger.warn(f"Evaluation of property {prop} for {entity, key} changed to {data['result']}")
+                    meta_dict["erk_data"][negative_relation].remove(property_key_label)
+                # IPS()
+        with open(metadata_path, "w") as f:
+            yaml.dump(meta_dict, f, allow_unicode=True)
 
-            print(entity_list)
-            # TODO check why every result appears double
+        # IPS()
+        # TODO automate process of identifying relation. maybe it is a representation property

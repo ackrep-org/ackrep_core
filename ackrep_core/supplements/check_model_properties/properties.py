@@ -7,39 +7,46 @@ from abc import abstractmethod
 from threading import Thread
 from ackrep_core.system_model_management import GenericModel
 
+
 class TimeoutException(Exception):
     pass
 
+
 # source of decorator for the timeout:
 # https://stackoverflow.com/questions/21827874/timeout-a-function-windows
+
 
 def timeout(timeout):
     def deco(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            res = [TimeoutException('function [%s] timeout [%s seconds] exceeded!' % (func.__name__, timeout))]
+            res = [TimeoutException("function [%s] timeout [%s seconds] exceeded!" % (func.__name__, timeout))]
+
             def newFunc():
                 try:
                     res[0] = func(*args, **kwargs)
                 except Exception as e:
                     res[0] = e
+
             t = Thread(target=newFunc)
             t.daemon = True
             try:
                 t.start()
                 t.join(timeout)
             except Exception as je:
-                print ('error starting thread')
+                print("error starting thread")
                 raise je
             ret = res[0]
             if isinstance(ret, BaseException):
                 raise ret
             return ret
+
         return wrapper
+
     return deco
 
 
-class Property():
+class Property:
     erk_key = None
 
     @abstractmethod
@@ -56,15 +63,15 @@ class LocalStrongAccess(Property):
 
         :reutrn: tuple of flag - boolean, msg - string
         """
-        if not isinstance(model, GenericModel):                     # models with not useable representation
+        if not isinstance(model, GenericModel):  # models with not useable representation
             flag = None
             msg = "model representation not useable"
-        elif not model.uu_symb:                                     # models without input
+        elif not model.uu_symb:  # models without input
             flag = None
             msg = "model has no input"
         else:
             eqns: st.MatrixBase = model.get_rhs_symbolic()
-            if not eqns:                                            # models without function get_rhs_symbolic()
+            if not eqns:  # models without function get_rhs_symbolic()
                 flag = None
                 msg = "model representation not useable"
             else:
@@ -75,9 +82,9 @@ class LocalStrongAccess(Property):
                 gg: st.MatrixBase = eqns - ff
 
                 GG = gg.jacobian(uu)
-                d = (GG - GG.subz0(uu)).srn                         # d != 0 where gg depends nonlinearly on u
+                d = (GG - GG.subz0(uu)).srn  # d != 0 where gg depends nonlinearly on u
 
-                if any(d):                                          # check if model is linearly dependent on u
+                if any(d):  # check if model is linearly dependent on u
                     flag = None
                     msg = "not input affine"
                 else:
@@ -113,6 +120,8 @@ class LocalStrongAccess(Property):
             D = st.col_stack(D, lb_fg)
 
         return [flag, msg]
+
+
 class ExactInputStateLinearization(Property):
     erk_key = "I5358"
 
@@ -128,15 +137,15 @@ class ExactInputStateLinearization(Property):
         [1] K. Röbenack, Nichtlineare Regelungssysteme: Theorie und Anwendung der exakten Linearisierung.
         Berlin, Heidelberg: Springer Berlin Heidelberg, 2017. doi: 10.1007/978-3-662-44091-9.
         """
-        if not isinstance(model, GenericModel):                     # models with not useable representation
+        if not isinstance(model, GenericModel):  # models with not useable representation
             flag = None
             msg = "model representation not useable"
-        elif not model.uu_symb:                                     # models without input
+        elif not model.uu_symb:  # models without input
             flag = None
             msg = "model has no input"
         else:
             eqns: st.MatrixBase = model.get_rhs_symbolic()
-            if not eqns:                                            # models without function get_rhs_symbolic()
+            if not eqns:  # models without function get_rhs_symbolic()
                 flag = None
                 msg = "model representation not useable"
             else:
@@ -147,12 +156,12 @@ class ExactInputStateLinearization(Property):
                 gg: st.MatrixBase = sp.simplify(eqns - ff)
 
                 GG = gg.jacobian(uu)
-                d = (GG - GG.subz0(uu)).srn                         # d != 0 where gg depends nonlinearly on u
+                d = (GG - GG.subz0(uu)).srn  # d != 0 where gg depends nonlinearly on u
 
-                if any(d):                                          # check if model is linearly dependent on u
+                if any(d):  # check if model is linearly dependent on u
                     flag = None
                     msg = "not input affine"
-                else:                                               # actually calculate linearization
+                else:  # actually calculate linearization
                     ff = ff.subs(model.pp_subs_list)
                     gg = gg.subs(model.pp_subs_list)
 
@@ -160,7 +169,7 @@ class ExactInputStateLinearization(Property):
 
                     # build distribution
                     delta_n_list = [gg]
-                    for i in range(1,n):
+                    for i in range(1, n):
                         delta_n_list.append(st.lie_bracket(-ff, gg, xx, order=i))
                     delta_n = sp.Matrix([delta_n_list])
 

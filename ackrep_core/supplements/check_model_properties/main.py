@@ -85,7 +85,6 @@ for e in entity_list:
             result_dict[key] = {}
         result_dict[key][prop.erk_key] = {"result": flag, "duration": round(deltat, 3), "message": msg}
 
-
         logger.info(result_data)
 
         with open(filepath, "a") as f:
@@ -99,4 +98,3 @@ with open(filepath, "a") as f:
 
 with open(yamlpath, "a") as f:
     yaml.dump(result_dict, f)
-
