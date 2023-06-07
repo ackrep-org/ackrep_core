@@ -9,6 +9,7 @@ from git import Repo
 
 # loading ackrep config before loading pyerk
 from ackrep_core.config_handler import FlexibleConfigHandler
+
 CONF = FlexibleConfigHandler()
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
@@ -31,6 +32,7 @@ from ipydex import Container
 
 from . import models
 from . import model_utils
+
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     from . import ackrep_parser
 

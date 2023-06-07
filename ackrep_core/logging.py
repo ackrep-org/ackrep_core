@@ -20,7 +20,7 @@ logging.basicConfig(
     handlers=[
         # lg.FileHandler("ackrep.log"),
         logging.StreamHandler(sys.stdout)
-    ]
+    ],
 )
 
 
