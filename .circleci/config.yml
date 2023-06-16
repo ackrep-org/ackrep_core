@@ -22,6 +22,8 @@ jobs: # A basic unit of work in a run
             . venv/bin/activate
             pip install -U pip
             pip install -r requirements.txt
+            pip show ipydex
+            echo --- Install Ackrep
             pip install -e .
       - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
           key: deps3--{{ checksum "requirements.txt" }}--
