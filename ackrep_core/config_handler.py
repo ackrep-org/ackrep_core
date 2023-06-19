@@ -218,13 +218,19 @@ class FlexibleConfigHandler(object):
 
         # database paths with hardcoded filenames
         self.ACKREP_UT_DATABASE_PATH = os.path.join(ackrep_root_path, "ackrep_core", "db_for_unittests.sqlite3")
+        print("env var ACKREP_UNITTEST", os.environ.get("ACKREP_UNITTEST") == "True")
+
 
         if os.environ.get("ACKREP_DATABASE_PATH"):
             self.ACKREP_DATABASE_PATH = os.environ.get("ACKREP_DATABASE_PATH")
+            print(1, self.ACKREP_DATABASE_PATH)
         elif os.environ.get("ACKREP_UNITTEST") == "True":
             self.ACKREP_DATABASE_PATH = self.ACKREP_UT_DATABASE_PATH
+            print(2, self.ACKREP_DATABASE_PATH)
         else:
             self.ACKREP_DATABASE_PATH = os.path.join(ackrep_root_path, "ackrep_core", "db.sqlite3")
+            print(3, self.ACKREP_DATABASE_PATH)
+
 
         if ocse_conf_path := self._get_ocse_conf_path("ERK_DATA_OCSE_MAIN_PATH"):
             os.environ["PYERK_CONF_PATH"] = ocse_conf_path
