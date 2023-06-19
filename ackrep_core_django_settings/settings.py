@@ -41,6 +41,9 @@ else:
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 # this is the repo root (where manage.py lives)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print(os.path.abspath(__file__))
+print(os.path.dirname(os.path.abspath(__file__)))
+print(BASE_DIR)
 PARENT_DIR = os.path.dirname(BASE_DIR)
 
 # Note: catching a FileNotFoundException here leads to strange error.
