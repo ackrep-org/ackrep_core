@@ -25,6 +25,8 @@ jobs: # A basic unit of work in a run
             pip show ipydex
             echo --- Install Ackrep
             pip install .
+            echo check for example ini
+            ls -R
       - save_cache: # cache Python dependencies using checksum of requirements as the cache-key
           key: deps3--{{ checksum "requirements.txt" }}--
           paths:
@@ -35,6 +37,7 @@ jobs: # A basic unit of work in a run
             . venv/bin/activate
             cd ..
             ackrep --bootstrap-config
+            cat /home/circleci/.config/ackrep/ackrepconf.toml
       - run:
           name: Load ERK Modules
           command: |
