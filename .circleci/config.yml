@@ -45,6 +45,10 @@ jobs: # A basic unit of work in a run
             mkdir -p erk/erk_data_for_unittests
             cd erk/erk_data_for_unittests
             git clone https://github.com/ackrep-org/ocse.git
+            ls /home
+            ls /home/circleci
+            ls /home/circleci/erk
+            ls /home/circleci/erk/erk-data-for-unittests
             ackrep --checkout-corresponding-ocse-ut-repo
             cp -r ~/erk/erk_data_for_unittests ~/erk/erk_data
       - run:
