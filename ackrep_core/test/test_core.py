@@ -2,14 +2,14 @@ import os
 import yaml
 
 os.environ["ACKREP_UNITTEST"] = "True"
-
+print("ACKREP_UNITTEST", os.environ.get("ACKREP_UNITTEST"), type(os.environ.get("ACKREP_UNITTEST")))
 from unittest import skipIf, skipUnless
 from django.test import TestCase as DjangoTestCase, SimpleTestCase
 from django.conf import settings
 from git import Repo, InvalidGitRepositoryError
 
 from ackrep_core import core, system_model_management, util
-print("test core l10, core conf", core.CONF.ACKREP_DATABASE_PATH)
+
 from ._test_utils import load_repo_to_db_for_ut, reset_repo
 from ackrep_core.util import run_command, utf8decode
 
@@ -21,8 +21,8 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     import pyerk as p
 
 from ackrep_core_django_settings import settings
-print("test core l24, core conf", settings.CONF.ACKREP_DATABASE_PATH)
-print("core test l 25 os env", os.environ.get("ACKREP_UNITTEST"))
+
+print("ACKREP_UNITTEST", os.environ.get("ACKREP_UNITTEST"), type(os.environ.get("ACKREP_UNITTEST")))
 ERK_DATA_OCSE_UT_MAIN_PATH = settings.CONF.ERK_DATA_OCSE_UT_MAIN_PATH
 """
 This module contains the tests of the core module (not ackrep_web).
