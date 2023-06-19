@@ -70,14 +70,14 @@ def _create_new_config_file(configfile_path):
     # │   │
     # │   └── ...
     # └── erk
-    # │   ├── erk-data/
-    # │   ├── erk-data-for-unittests/
+    # │   ├── erk_data/
+    # │   ├── erk_data_for_unittests/
     #     └── ...
 
     cwd = Path.cwd().as_posix()
     ackrep_root_path = Path.cwd().as_posix()
     ocse_path = Path.cwd().parent.joinpath("erk", "erk-data", "ocse", "erkpackage.toml").as_posix()
-    ocse_ut_path = Path.cwd().parent.joinpath("erk", "erk-data-for-unittests", "ocse", "erkpackage.toml").as_posix()
+    ocse_ut_path = Path.cwd().parent.joinpath("erk", "erk_data_for_unittests", "ocse", "erkpackage.toml").as_posix()
     ackrep_data_path = os.path.join(ackrep_root_path, "ackrep_data")
 
     check_paths = [
@@ -88,7 +88,7 @@ def _create_new_config_file(configfile_path):
     ]
 
     if os.path.split(cwd)[-1] != "ackrep":
-        msg = f"The current workdir ist not `ackrep` (as expected) but instead {cwd}."
+        msg = f"The current workdir is not `ackrep` (as expected) but instead {cwd}."
         logging.logger.warn(msg)
 
     for name, pathstr in check_paths:
@@ -99,6 +99,11 @@ def _create_new_config_file(configfile_path):
                 "Proceeding anyway."
             )
             logging.logger.warn(msg)
+
+    #
+    if os.environ.get("CI") == "true":
+        ocse_path = ocse_ut_path
+        logging.logger.warn("inside CI there is no ERK_DATA, for compatibility, we point ERK_DATA at ERK_DATA_UT")
 
     default_configfile_content = twdd(
         f"""
