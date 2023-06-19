@@ -18,5 +18,5 @@ beautifulsoup4
 lxml
 addict
 tomli >= 1.1.0 ; python_version < "3.11"
-pyerk >= 0.6.2
+pyerk >= 0.8.5
 appdirs
