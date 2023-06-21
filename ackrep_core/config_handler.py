@@ -101,9 +101,12 @@ def _create_new_config_file(configfile_path):
             logging.logger.warn(msg)
 
     #
-    if os.environ.get("CI") == "true":
+    if os.environ.get("ACKREP_CORE_UT") == "True":
         ocse_path = ocse_ut_path
         logging.logger.warn("inside CI there is no ERK_DATA, for compatibility, we point ERK_DATA at ERK_DATA_UT")
+    if os.environ.get("ACKREP_DATA_UT") == "True":
+        ocse_ut_path = ocse_path
+        logging.logger.warn("inside CI there is no ERK_DATA_UT, for compatibility, we point ERK_DATA_UT at ERK_DATA")
 
     default_configfile_content = twdd(
         f"""
