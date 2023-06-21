@@ -76,7 +76,7 @@ def _create_new_config_file(configfile_path):
 
     cwd = Path.cwd().as_posix()
     ackrep_root_path = Path.cwd().as_posix()
-    ocse_path = Path.cwd().parent.joinpath("erk", "erk-data", "ocse", "erkpackage.toml").as_posix()
+    ocse_path = Path.cwd().parent.joinpath("erk", "erk_data", "ocse", "erkpackage.toml").as_posix()
     ocse_ut_path = Path.cwd().parent.joinpath("erk", "erk_data_for_unittests", "ocse", "erkpackage.toml").as_posix()
     ackrep_data_path = os.path.join(ackrep_root_path, "ackrep_data")
 
