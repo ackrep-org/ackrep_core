@@ -167,7 +167,12 @@ class FlexibleConfigHandler(object):
         return cls.instance
 
     def __init__(self):
-
+        import inspect
+        cf = inspect.currentframe()
+        for i in range(3):
+            pre_f = cf.f_back
+            print(inspect.getframeinfo(pre_f))
+            cf = pre_f
         # prevent multiple calls
         if self.is_initialized:
             return
@@ -223,13 +228,10 @@ class FlexibleConfigHandler(object):
 
         if os.environ.get("ACKREP_DATABASE_PATH"):
             self.ACKREP_DATABASE_PATH = os.environ.get("ACKREP_DATABASE_PATH")
-            print(1, self.ACKREP_DATABASE_PATH)
         elif os.environ.get("ACKREP_UNITTEST") == "True":
             self.ACKREP_DATABASE_PATH = self.ACKREP_UT_DATABASE_PATH
-            print(2, self.ACKREP_DATABASE_PATH)
         else:
             self.ACKREP_DATABASE_PATH = os.path.join(ackrep_root_path, "ackrep_core", "db.sqlite3")
-            print(3, self.ACKREP_DATABASE_PATH)
 
 
         if ocse_conf_path := self._get_ocse_conf_path("ERK_DATA_OCSE_MAIN_PATH"):

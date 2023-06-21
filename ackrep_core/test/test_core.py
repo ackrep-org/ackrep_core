@@ -2,7 +2,7 @@ import os
 import yaml
 
 os.environ["ACKREP_UNITTEST"] = "True"
-print("ACKREP_UNITTEST", os.environ.get("ACKREP_UNITTEST"), type(os.environ.get("ACKREP_UNITTEST")))
+
 from unittest import skipIf, skipUnless
 from django.test import TestCase as DjangoTestCase, SimpleTestCase
 from django.conf import settings
@@ -22,7 +22,6 @@ if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
 
 from ackrep_core_django_settings import settings
 
-print("ACKREP_UNITTEST", os.environ.get("ACKREP_UNITTEST"), type(os.environ.get("ACKREP_UNITTEST")))
 ERK_DATA_OCSE_UT_MAIN_PATH = settings.CONF.ERK_DATA_OCSE_UT_MAIN_PATH
 """
 This module contains the tests of the core module (not ackrep_web).
