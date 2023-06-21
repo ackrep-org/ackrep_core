@@ -169,10 +169,13 @@ class FlexibleConfigHandler(object):
     def __init__(self):
         import inspect
         cf = inspect.currentframe()
-        for i in range(3):
-            pre_f = cf.f_back
-            print(inspect.getframeinfo(pre_f))
-            cf = pre_f
+        while True:
+            try:
+                pre_f = cf.f_back
+                print(inspect.getframeinfo(pre_f))
+                cf = pre_f
+            except:
+                break
         # prevent multiple calls
         if self.is_initialized:
             return
