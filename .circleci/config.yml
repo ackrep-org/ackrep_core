@@ -75,7 +75,7 @@ jobs: # A basic unit of work in a run
           name: Setup Containers
           command: |
             . venv/bin/activate
-            ackrep --bootstrap-db
+            ackrep --bootstrap-test-db
             ackrep -l ../ackrep_data_for_unittests
             echo Pulling environment images
             ackrep --pull-and-show-envs
