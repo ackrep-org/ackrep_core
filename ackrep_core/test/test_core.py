@@ -343,7 +343,8 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
         res = run_command(["ackrep", "--key"])
         self.assertEqual(res.returncode, 0)
 
-        self.assertTrue(res.stdout.lower().startswith("random entity-key:"))
+        key_line = res.stdout.strip().split("\n")[-1].lower()
+        self.assertTrue(key_line.startswith("random entity-key:"))
 
     def test_get_metadata_path_from_key(self):
 
