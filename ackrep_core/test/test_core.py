@@ -32,12 +32,9 @@ The order of classes in the file reflects the execution order, see also
 
 Possibilities to run (some of) the tests:
 
-The option `--keepdb` is important such that the execscript has access to the same db as the test.
-
-`python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core`
-`python manage.py test --keepdb -v 2 --nocapture ackrep_core.test.test_core`
-`python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases01`
-`python3 manage.py test --keepdb --nocapture --rednose --ips ackrep_core.test.test_core:TestCases03.test_get_metadata_path_from_key`
+pytest (all)
+pytest -k TestCase03 (one class)
+pytest -k test_run_interactive_environment (one method)
 
 See also devdocs for tipps on speeding tests.
 """

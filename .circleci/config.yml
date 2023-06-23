@@ -98,12 +98,12 @@ jobs: # A basic unit of work in a run
             echo Bootstrap test db
             ackrep --bootstrap-test-db
             echo run test core
-            python manage.py test -v 2 --keepdb ackrep_core.test.test_core
+            pytest -k test_core
       - run:
           name: Test Web
           command: |
             . venv/bin/activate
-            python manage.py test -v 2 --keepdb ackrep_web.test.test_web
+            pytest -k test_web
       - run:
           name: Debug
           when: on_fail
