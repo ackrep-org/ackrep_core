@@ -180,7 +180,7 @@ class TestCases2(SimpleTestCase):
         PREFIX ocse: <{settings.SPARQL_PREFIX_MAPPING['ocse']}#>
         SELECT ?s
         WHERE {{
-            ?s :R16 ocse:I7733.
+            ?s :R8303 ocse:I7733.
 
         }}
         """
@@ -204,7 +204,7 @@ class TestCases2(SimpleTestCase):
         PREFIX ocse: <{settings.SPARQL_PREFIX_MAPPING['ocse']}#>
         SELECT ?s
         WHERE {{
-            ?s :R16__has_property ocse:I7733__time_invariance.
+            ?s ocse:R8303__has_general_system_property ocse:I7733__time_invariance.
 
         }}
         """

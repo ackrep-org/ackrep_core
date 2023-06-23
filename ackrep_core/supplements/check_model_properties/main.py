@@ -28,7 +28,8 @@ result_list = []
 entity_list = list(models.SystemModel.objects.all())
 report = "Results"
 
-test_list = [LocalStrongAccess, ExactInputStateLinearization]
+test_list = [ExactInputStateLinearization]
+# test_list = [LocalStrongAccess, ExactInputStateLinearization]
 
 # text file
 timestamp = dt.datetime.now().strftime("__%Y_%m_%d__%H_%M_%S")
@@ -50,7 +51,7 @@ for e in entity_list:
 
     # useful for debugging
     # only check double crane model:
-    if key != "XHINE":
+    if key != "IMLSG":
         print(f"{e.key=}, {e.name=}")
         continue
 
@@ -77,7 +78,7 @@ for e in entity_list:
         except TimeoutException:
             flag, msg = [None, "timeout"]
         deltat = time.time() - t0
-        result_data = [key, e.name, prop.__name__, str(flag), str(round(deltat, 3)), msg]
+        result_data = [key, e.name, prop.__class__.__name__, str(flag), str(round(deltat, 3)), msg]
         result_list.append(result_data)
 
         # now add data to dictionary for automated metadata completion

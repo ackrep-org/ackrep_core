@@ -435,7 +435,7 @@ class SearchSparqlView(View):
         PREFIX ack: <{settings.SPARQL_PREFIX_MAPPING['ack']}#>
         SELECT ?s
         WHERE {{
-            ?s :R16__has_property ocse:I7733__time_invariance.
+            ?s ocse:R8303__has_general_system_property ocse:I7733__time_invariance.
         }}
         """
         )

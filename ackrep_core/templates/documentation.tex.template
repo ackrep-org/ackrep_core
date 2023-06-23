@@ -8,19 +8,19 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{float}
-\usepackage{href}
+\usepackage{hyperref}
 
-%link to documentation: 
+%link to documentation:
 %https://ackrep-doc.readthedocs.io/en/latest/devdoc/contributing_data.html
 
 \begin{document}
-	\part*{Model Documentation of the \\ {{context.model_name}}} % MUST - Add Model Name 
-	
+	\part*{Model Documentation of the \\ {{context.model_name}}} % MUST - Add Model Name
+
 	%%%%%%%%%%%%%%%%%%%%%% NOMENCLATURE %%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
+
 	\section{Nomenclature} % MUST
 	\subsection{Nomenclature for Model Equations} % MUST
-	
+
 	%variables for model equations
 	\begin{tabular}{ll}
 		$x$ & state vector \\
@@ -28,16 +28,16 @@
 		$w$ & noise vector \\
 		$z$ & regulated output vector \\
 		$y$ & measurement vector \\
-		
-				
-	\end{tabular}
-	 
 
-	
+
+	\end{tabular}
+
+
+
 	%%%%%%%%%%%%%%%%%%%%%% MDOEL EQUATIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
+
 	\section{Model Equations} % MUST
-	
+
 	State Vector and Input Vector:
 	\begin{align*}
 		x &\in\mathbb{R}^{{context.nx}}
@@ -46,8 +46,8 @@
 		z &\in\mathbb{R}^{{context.nz}}
 		y &\in\mathbb{R}^{{context.ny}}
 	\end{align*}
-	
-	\noindent System Equations:			
+
+	\noindent System Equations:
 	\begin{subequations}
 	\begin{align}
 		\dot{x}(t) &= Ax(t) + B_1w(t) + Bu(t) \\
@@ -58,28 +58,27 @@
 
 	%%%%%%%%%%%%%%%%%%%%%% PARAMETERS | OUTPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\noindent
-	
 	\\
 	Outputs: $z$ % MAY
-	
-	
-	%%%%%%%%%%%%%%%%%%%%%% EXEMPLARY PARAMETER VALUES %%%%%%%%%%%%%%%%%%%%%%%%%%%	
-	
+
+
+	%%%%%%%%%%%%%%%%%%%%%% EXEMPLARY PARAMETER VALUES %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 	\subsection{Exemplary parameter values}
 	\input{parameters.tex}
 
-	%%%%%%%%%%%%%%%%%%%%%% DERIVATION & EXPLANATION %%%%%%%%%%%%%%%%%%%%%%%%%%%	
-	
+	%%%%%%%%%%%%%%%%%%%%%% DERIVATION & EXPLANATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 	\section{Derivation and Explanation} % SHOULD
-	This model is part of the \href{http://www.compleib.de/}{"`COMPleib"' - library} and was 
+	This model is part of the \href{http://www.compleib.de/}{"`COMPleib"' - library} and was
 	automatically imported into ACKREP.\\
 	The original description was:\\
 	{{context.description}}
 	\textit{Not available}
-	
+
 	%%%%%%%%%%%%%%%%%%%%%% REFERENCES %%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
-	\begin{thebibliography}{10}		
+
+	\begin{thebibliography}{10}
 		\bibitem {{context.source}}
 	\end{thebibliography}
 

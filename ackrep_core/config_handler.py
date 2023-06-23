@@ -221,8 +221,6 @@ class FlexibleConfigHandler(object):
 
         # database paths with hardcoded filenames
         self.ACKREP_UT_DATABASE_PATH = os.path.join(ackrep_root_path, "ackrep_core", "db_for_unittests.sqlite3")
-        print("handler: ACKREP_UNITTEST", os.environ.get("ACKREP_UNITTEST"), type(os.environ.get("ACKREP_UNITTEST")))
-
 
         if os.environ.get("ACKREP_DATABASE_PATH"):
             self.ACKREP_DATABASE_PATH = os.environ.get("ACKREP_DATABASE_PATH")
