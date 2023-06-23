@@ -822,11 +822,12 @@ def run_interactive_environment(args):
 
     acm.logging.logger.info(f"Ackrep command running in Container: {container_id}")
     host_uid = acm.core.get_host_uid()
-    cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
 
     if len(args) == 1:
+        cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
         cmd.extend(["/bin/bash"])
     else:
+        cmd = ["docker", "exec", "-t", "--user", host_uid, container_id]
         c = " ".join(args[1:])
         cmd.extend(["/bin/bash", "-c", c])
 
@@ -1057,6 +1058,7 @@ def update_metadata_from_property_report(property_path):
         # key = erk key of property, value = property data
         for prop, data in value.items():
 
+            # TODO move this to config?
             positive_relation = 'R8303["has general system property"]'
             negative_relation = 'R6458["does not have general system property"]'
 
@@ -1079,7 +1081,7 @@ def update_metadata_from_property_report(property_path):
                 # check if property is already set
                 ## make sure meta data entry exists
                 if not "erk_data" in meta_dict.keys():
-                    acm.core.logger.warn(f"Model {entity, key} has no metadata yet! Adding some automatically.")
+                    acm.core.logger.warn(f"Model {entity} has no metadata yet! Adding some automatically.")
                     meta_dict["erk_data"] = {}
 
                 # metadata has no properties: add current prop
@@ -1100,8 +1102,7 @@ def update_metadata_from_property_report(property_path):
                     negative_relation in meta_dict["erk_data"].keys()
                     and property_key_label in meta_dict["erk_data"][negative_relation]
                 ):
-                    # TODO check if opposite property was here before (and remove it)
-                    acm.core.logger.warn(f"Evaluation of property {prop} for {entity, key} changed to {data['result']}")
+                    acm.core.logger.warn(f"Evaluation of property {prop} for {entity} changed to {data['result']}")
                     meta_dict["erk_data"][negative_relation].remove(property_key_label)
                 # IPS()
         with open(metadata_path, "w") as f:
