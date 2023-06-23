@@ -654,8 +654,8 @@ def update_all_pdfs():
 
         try:
             acm.system_model_management.update_parameter_tex(e.key)
-        except:
-            print("Parameter update Error, maybe entity doesnt have params?")
+        except Exception as exc:
+            acm.logging.logger.warn(f"Parameter update Error, {exc}, maybe entity doesnt have params?")
         res = acm.system_model_management.create_pdf(key=e.key)
         if res.returncode == 0:
             print(bgreen("Success."))

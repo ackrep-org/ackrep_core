@@ -72,7 +72,7 @@ def create_compleib_models_from_template(target=None):
 
             model_dict[handle] = {}
             model_dict[handle]["N"] = model_counter
-            model_dict[handle]["description"] = context["description"] = cleanup_str(part)
+            model_dict[handle]["description"] = context["description"] = make_latex_compatible(part)
             stat_dict["n_models"] += 1
 
             # get rid of comments inside the comment block
@@ -274,6 +274,26 @@ def cleanup_str(s: str) -> str:
         s = s.replace(character, "")
     s = re.sub(r"\s+", " ", s)
     return s.strip()
+
+def make_latex_compatible(text: str):
+
+    # Replace other special characters with appropriate LaTeX equivalents
+    special_chars = {
+        "&": r"\&",
+        "%": r"\%",
+        "$": r"\$",
+        "#": r"\#",
+        "_": r"\_",
+        "{": r"\{",
+        "}": r"\}",
+        "<": r"\textless{}",
+        ">": r"\textgreater{}",
+    }
+    
+    for char, latex_equiv in special_chars.items():
+        text = text.replace(char, latex_equiv)
+    
+    return text.strip()
 
 
 def simulate_system(context: dict):

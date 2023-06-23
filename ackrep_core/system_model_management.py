@@ -465,7 +465,12 @@ def update_parameter_tex(key):
     p_values = [sp.latex(p_sf) for p_sf in parameters.pp_sf]
     # set cells in math-mode
     for i in range(len(p_values)):
-        p_values[i] = "$" + str("{:.{p}g}".format(float(p_values[i]), p=4)) + "$"
+        # try to round if possible:
+        try:
+            p_values[i] = "$" + str("{:.{p}g}".format(float(p_values[i]), p=4)) + "$"
+        except ValueError:
+            p_values[i] = "$" + p_values[i] + "$"
+            
 
     # Define "Range" column
     p_ranges = []
