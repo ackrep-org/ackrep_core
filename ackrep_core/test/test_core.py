@@ -72,7 +72,7 @@ pyerk_ocse_name = "ocse/0.2"
 default_repo_head_hash = "834aaad12256118d475de9eebfdaefb7746a28bc"  # 2022-09-13 branch for_unittests
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_ACKREP_DATA_REPO_COMMIT_SHA = "14cfbc0023c18d774dc039e94d2d5fb455639649"
+TEST_ACKREP_DATA_REPO_COMMIT_SHA = "73ec07280ffdb1aff67302c09fe2dac70b44d7c0" # 2023-06-23
 TEST_ERK_DATA_REPO_COMMIT_SHA = "9e828d753cab7967ec61aabc0e7591322857628a"  # 2022-12-16 branch ut__ackrep__main
 
 
@@ -343,7 +343,8 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
         res = run_command(["ackrep", "--key"])
         self.assertEqual(res.returncode, 0)
 
-        self.assertTrue(res.stdout.lower().startswith("random entity-key:"))
+        key_line = res.stdout.strip().split("\n")[-1].lower()
+        self.assertTrue(key_line.startswith("random entity-key:"))
 
     def test_get_metadata_path_from_key(self):
 
@@ -352,20 +353,21 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
         res = run_command(["ackrep", "--get-metadata-rel-path-from-key", key])
         self.assertEqual(res.returncode, 0)
 
-        relpath = res.stdout.strip()
+        relpath = res.stdout.strip().split("\n")[-1]
         expected_relpath = os.path.join(
             "ackrep_data_for_unittests",
             "problem_solutions",
             "double_integrator_transition_with_pytrajectory",
             "metadata.yml",
         )
+
         self.assertEqual(relpath, expected_relpath)
 
         # second: absolute path
         res = run_command(["ackrep", "--get-metadata-abs-path-from-key", key])
         self.assertEqual(res.returncode, 0)
 
-        abspath = res.stdout.strip()
+        abspath = res.stdout.strip().split("\n")[-1]
 
         self.assertIn(relpath, abspath)
         self.assertTrue(len(abspath) > len(relpath))
