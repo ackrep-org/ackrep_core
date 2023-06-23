@@ -822,11 +822,12 @@ def run_interactive_environment(args):
 
     acm.logging.logger.info(f"Ackrep command running in Container: {container_id}")
     host_uid = acm.core.get_host_uid()
-    cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
 
     if len(args) == 1:
+        cmd = ["docker", "exec", "-ti", "--user", host_uid, container_id]
         cmd.extend(["/bin/bash"])
     else:
+        cmd = ["docker", "exec", "-t", "--user", host_uid, container_id]
         c = " ".join(args[1:])
         cmd.extend(["/bin/bash", "-c", c])
 
