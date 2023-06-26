@@ -272,7 +272,7 @@ class TestCases2(SimpleTestCase):
         else:
             self.assertTrue(False, "could not find expected copy-string in response")
 
-    def test03_search_api(self):
+    def test01_search_api(self):
         # this tests:
         # - partial matching (out of order search of key words)
         # - sorting of pyerk entities in relevant order
