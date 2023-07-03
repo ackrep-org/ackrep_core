@@ -275,6 +275,7 @@ def cleanup_str(s: str) -> str:
     s = re.sub(r"\s+", " ", s)
     return s.strip()
 
+
 def make_latex_compatible(text: str):
 
     # Replace other special characters with appropriate LaTeX equivalents
@@ -289,10 +290,10 @@ def make_latex_compatible(text: str):
         "<": r"\textless{}",
         ">": r"\textgreater{}",
     }
-    
+
     for char, latex_equiv in special_chars.items():
         text = text.replace(char, latex_equiv)
-    
+
     return text.strip()
 
 

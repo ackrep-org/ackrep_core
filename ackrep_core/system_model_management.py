@@ -450,11 +450,11 @@ def update_parameter_tex(key, omit_parameters=False):
     """
     e = core.get_entity(key)
     file_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, e.base_path, "_data", "parameters.tex")
-    
+
     if omit_parameters:
         with open(file_path, "w") as file:
             file.write("Parameters omitted due to large matrizes. See Source code.")
-    
+
     else:
         parameters = import_parameters(key)
 
@@ -478,7 +478,6 @@ def update_parameter_tex(key, omit_parameters=False):
                 p_values[i] = "$" + str("{:.{p}g}".format(float(p_values[i]), p=4)) + "$"
             except ValueError:
                 p_values[i] = "$" + p_values[i] + "$"
-                
 
         # Define "Range" column
         p_ranges = []
@@ -511,7 +510,9 @@ def update_parameter_tex(key, omit_parameters=False):
         else:
             # for backwards compatibility
             # Create list, which contains the content of the table body
-            table_body_list = np.array([*parameters.start_columns_list, p_symbols, p_values, *parameters.end_columns_list])
+            table_body_list = np.array(
+                [*parameters.start_columns_list, p_symbols, p_values, *parameters.end_columns_list]
+            )
 
         # Convert list of column entries to list of row entries
         table = table_body_list.transpose()
@@ -535,7 +536,7 @@ def create_pdf(key, skip_check=False, output_path=None):
     base_path = system_model_entity.base_path
     tex_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, base_path, "_data")
     os.chdir(tex_path)
-    
+
     @timeout(300)
     def check(entity):
         core.check_generic(entity.key)

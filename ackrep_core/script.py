@@ -185,7 +185,7 @@ def main():
         help="specify log level: DEBUG (10), INFO, WARNING, ERROR, CRITICAL (50)",
         type=int,
     )
-    
+
     argparser.add_argument(
         "--start-key",
         metavar="key",
@@ -652,9 +652,9 @@ def update_all_pdfs(start_key=None):
     """
     failed_entities = []
     entity_list = list(acm.models.SystemModel.objects.all())
-    
-    skip_until_key = True 
-    
+
+    skip_until_key = True
+
     for i, e in enumerate(entity_list):
         if start_key is not None and skip_until_key:
             if start_key == e.key:
@@ -664,7 +664,7 @@ def update_all_pdfs(start_key=None):
                 continue
         else:
             skip_until_key = False
-            
+
         print(bright(e))
         model_too_big = False
         d = yaml.load(e.erk_data, yaml.FullLoader)

@@ -229,7 +229,6 @@ class FlexibleConfigHandler(object):
         else:
             self.ACKREP_DATABASE_PATH = os.path.join(ackrep_root_path, "ackrep_core", "db.sqlite3")
 
-
         if ocse_conf_path := self._get_ocse_conf_path("ERK_DATA_OCSE_MAIN_PATH"):
             os.environ["PYERK_CONF_PATH"] = ocse_conf_path
 

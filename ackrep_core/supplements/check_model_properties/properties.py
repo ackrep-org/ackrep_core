@@ -14,6 +14,7 @@ from util import timeout
 class TimeoutException(Exception):
     pass
 
+
 class Property:
     erk_key = None
 
@@ -172,7 +173,7 @@ class ExactInputStateLinearization(Property):
                         else:
                             Gi = []
                         for j in range(m):
-                            Gi.append(st.lie_bracket(ff, GG[:,j], xx, order=i))
+                            Gi.append(st.lie_bracket(ff, GG[:, j], xx, order=i))
                         G_list.append(Gi)
 
                     cond1 = True
@@ -195,7 +196,7 @@ class ExactInputStateLinearization(Property):
                         if cond2:
                             print("cond. 2 ok")
                             cond3 = True
-                            for i in range(n-1):
+                            for i in range(n - 1):
                                 cond3 = st.involutivity_test(sp.Matrix([G_list[i]]), xx)[0]
                                 if cond3 == False:
                                     print(f"cond3 failed at i={i}")

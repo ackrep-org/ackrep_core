@@ -69,7 +69,7 @@ pyerk_ocse_name = "ocse/0.2"
 default_repo_head_hash = "834aaad12256118d475de9eebfdaefb7746a28bc"  # 2022-09-13 branch for_unittests
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_ACKREP_DATA_REPO_COMMIT_SHA = "73ec07280ffdb1aff67302c09fe2dac70b44d7c0" # 2023-06-23
+TEST_ACKREP_DATA_REPO_COMMIT_SHA = "73ec07280ffdb1aff67302c09fe2dac70b44d7c0"  # 2023-06-23
 TEST_ERK_DATA_REPO_COMMIT_SHA = "9e828d753cab7967ec61aabc0e7591322857628a"  # 2022-12-16 branch ut__ackrep__main
 
 
