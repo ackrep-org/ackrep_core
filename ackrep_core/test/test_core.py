@@ -262,10 +262,10 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
         self.assertTrue(len(entity.oc.item_list()) > 0)
 
         self.assertTrue(isinstance(entity.oc.solved_problem_list, list))
-        self.assertEquals(len(entity.oc.solved_problem_list), 1)
-        self.assertEquals(entity.oc.solved_problem_list[0].key, "4ZZ9J")
+        self.assertEqual(len(entity.oc.solved_problem_list), 1)
+        self.assertEqual(entity.oc.solved_problem_list[0].key, "4ZZ9J")
         self.assertTrue(isinstance(entity.oc.method_package_list, list))
-        self.assertEquals(entity.oc.method_package_list[0].key, "UENQQ")
+        self.assertEqual(entity.oc.method_package_list[0].key, "UENQQ")
         self.assertTrue(entity.oc.predecessor_key is None)
 
         default_env = core.model_utils.get_entity(core.settings.DEFAULT_ENVIRONMENT_KEY)
