@@ -1,52 +1,18 @@
 import symbtools as st
 import numpy as np
 import sympy as sp
-import functools
 from ipydex import IPS
 from abc import abstractmethod
 import copy
 
-from threading import Thread
+
 from ackrep_core.system_model_management import GenericModel
+
+from util import timeout
 
 
 class TimeoutException(Exception):
     pass
-
-
-# source of decorator for the timeout:
-# https://stackoverflow.com/questions/21827874/timeout-a-function-windows
-
-
-def timeout(timeout):
-    def deco(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            res = [TimeoutException("function [%s] timeout [%s seconds] exceeded!" % (func.__name__, timeout))]
-
-            def newFunc():
-                try:
-                    res[0] = func(*args, **kwargs)
-                except Exception as e:
-                    res[0] = e
-
-            t = Thread(target=newFunc)
-            t.daemon = True
-            try:
-                t.start()
-                t.join(timeout)
-            except Exception as je:
-                print("error starting thread")
-                raise je
-            ret = res[0]
-            if isinstance(ret, BaseException):
-                raise ret
-            return ret
-
-        return wrapper
-
-    return deco
-
 
 class Property:
     erk_key = None

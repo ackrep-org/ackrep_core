@@ -58,7 +58,6 @@
 
 	%%%%%%%%%%%%%%%%%%%%%% PARAMETERS | OUTPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\noindent
-	\\
 	Outputs: $z$ % MAY
 
 
@@ -70,11 +69,9 @@
 	%%%%%%%%%%%%%%%%%%%%%% DERIVATION & EXPLANATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 	\section{Derivation and Explanation} % SHOULD
-	This model is part of the \href{http://www.compleib.de/}{"`COMPleib"' - library} and was
-	automatically imported into ACKREP.\\
+	This model is part of the \href{http://www.compleib.de/}{"`COMPleib"' - library} and was automatically imported into ACKREP.\\
 	The original description was:\\
 	{{context.description}}
-	\textit{Not available}
 
 	%%%%%%%%%%%%%%%%%%%%%% REFERENCES %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

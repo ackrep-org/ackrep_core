@@ -20,7 +20,7 @@ import copy
 from ackrep_core_django_settings import settings
 
 from . import core
-from .util import run_command
+from .util import run_command, timeout
 from . import models
 from ipydex import IPS
 
@@ -443,88 +443,90 @@ def save_plot_in_dir(name="plot.png"):
 ### Parameter fetching and tex-ing ###
 
 
-def update_parameter_tex(key):
+def update_parameter_tex(key, omit_parameters=False):
     """search for parameter file of system_model key
     update tex files and pdf w.r.t. parameters.py
     delete auxiliary files
     """
-    parameters = import_parameters(key)
-
-    # ------ CREATE RAMAINING PART OF THE LATEX TABULAR AND WRITE IT TO FILE
-    # Define "Symbol" column
-    pp_dict_key_list = list(parameters.get_default_parameters().keys())
-    p_symbols = [
-        sp.latex(pp_dict_key_list[i], symbol_names=parameters.latex_names)
-        for i in range(len(parameters.get_default_parameters()))
-    ]
-    # set cells in math-mode
-    for i in range(len(p_symbols)):
-        p_symbols[i] = "$" + p_symbols[i] + "$"
-
-    # Define "Value" column
-    p_values = [sp.latex(p_sf) for p_sf in parameters.pp_sf]
-    # set cells in math-mode
-    for i in range(len(p_values)):
-        # try to round if possible:
-        try:
-            p_values[i] = "$" + str("{:.{p}g}".format(float(p_values[i]), p=4)) + "$"
-        except ValueError:
-            p_values[i] = "$" + p_values[i] + "$"
-            
-
-    # Define "Range" column
-    p_ranges = []
-    if hasattr(parameters, "pp_range_list"):
-        for r in parameters.pp_range_list:
-            # get interval boundaries
-            if isinstance(r, list):
-                ib = ["[", "]"]
-                p_ranges.append(f"${ib[0]}{r[0]}, {r[1]}{ib[1]}$")
-            elif isinstance(r, tuple):
-                ib = ["(", ")"]
-                p_ranges.append(f"${ib[0]}{r[0]}, {r[1]}{ib[1]}$")
-            elif isinstance(r, str) and len(r) == 1:
-                p_ranges.append("$\mathbb{" + r + "}$")
-            elif r is None:
-                # used for fixed parameters, such as g = 9.81
-                p_ranges.append("-")
-            else:
-                p_ranges.append("$\mathbb{R}$")
-            # replace inf
-            p_ranges[-1] = p_ranges[-1].replace("inf", "\infty")
-
-        # Create list, which contains the content of the table body
-        table_body_list = np.array(
-            [*parameters.start_columns_list, p_symbols, p_values, p_ranges, *parameters.end_columns_list]
-        )
-        if "Range" not in parameters.tabular_header:
-            parameters.tabular_header.append("Range")
-
+    e = core.get_entity(key)
+    file_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, e.base_path, "_data", "parameters.tex")
+    
+    if omit_parameters:
+        with open(file_path, "w") as file:
+            file.write("Parameters omitted due to large matrizes. See Source code.")
+    
     else:
-        # for backwards compatibility
-        # Create list, which contains the content of the table body
-        table_body_list = np.array([*parameters.start_columns_list, p_symbols, p_values, *parameters.end_columns_list])
+        parameters = import_parameters(key)
 
-    # Convert list of column entries to list of row entries
-    table = table_body_list.transpose()
+        # ------ CREATE RAMAINING PART OF THE LATEX TABULAR AND WRITE IT TO FILE
+        # Define "Symbol" column
+        pp_dict_key_list = list(parameters.get_default_parameters().keys())
+        p_symbols = [
+            sp.latex(pp_dict_key_list[i], symbol_names=parameters.latex_names)
+            for i in range(len(parameters.get_default_parameters()))
+        ]
+        # set cells in math-mode
+        for i in range(len(p_symbols)):
+            p_symbols[i] = "$" + p_symbols[i] + "$"
 
-    # Create string which contains the latex-code of the tabular
-    tex = tab.tabulate(table, parameters.tabular_header, tablefmt="latex_raw", colalign=parameters.col_alignment)
+        # Define "Value" column
+        p_values = [sp.latex(p_sf) for p_sf in parameters.pp_sf]
+        # set cells in math-mode
+        for i in range(len(p_values)):
+            # try to round if possible:
+            try:
+                p_values[i] = "$" + str("{:.{p}g}".format(float(p_values[i]), p=4)) + "$"
+            except ValueError:
+                p_values[i] = "$" + p_values[i] + "$"
+                
 
-    # Change Directory to the Folder of the Model.
-    cwd = os.path.dirname(os.path.abspath(__file__))
-    parent2_cwd = os.path.dirname(os.path.dirname(cwd))
-    path_base = os.path.join(core.CONF.ACKREP_ROOT_PATH, parameters.base_path, "_data")
-    os.chdir(path_base)
-    # Write tabular to Parameter File.
-    file = open("parameters.tex", "w")
-    file.write(tex)
-    file.close()
+        # Define "Range" column
+        p_ranges = []
+        if hasattr(parameters, "pp_range_list"):
+            for r in parameters.pp_range_list:
+                # get interval boundaries
+                if isinstance(r, list):
+                    ib = ["[", "]"]
+                    p_ranges.append(f"${ib[0]}{r[0]}, {r[1]}{ib[1]}$")
+                elif isinstance(r, tuple):
+                    ib = ["(", ")"]
+                    p_ranges.append(f"${ib[0]}{r[0]}, {r[1]}{ib[1]}$")
+                elif isinstance(r, str) and len(r) == 1:
+                    p_ranges.append("$\mathbb{" + r + "}$")
+                elif r is None:
+                    # used for fixed parameters, such as g = 9.81
+                    p_ranges.append("-")
+                else:
+                    p_ranges.append("$\mathbb{R}$")
+                # replace inf
+                p_ranges[-1] = p_ranges[-1].replace("inf", "\infty")
+
+            # Create list, which contains the content of the table body
+            table_body_list = np.array(
+                [*parameters.start_columns_list, p_symbols, p_values, p_ranges, *parameters.end_columns_list]
+            )
+            if "Range" not in parameters.tabular_header:
+                parameters.tabular_header.append("Range")
+
+        else:
+            # for backwards compatibility
+            # Create list, which contains the content of the table body
+            table_body_list = np.array([*parameters.start_columns_list, p_symbols, p_values, *parameters.end_columns_list])
+
+        # Convert list of column entries to list of row entries
+        table = table_body_list.transpose()
+
+        # Create string which contains the latex-code of the tabular
+        tex = tab.tabulate(table, parameters.tabular_header, tablefmt="latex_raw", colalign=parameters.col_alignment)
+
+        # Write tabular to Parameter File.
+        with open(file_path, "w") as file:
+            file.write(tex)
 
     return 0
 
 
-def create_pdf(key, output_path=None):
+def create_pdf(key, skip_check=False, output_path=None):
     """create new documentation.pdf from documentation.tex and parameters.tex, specified by key.
     If outputpath is set, pdf is created at given path.
     Auxiliary Files are deleted.
@@ -533,11 +535,18 @@ def create_pdf(key, output_path=None):
     base_path = system_model_entity.base_path
     tex_path = os.path.join(core.CONF.ACKREP_ROOT_PATH, base_path, "_data")
     os.chdir(tex_path)
+    
+    @timeout(300)
+    def check(entity):
+        core.check_generic(entity.key)
 
     assert type(system_model_entity) == models.SystemModel, f"{system_model_entity} is not of type model.SystemModel"
-    try:
-        res = core.check_generic(system_model_entity.key)
-    except:
+    if not skip_check:
+        try:
+            res = check(system_model_entity)
+        except:
+            print(f"{system_model_entity} was not checked, plot might not be included.")
+    else:
         print(f"{system_model_entity} was not checked, plot might not be included.")
 
     # add plots, if existing
@@ -548,6 +557,10 @@ def create_pdf(key, output_path=None):
         lines = copy.copy(og_lines)
 
         for i, v in enumerate(lines):
+            if "section{Simulation}" in v:
+                # docu already has simulation, prevent multiple sections
+                # simulation is always before bibliography
+                break
             if "\\begin{thebibliography}" in v:
                 lines[i] = _import_png_to_tex(system_model_entity) + lines[i]
 

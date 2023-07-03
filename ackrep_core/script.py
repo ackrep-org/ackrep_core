@@ -6,6 +6,7 @@ import datetime
 import signal
 import os
 import git
+import yaml
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -184,6 +185,12 @@ def main():
         help="specify log level: DEBUG (10), INFO, WARNING, ERROR, CRITICAL (50)",
         type=int,
     )
+    
+    argparser.add_argument(
+        "--start-key",
+        metavar="key",
+        help="specify a key",
+    )
 
     argparser.add_argument(
         "--test-logging",
@@ -260,7 +267,7 @@ def main():
         metadatapath = args.create_pdf
         create_pdf(metadatapath)
     elif args.update_all_pdfs:
-        update_all_pdfs()
+        update_all_pdfs(args.start_key)
     elif args.create_system_model_list_pdf:
         create_system_model_list_pdf()
     elif args.metadata or args.md:
@@ -635,7 +642,7 @@ def create_pdf(arg0: str, exitflag: bool = True):
         return res
 
 
-def update_all_pdfs():
+def update_all_pdfs(start_key=None):
     """
 
     :param arg0:        either an entity key or the path to the respective metadata.yml
@@ -645,18 +652,35 @@ def update_all_pdfs():
     """
     failed_entities = []
     entity_list = list(acm.models.SystemModel.objects.all())
-    for e in entity_list:
+    
+    skip_until_key = True 
+    
+    for i, e in enumerate(entity_list):
+        if start_key is not None and skip_until_key:
+            if start_key == e.key:
+                skip_until_key = False
+            else:
+                acm.core.logger.info(f"skipping {e}")
+                continue
+        else:
+            skip_until_key = False
+            
         print(bright(e))
+        model_too_big = False
+        d = yaml.load(e.erk_data, yaml.FullLoader)
         try:
-            acm.core.check_generic(e.key)
-        except:
-            print(bred("Could not check entity, plot may not be up to date."))
+            rep = d['R2928["has model representation"]']
+            dim = d['R2928["has model representation"]'][list(rep.keys())[0]]['R2112["has state dimension"]']
+            model_too_big = dim > 20
+        except KeyError:
+            pass
 
         try:
-            acm.system_model_management.update_parameter_tex(e.key)
+            acm.system_model_management.update_parameter_tex(e.key, omit_parameters=model_too_big)
         except Exception as exc:
             acm.logging.logger.warn(f"Parameter update Error, {exc}, maybe entity doesnt have params?")
-        res = acm.system_model_management.create_pdf(key=e.key)
+
+        res = acm.system_model_management.create_pdf(key=e.key, skip_check=model_too_big)
         if res.returncode == 0:
             print(bgreen("Success."))
         else:
