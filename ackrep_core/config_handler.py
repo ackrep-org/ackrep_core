@@ -14,7 +14,7 @@ APPNAME = "ackrep"
 DEFAULT_CONFIGFILE_PATH = os.path.join(appdirs.user_config_dir(appname=APPNAME), "ackrepconf.toml")
 
 
-def bootstrap_config_from_current_directory(configfile_path=None):
+def bootstrap_config_from_current_directory(configfile_path=None, force_new_config=False):
     """
     Try to load configfile. If it does not exist: create. Anyway: check
 
@@ -25,6 +25,10 @@ def bootstrap_config_from_current_directory(configfile_path=None):
     # then expect erk/erkdata/... as "sibling"
 
     configfile_path = DEFAULT_CONFIGFILE_PATH
+
+    if os.path.isfile(configfile_path) and force_new_config:
+        print("deleting existing config.")
+        os.remove(configfile_path)
 
     if not os.path.isfile(configfile_path):
         # create new config file

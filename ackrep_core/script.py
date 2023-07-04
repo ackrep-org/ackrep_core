@@ -208,6 +208,12 @@ def main():
         help="some commands use this flag to behave speed up CI job",
         action="store_true",
     )
+    argparser.add_argument(
+        "-f",
+        "--force",
+        help="some commands use this flag",
+        action="store_true",
+    )
 
     args = argparser.parse_args()
 
@@ -284,7 +290,7 @@ def main():
         print("Random entity-key: ", acm.core.gen_random_entity_key())
         return
     elif args.bootstrap_config:
-        config_handler.bootstrap_config_from_current_directory()
+        config_handler.bootstrap_config_from_current_directory(force_new_config=args.force)
     elif args.bootstrap_db:
         bootstrap_db(db="main")
     elif args.bootstrap_test_db:
