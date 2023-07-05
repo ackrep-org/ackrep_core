@@ -751,7 +751,7 @@ class TestCases05(ErkHandlerMixin, SimpleTestCase):
 
         # check error message for existance (and readability?)
 
-        expected_error_infos = ["ZeroDivisionError", "In [2]", "<cell line: 3>"]
+        expected_error_infos = ["ZeroDivisionError", "[2]", "line 3"]
         for info in expected_error_infos:
             self.assertIn(info, res.stdout)
 
