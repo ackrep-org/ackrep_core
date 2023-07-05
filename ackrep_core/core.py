@@ -1035,7 +1035,7 @@ def download_and_store_artifacts(branch_name):
 Debug Commands:
 
 for debugging containers:
-docker-compose --file ../ackrep_deployment/docker-compose.yml run --rm -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data -e HOST_UID=1000 default_conda_environment bash
+docker-compose --file ../ackrep_deployment/docker-compose.yml run --rm -e ACKREP_DATABASE_PATH=/code/ackrep/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep_project/ackrep/ackrep_data -v /home/julius/Documents/ackrep_project/ackrep/ackrep_data:/code/ackrep/ackrep_data -e HOST_UID=1000 default_conda_environment bash
 docker run --rm -ti -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data ghcr.io/ackrep-org/default_environment bash
 
 downloading artifacts from circle

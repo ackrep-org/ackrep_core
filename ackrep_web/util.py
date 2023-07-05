@@ -13,6 +13,7 @@ import re
 
 from ackrep_core_django_settings import settings
 from ackrep_core.models import PyerkEntity, LanguageSpecifiedString
+import pyerk as p
 
 # will be changed from views
 GLOBALS = Container()
@@ -22,14 +23,10 @@ activate_ips_on_exception()
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
-    import pyerk as p
-    from pyerk.auxiliary import get_erk_root_dir
 
     # Flag to determine if tests are running
     RUNNING_TESTS = False
-
-    # TODO: This might be obsolete redundancy
-    ERK_ROOT_DIR = get_erk_root_dir()
+    # TODO delete?
 
 
 def _entity_sort_key(entity, subqueries) -> Tuple[int, str, int]:
