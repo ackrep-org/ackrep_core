@@ -427,12 +427,12 @@ def check_all_entities(unittest=False, fast=False):
 
             if isinstance(entity, acm.models.ProblemSolution) or isinstance(entity, acm.models.SystemModel):
                 # copy entire folder since there could be multiple images with arbitrary names
-                src = f"dummy:/code/{entity.base_path}/_data/."
+                src = f"dummy:/code/ackrep/{entity.base_path}/_data/."
                 dest_folder = os.path.join(dest_dir_plots, key)
                 dest = dest_folder
             elif isinstance(entity, acm.models.Notebook):
                 html_file_name = entity.notebook_file.replace(".ipynb", ".html")
-                src = f"dummy:/code/{entity.base_path}/{html_file_name}"
+                src = f"dummy:/code/ackrep/{entity.base_path}/{html_file_name}"
                 dest_folder = os.path.join(dest_dir_notebooks, key)
                 dest = os.path.join(dest_folder, html_file_name)
             else:
@@ -872,7 +872,7 @@ def run_interactive_environment(args):
 
 def run_jupyter(key):
     """run jupyter server out of docker environment container
-    jupyter notebook --notebook-dir=/code/ackrep_data --ip='*' --port=8888 --no-browser --allow-root
+    jupyter notebook --notebook-dir=/code/ackrep/ackrep_data --ip='*' --port=8888 --no-browser --allow-root
     """
 
     entity, key = get_entity_and_key(key)
@@ -902,7 +902,7 @@ def run_jupyter(key):
         [
             "jupyter",
             "notebook",
-            "--notebook-dir=/code/ackrep_data",
+            "--notebook-dir=/code/ackrep/ackrep_data",
             "--ip='*'",
             "--port=8888",
             "--no-browser",

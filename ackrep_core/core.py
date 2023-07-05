@@ -935,16 +935,16 @@ def get_docker_env_vars():
             + ' ACKREP_DATA_PATH=os.environ.get("ACKREP_DATA_PATH")'
         )
         logger.info(msg)
-        database_path = os.path.join("/code/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
-        ackrep_data_path = os.path.join("/code", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
+        database_path = os.path.join("/code/ackrep/ackrep_core", os.path.split(os.environ.get("ACKREP_DATABASE_PATH"))[-1])
+        ackrep_data_path = os.path.join("/code/ackrep", os.path.split(os.environ.get("ACKREP_DATA_PATH"))[-1])
         cmd_extension = ["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"]
     # nominal case
     else:
         logger.info(
             f"env var ACKREP_DATABASE_PATH, ACKREP_DATA_PATH no set, using defaults: db.sqlite3 and {CONF.ACKREP_DATA_PATH}"
         )
-        database_path = os.path.join("/code/ackrep_core", "db.sqlite3")
-        ackrep_data_path = os.path.join("/code", CONF.ACKREP_DATA_PATH)
+        database_path = os.path.join("/code/ackrep/ackrep_core", "db.sqlite3")
+        ackrep_data_path = os.path.join("/code/ackrep", CONF.ACKREP_DATA_PATH)
         cmd_extension = ["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"]
     logger.info(f"ACKREP_DATABASE_PATH {database_path}")
     logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
@@ -975,7 +975,7 @@ def get_volume_mapping():
     if os.environ.get("CI") != "true":
         logger.info(f"data path: {CONF.ACKREP_DATA_PATH}")
         target = os.path.split(CONF.ACKREP_DATA_PATH)[1]
-        cmd_extension = ["-v", f"{CONF.ACKREP_DATA_PATH}:/code/{target}"]
+        cmd_extension = ["-v", f"{CONF.ACKREP_DATA_PATH}:/code/ackrep/{target}"]
     # circleci unittest case
     else:
         # volumes cant be mounted in cirlceci, this is the workaround,
@@ -1036,7 +1036,7 @@ Debug Commands:
 
 for debugging containers:
 docker-compose --file ../ackrep_deployment/docker-compose.yml run --rm -e ACKREP_DATABASE_PATH=/code/ackrep/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep_project/ackrep/ackrep_data -v /home/julius/Documents/ackrep_project/ackrep/ackrep_data:/code/ackrep/ackrep_data -e HOST_UID=1000 default_conda_environment bash
-docker run --rm -ti -e ACKREP_DATABASE_PATH=/code/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep_data ghcr.io/ackrep-org/default_environment bash
+docker run --rm -ti -e ACKREP_DATABASE_PATH=/code/ackrep/ackrep_core/db.sqlite3 -e ACKREP_DATA_PATH=/home/julius/Documents/ackrep/ackrep_data -v /home/julius/Documents/ackrep/ackrep_data:/code/ackrep/ackrep_data ghcr.io/ackrep-org/default_environment bash
 
 downloading artifacts from circle
 curl -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v1.1/project/github/ackrep-org/ackrep_data/latest/artifacts \

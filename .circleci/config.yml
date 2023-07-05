@@ -83,9 +83,9 @@ jobs: # A basic unit of work in a run
             docker image prune -f
             docker images
             echo Create dummy container
-            docker create -v /code/ackrep_data_for_unittests --name dummy alpine:3.4 /bin/true
+            docker create -v /code/ackrep/ackrep_data_for_unittests --name dummy alpine:3.4 /bin/true
             echo Copy ackrep_data to dummy
-            docker cp /home/circleci/ackrep/ackrep_data_for_unittests dummy:/code
+            docker cp /home/circleci/ackrep/ackrep_data_for_unittests dummy:/code/ackrep
             echo containers:
             docker container ps
       - run:
