@@ -944,7 +944,9 @@ def get_docker_env_vars():
             f"env var ACKREP_DATABASE_PATH, ACKREP_DATA_PATH no set, using defaults: db.sqlite3 and {CONF.ACKREP_DATA_PATH}"
         )
         database_path = os.path.join("/code/ackrep/ackrep_core", "db.sqlite3")
-        ackrep_data_path = os.path.join("/code/ackrep", CONF.ACKREP_DATA_PATH)
+        #* Note: since the introduction of the config handler this was bugged, bc two abs paths were joined which
+        #* ommits the first and makes the database unable to be found and loaded
+        ackrep_data_path = os.path.join("/code/ackrep", os.path.basename(CONF.ACKREP_DATA_PATH))
         cmd_extension = ["-e", f"ACKREP_DATABASE_PATH={database_path}", "-e", f"ACKREP_DATA_PATH={ackrep_data_path}"]
     logger.info(f"ACKREP_DATABASE_PATH {database_path}")
     logger.info(f"ACKREP_DATA_PATH {ackrep_data_path}")
