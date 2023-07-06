@@ -835,9 +835,9 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
     cmd = ["docker", "images", "-q", image_name]
     res = run_command(cmd, logger=logger, capture_output=True)
     local_image_id = res.stdout.replace("\n", "")
-    logger.info(f"local image id: {local_image_id}")
     if len(local_image_id) == 12 and try_to_use_local_image:  # 12 characters image id + \n
         logger.info("running local image")
+        logger.info(f"local image id: {local_image_id}")
         image_name = env_name  # since docker-compose doesnt use prefix
 
         assert os.path.isdir(f"{CONF.ACKREP_ROOT_PATH}/ackrep_deployment"), "docker-compose file not found"
@@ -862,12 +862,12 @@ def start_idle_container(env_name, try_to_use_local_image=True, port_dict=None):
         res = run_command(pull_cmd, logger=logger, capture_output=True)
         assert res.returncode == 0, f"Unable to pull image from remote. Does '{image_name}' exist?"
 
-        logger.info("stopping old containers (if necessary)")
         # stop all running containers with env_name to ensure name uniqueness
         find_cmd = ["docker", "ps", "--filter", f"name={env_name}", "-q"]
         res = run_command(find_cmd, logger=logger, capture_output=True)
         if len(res.stdout) > 0:
             ids = res.stdout.split("\n")[:-1]
+            logger.info(f"stopping old containers: {ids}")
             for i in ids:
                 stop_cmd = ["docker", "stop", i]
                 run_command(stop_cmd, logger=logger, capture_output=True)
