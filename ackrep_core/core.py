@@ -477,6 +477,7 @@ def get_entity_context(key: str):
         raise NotImplementedError
 
     c = Container()  # this will be our easily accessible context dict for the template
+    c.kwargs = None
 
     if isinstance(entity, models.ProblemSolution):
         c.solution_path = os.path.join(CONF.ACKREP_ROOT_PATH, entity.base_path)

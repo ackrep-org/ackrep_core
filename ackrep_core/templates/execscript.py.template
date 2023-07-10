@@ -42,7 +42,7 @@ try:
     import solution
 
     # perform the solution
-    solution_data = solution.solve(ps.ProblemSpecification)
+    solution_data = solution.solve(ps.ProblemSpecification, kwargs={{context.kwargs}})
 
     # evaluate the solution (-> ResultContainer)
     rc = ps.evaluate_solution(solution_data)
