@@ -36,11 +36,11 @@ from ipydex import IPS, activate_ips_on_exception
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
-    import pyerk as p
+    import pyirk as p
 
 from django.http import JsonResponse
 from django.db.models import Q
-from ackrep_core.models import PyerkEntity
+from ackrep_core.models import PyirkEntity
 from .util import (
     _entity_sort_key,
     render_entity_inline,
@@ -430,7 +430,7 @@ class SearchSparqlView(View):
         # PREFIX P: <{OM.iri}>
         example_query = twdd(
             f"""
-        PREFIX : <{p.rdfstack.ERK_URI}>
+        PREFIX : <{p.rdfstack.IRK_URI}>
         PREFIX ocse: <{settings.SPARQL_PREFIX_MAPPING['ocse']}#>
         PREFIX ack: <{settings.SPARQL_PREFIX_MAPPING['ack']}#>
         SELECT ?s
@@ -466,7 +466,7 @@ class SearchSparqlView(View):
 
 # /search/?q=...
 def get_item(request):
-    """generate response for dynamical pyerk entity search bar"""
+    """generate response for dynamical pyirk entity search bar"""
 
     # TODO: smart dynamic reload would be desireable but causes currently causes problems
     reload_data_if_necessary()
@@ -487,10 +487,10 @@ def get_item(request):
             else:
                 total_filter = total_filter & f
 
-        entity_list = list(PyerkEntity.objects.filter(total_filter))
+        entity_list = list(PyirkEntity.objects.filter(total_filter))
         entity_list.sort(key=lambda ent: _entity_sort_key(ent, subqueries))
         for idx, db_entity in enumerate(entity_list):
-            db_entity: PyerkEntity
+            db_entity: PyirkEntity
             try:
                 res = render_entity_inline(
                     db_entity, idx=idx, script_tag="script", include_description=True, highlight_text=subqueries

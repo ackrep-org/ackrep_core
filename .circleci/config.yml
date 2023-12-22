@@ -39,20 +39,20 @@ jobs: # A basic unit of work in a run
             ackrep --bootstrap-config
             cat /home/circleci/.config/ackrep/ackrepconf.toml
       - run:
-          name: Load ERK Modules
+          name: Load IRK Modules
           command: |
             . venv/bin/activate
-            echo Cloning erk_data_for_unittests
+            echo Cloning irk_data_for_unittests
             cd ~
-            mkdir -p erk/erk_data_for_unittests
-            cd erk/erk_data_for_unittests
+            mkdir -p irk/irk_data_for_unittests
+            cd irk/irk_data_for_unittests
             git clone https://github.com/ackrep-org/ocse.git
             ls /home
             ls /home/circleci
-            ls /home/circleci/erk
-            ls /home/circleci/erk/erk_data_for_unittests
+            ls /home/circleci/irk
+            ls /home/circleci/irk/irk_data_for_unittests
             ackrep --checkout-corresponding-ocse-ut-repo
-            cp -r ~/erk/erk_data_for_unittests ~/erk/erk_data
+            cp -r ~/irk/irk_data_for_unittests ~/irk/irk_data
       - run:
           name: Load Test Data
           command: |

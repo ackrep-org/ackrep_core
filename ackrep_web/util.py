@@ -12,8 +12,8 @@ from ipydex import IPS, activate_ips_on_exception
 import re
 
 from ackrep_core_django_settings import settings
-from ackrep_core.models import PyerkEntity, LanguageSpecifiedString
-import pyerk as p
+from ackrep_core.models import PyirkEntity, LanguageSpecifiedString
+import pyirk as p
 
 # will be changed from views
 GLOBALS = Container()
@@ -70,12 +70,12 @@ def _entity_sort_key(entity, subqueries) -> Tuple[int, str, int]:
     return relevance, letter, num
 
 
-def render_entity_inline(entity: Union[PyerkEntity, p.Entity], **kwargs) -> str:
+def render_entity_inline(entity: Union[PyirkEntity, p.Entity], **kwargs) -> str:
 
-    # allow both models.Entity (from db) and "code-defined" pyerk.Entity
+    # allow both models.Entity (from db) and "code-defined" pyirk.Entity
     if isinstance(entity, p.Entity):
         code_entity = entity
-    elif isinstance(entity, PyerkEntity):
+    elif isinstance(entity, PyirkEntity):
         code_entity = p.ds.get_entity_by_uri(entity.uri)
     else:
         # TODO: improve handling of literal values
@@ -127,7 +127,7 @@ def render_entity_inline(entity: Union[PyerkEntity, p.Entity], **kwargs) -> str:
     return rendered_entity
 
 
-def represent_entity_as_dict(code_entity: Union[PyerkEntity, object]) -> dict:
+def represent_entity_as_dict(code_entity: Union[PyirkEntity, object]) -> dict:
 
     if isinstance(code_entity, p.Entity):
 
@@ -175,7 +175,7 @@ def reload_data_if_necessary(force: bool = False, speedup: bool = True) -> Conta
     res = Container()
     res.modules = reload_modules_if_necessary(force=force)
 
-    res.db = load_erk_entities_to_db(speedup=speedup)
+    res.db = load_irk_entities_to_db(speedup=speedup)
 
     GLOBALS.DATA_LOADED = True
 
@@ -183,15 +183,15 @@ def reload_data_if_necessary(force: bool = False, speedup: bool = True) -> Conta
 
 
 def reload_modules_if_necessary(force: bool = False) -> int:
-    erk_data_mod_name = os.path.split(settings.CONF.ERK_DATA_OCSE_MAIN_PATH)[1]
+    irk_data_mod_name = os.path.split(settings.CONF.IRK_DATA_OCSE_MAIN_PATH)[1]
     count = 0
 
     # load ocse
     if force or p.settings.OCSE_URI not in p.ds.uri_prefix_mapping.a:
-        mod = p.erkloader.load_mod_from_path(
-            settings.CONF.ERK_DATA_OCSE_MAIN_PATH,
+        mod = p.irkloader.load_mod_from_path(
+            settings.CONF.IRK_DATA_OCSE_MAIN_PATH,
             prefix="ct",
-            modname=erk_data_mod_name,
+            modname=irk_data_mod_name,
         )
         count += 1
 
@@ -203,7 +203,7 @@ def reload_modules_if_necessary(force: bool = False) -> int:
     return count
 
 
-def load_erk_entities_to_db(speedup: bool = True) -> int:
+def load_irk_entities_to_db(speedup: bool = True) -> int:
     """
     Load data from python-module into data base to allow simple searching
 
@@ -216,7 +216,7 @@ def load_erk_entities_to_db(speedup: bool = True) -> int:
 
     # delete all existing data (if database already exisits)
     try:
-        PyerkEntity.objects.all().delete()
+        PyirkEntity.objects.all().delete()
         LanguageSpecifiedString.objects.all().delete()
     except OperationalError:
         # db does not yet exist. The functions is probably called during `manage.py migrate` or similiar.
@@ -228,7 +228,7 @@ def load_erk_entities_to_db(speedup: bool = True) -> int:
     # repopulate the databse with items and relations (and auxiliary objects)
     _load_entities_to_db(speedup=speedup)
 
-    n = len(PyerkEntity.objects.all())
+    n = len(PyirkEntity.objects.all())
     n += len(LanguageSpecifiedString.objects.all())
 
     return n
@@ -269,22 +269,22 @@ def __load_entities_to_db(speedup: bool) -> None:
     label_list = []
     for ent in itertools.chain(p.ds.items.values(), p.ds.relations.values()):
         label = create_lss(ent, "R1")
-        entity = PyerkEntity(uri=ent.uri, description=getattr(ent, "R2", None))
+        entity = PyirkEntity(uri=ent.uri, description=getattr(ent, "R2", None))
 
         label_list.append(label)
         entity_list.append(entity)
 
     # print(p.auxiliary.bcyan(f"time1: {time.time() - t0}"))
-    PyerkEntity.objects.bulk_create(entity_list)
+    PyirkEntity.objects.bulk_create(entity_list)
     LanguageSpecifiedString.objects.bulk_create(label_list)
 
     if speedup:
         transaction.commit()
 
-    assert len(PyerkEntity.objects.all()) == len(
+    assert len(PyirkEntity.objects.all()) == len(
         LanguageSpecifiedString.objects.all()
     ), "Mismatch in Entities and corresponding Labels."
-    for entity, label in zip(PyerkEntity.objects.all(), LanguageSpecifiedString.objects.all()):
+    for entity, label in zip(PyirkEntity.objects.all(), LanguageSpecifiedString.objects.all()):
         entity.label.add(label)
 
     # print(p.auxiliary.bcyan(f"time2: {time.time() - t0}"))
@@ -297,7 +297,7 @@ def unload_data(strict=False):
     p.unload_mod(p.settings.OCSE_URI, strict=strict)
 
     # unload db
-    PyerkEntity.objects.all().delete()
+    PyirkEntity.objects.all().delete()
     LanguageSpecifiedString.objects.all().delete()
 
 
@@ -314,7 +314,7 @@ def create_lss(ent: p.Entity, rel_key: str) -> LanguageSpecifiedString:
     return LanguageSpecifiedString(langtag=rdf_literal.language, content=rdf_literal.value)
 
 
-def get_sparql_text(code_entity: Union[PyerkEntity, object]) -> str:
+def get_sparql_text(code_entity: Union[PyirkEntity, object]) -> str:
     # uri = "<" + code_entity.base_uri + "#>"
     uri = code_entity.base_uri
     try:

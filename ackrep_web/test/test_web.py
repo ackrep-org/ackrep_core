@@ -13,7 +13,7 @@ import json
 from ackrep_core_django_settings import settings
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
-    import pyerk as p
+    import pyirk as p
 from bs4 import BeautifulSoup
 
 try:
@@ -275,7 +275,7 @@ class TestCases2(SimpleTestCase):
     def test01_search_api(self):
         # this tests:
         # - partial matching (out of order search of key words)
-        # - sorting of pyerk entities in relevant order
+        # - sorting of pyirk entities in relevant order
         class C:
             pass
 
@@ -296,7 +296,7 @@ class TestCases2(SimpleTestCase):
         return super().tearDown()
 
 
-# TODO: this fails due to pyerk modules being already loaded. Maybe the setup methode is old and modules could be
+# TODO: this fails due to pyirk modules being already loaded. Maybe the setup methode is old and modules could be
 # TODO: unloaded there?
 @pytest.mark.xfail
 class TestBugs(DjangoTestCase):

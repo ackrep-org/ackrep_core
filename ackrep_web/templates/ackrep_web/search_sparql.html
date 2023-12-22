@@ -13,7 +13,7 @@
         <pre>{{ stacktrace }}</pre>
     {% endif %}
 {% endif %}
-<code>CTRL + SPACE</code> will take you to the PyERK entity search field.
+<code>CTRL + SPACE</code> will take you to the PyIRK entity search field.
 <form action="{% url 'search-sparql' %}" method="GET" class="styled_form">
 <!--    {% csrf_token %}-->
     <label for="query">SPARQL query:</label>
@@ -21,9 +21,9 @@
     <br>
     <button id="btn_mr_submit" type="submit">Search</button>
 </form>
-{# --------------------- pyerk autocomplete item search --------------------- #}
+{# --------------------- pyirk autocomplete item search --------------------- #}
 <br>
-<h4>Search the PyERK entities for an item / a relation and use it in the SPARQL query</h4>
+<h4>Search the PyIRK entities for an item / a relation and use it in the SPARQL query</h4>
 Use <code>UP</code> and <code>DOWN</code> to navigate and <code>ENTER</code> to select.
 <div id="autoComplete" class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list_1" aria-haspopup="true" aria-expanded="false">
     <div  class="ac_input_wrapper">
@@ -90,7 +90,7 @@ MathJax.Hub.Config({
     <br>
     Find the entity with a given key (e.g. UXMFA):
     <code style="display:block; white-space:pre-wrap">
-    PREFIX : &lt;erk:/builtins#&gt;
+    PREFIX : &lt;irk:/builtins#&gt;
     PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
     SELECT ?entity
     WHERE {
@@ -100,7 +100,7 @@ MathJax.Hub.Config({
     <br>
     Get all relations of all exising system models:
     <code style="display:block; white-space:pre-wrap">
-        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX : &lt;irk:/builtins#&gt;
         PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?relation
         WHERE {
@@ -110,7 +110,7 @@ MathJax.Hub.Config({
     </code>
     Get all relations that have a system model as first argument:
     <code style="display:block; white-space:pre-wrap">
-        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX : &lt;irk:/builtins#&gt;
         PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?relation
         WHERE {
@@ -120,9 +120,9 @@ MathJax.Hub.Config({
     Note the difference between the two preceding queries!
     <br>
     <br>
-    Get all pyerk items:
+    Get all pyirk items:
     <code style="display:block; white-space:pre-wrap">
-        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX : &lt;irk:/builtins#&gt;
         PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?item
         WHERE {
@@ -133,7 +133,7 @@ MathJax.Hub.Config({
     <b>Some more useful and complex queries:</b><br>
     Find all system models that are represented by a partial differential equation:
     <code style="display:block; white-space:pre-wrap">
-        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX : &lt;irk:/builtins#&gt;
         PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?entity
         WHERE {
@@ -145,7 +145,7 @@ MathJax.Hub.Config({
     <br>
     Find all system models that have system order of 3 and are autonomous
     <code style="display:block; white-space:pre-wrap">
-        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX : &lt;irk:/builtins#&gt;
         PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?model
         WHERE
@@ -156,11 +156,11 @@ MathJax.Hub.Config({
         }
     </code>
     <br>
-    <b>Note: Tags of problems and solutions are depricated and will soon be implemented in pyerk.</b>
+    <b>Note: Tags of problems and solutions are depricated and will soon be implemented in pyirk.</b>
     <br>
     Select all ackrep entities that use linear state feedback:
     <code style="display:block; white-space:pre-wrap">
-        PREFIX : &lt;erk:/builtins#&gt;
+        PREFIX : &lt;irk:/builtins#&gt;
         PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
         SELECT ?entity ?tag
         WHERE {
@@ -171,7 +171,7 @@ MathJax.Hub.Config({
     <br>
     Select all entites, that have both of the tags "Convergence_To_Desired_Trajectory" and "Trajectory_Generation":
     <code style="display:block; white-space:pre-wrap">
-    PREFIX : &lt;erk:/builtins#&gt;
+    PREFIX : &lt;irk:/builtins#&gt;
     PREFIX ocse: &lt;{{SETTINGS_SPARQL_PREFIX_MAPPING.ocse}}#&gt;
     SELECT ?entity
     WHERE {

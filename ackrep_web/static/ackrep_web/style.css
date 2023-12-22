@@ -290,7 +290,7 @@ input#hide:checked ~ span#content {
 }
 
 
-/* pyerk autocomplete */
+/* pyirk autocomplete */
 .autoComplete_wrapper input {
     height: 4rem;
     display: block;

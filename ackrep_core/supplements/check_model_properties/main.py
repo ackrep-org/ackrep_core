@@ -84,7 +84,7 @@ for e in entity_list:
         # now add data to dictionary for automated metadata completion
         if key not in result_dict.keys():
             result_dict[key] = {}
-        result_dict[key][prop.erk_key] = {"result": flag, "duration": round(deltat, 3), "message": msg}
+        result_dict[key][prop.irk_key] = {"result": flag, "duration": round(deltat, 3), "message": msg}
 
         logger.info(result_data)
 

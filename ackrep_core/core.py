@@ -7,14 +7,14 @@ import shutil
 from jinja2 import Environment, FileSystemLoader
 from git import Repo
 
-# loading ackrep config before loading pyerk
+# loading ackrep config before loading pyirk
 from ackrep_core.config_handler import FlexibleConfigHandler
 
 CONF = FlexibleConfigHandler()
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
     # this env var is set in Dockerfile of env
-    import pyerk as p
+    import pyirk as p
 from ackrep_core_django_settings import settings
 
 # settings might be accessed from other modules which import this one (core)
@@ -208,7 +208,7 @@ class ACKREP_OntologyManager(object):
         self.ds = None
 
     def load_ontology(self, startdir=None, entity_list=None):
-        _ = p.erkloader.load_mod_from_path(modpath=settings.CONF.ERK_DATA_OCSE_MAIN_PATH, prefix="ct")
+        _ = p.irkloader.load_mod_from_path(modpath=settings.CONF.IRK_DATA_OCSE_MAIN_PATH, prefix="ct")
         ackrep_parser.load_ackrep_entities(startdir)
         self.ds = p.core.ds
         self.ds.rdfgraph = p.rdfstack.create_rdf_triples()
@@ -220,12 +220,12 @@ class ACKREP_OntologyManager(object):
         self.ds = p.core.ds
         qsrc = self.ds.preprocess_query(qsrc)
         res = self.ds.rdfgraph.query(qsrc)
-        erk_entitites = list(p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res))
-        erk_entitites.sort(key=_sort_sparql_results)
+        irk_entitites = list(p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyirk, res))
+        irk_entitites.sort(key=_sort_sparql_results)
 
         table_data = []
         table_head = [str(var) for var in res.vars]
-        for tuples in erk_entitites:
+        for tuples in irk_entitites:
             row = []
             for i, e in enumerate(tuples):
                 # entity is system model

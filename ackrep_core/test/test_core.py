@@ -18,11 +18,11 @@ from ipydex import IPS  # only for debugging
 from shutil import which as find_executable
 
 if not os.environ.get("ACKREP_ENVIRONMENT_NAME"):
-    import pyerk as p
+    import pyirk as p
 
 from ackrep_core_django_settings import settings
 
-ERK_DATA_OCSE_UT_MAIN_PATH = settings.CONF.ERK_DATA_OCSE_UT_MAIN_PATH
+IRK_DATA_OCSE_UT_MAIN_PATH = settings.CONF.IRK_DATA_OCSE_UT_MAIN_PATH
 """
 This module contains the tests of the core module (not ackrep_web).
 
@@ -62,15 +62,15 @@ os.environ["ACKREP_CI_RESULTS_PATH"] = ackrep_ci_results_test_repo_path
 
 core.CONF.define_paths()
 
-pyerk_ocse_path = ERK_DATA_OCSE_UT_MAIN_PATH
-pyerk_ocse_name = "ocse/0.2"
+pyirk_ocse_path = IRK_DATA_OCSE_UT_MAIN_PATH
+pyirk_ocse_name = "ocse/0.2"
 
 # use `git log -1` to display the full hash
 default_repo_head_hash = "834aaad12256118d475de9eebfdaefb7746a28bc"  # 2022-09-13 branch for_unittests
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
 TEST_ACKREP_DATA_REPO_COMMIT_SHA = "73ec07280ffdb1aff67302c09fe2dac70b44d7c0"  # 2023-06-23
-TEST_ERK_DATA_REPO_COMMIT_SHA = "9e828d753cab7967ec61aabc0e7591322857628a"  # 2022-12-16 branch ut__ackrep__main
+TEST_IRK_DATA_REPO_COMMIT_SHA = "9e828d753cab7967ec61aabc0e7591322857628a"  # 2022-12-16 branch ut__ackrep__main
 
 
 class TestCases01(DjangoTestCase):
@@ -122,16 +122,16 @@ class TestCases01(DjangoTestCase):
 
         self.assertIn(TEST_ACKREP_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
-    def test_01_pyerk_dependency(self):
+    def test_01_pyirk_dependency(self):
         from packaging import version
-        from pyerk import release
+        from pyirk import release
 
-        pyerk_version = version.parse(release.__version__)
-        self.assertTrue(pyerk_version >= version.parse("0.6.2"))
+        pyirk_version = version.parse(release.__version__)
+        self.assertTrue(pyirk_version >= version.parse("0.6.2"))
 
-    def test_02_pyerk_data_unittest_repo(self):
+    def test_02_pyirk_data_unittest_repo(self):
         """
-        Test whether the erk_data repository to which the unittests refer is in a defined state.
+        Test whether the irk_data repository to which the unittests refer is in a defined state.
 
         Construct a list of all sha-strings which where commited in the current branch and assert that
         the expected string is among them. This heuristics assumes that it is OK if the data-repo is newer than
@@ -140,7 +140,7 @@ class TestCases01(DjangoTestCase):
         The name should ensure that this test runs first (do not waste time with further tests if this fails).
         """
         msg = "Test repo not found. It must be created manually."
-        path = os.path.split(pyerk_ocse_path)[0]
+        path = os.path.split(pyirk_ocse_path)[0]
         self.assertTrue(os.path.isdir(path), msg=msg)
 
         try:
@@ -158,7 +158,7 @@ class TestCases01(DjangoTestCase):
         self.assertIn("ut__ackrep__", ut_branch)
 
         core_branch = Repo(os.path.join(core.CONF.ACKREP_ROOT_PATH, "ackrep_core")).active_branch.name
-        msg = f"Pyerk UT Repo is on branch {util.bred(ut_branch)} while your core project is on branch {util.bred(core_branch)}"
+        msg = f"Pyirk UT Repo is on branch {util.bred(ut_branch)} while your core project is on branch {util.bred(core_branch)}"
 
         if not ut_branch == f"ut__ackrep__{core_branch}":
             core.logger.warning(msg)
@@ -168,10 +168,10 @@ class TestCases01(DjangoTestCase):
         sha_list = [line.split(" ")[0] for line in log_list]
 
         msg = (
-            f"Repository {pyerk_ocse_path} is in the wrong state. "
-            f"Current branch does unexpectedly not contain commit {TEST_ERK_DATA_REPO_COMMIT_SHA[:7]}."
+            f"Repository {pyirk_ocse_path} is in the wrong state. "
+            f"Current branch does unexpectedly not contain commit {TEST_IRK_DATA_REPO_COMMIT_SHA[:7]}."
         )
-        self.assertIn(TEST_ERK_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
+        self.assertIn(TEST_IRK_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
     def test_logging(self):
         res = run_command(["ackrep", "--test-logging", "--log=10"])
@@ -190,7 +190,7 @@ class TestCases01(DjangoTestCase):
         self.assertIn("warning", lines[-1])
 
 
-class ErkHandlerMixin:
+class IRKHandlerMixin:
     def setUp(self):
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
@@ -212,7 +212,7 @@ class ErkHandlerMixin:
                 print(f"Error in tearDown of {method_repr}:", err)
 
 
-class TestCases02(ErkHandlerMixin, DjangoTestCase):
+class TestCases02(IRKHandlerMixin, DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.
 
@@ -240,7 +240,7 @@ class TestCases02(ErkHandlerMixin, DjangoTestCase):
         # core.load_repo_to_db(ackrep_data_test_repo_path)
 
 
-class TestCases03(ErkHandlerMixin, SimpleTestCase):
+class TestCases03(IRKHandlerMixin, SimpleTestCase):
     """
     These tests expect the database to be loaded.
 
@@ -514,7 +514,7 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
         # unload modules, since they would already be loaded due to load_repo_to_db
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
-        mod1 = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
+        mod1 = p.irkloader.load_mod_from_path(pyirk_ocse_path, prefix="ct", modname=pyirk_ocse_name)
         p1 = os.path.join(ackrep_data_test_repo_path, "system_models", "lorenz_system")
         res = core.ackrep_parser.load_ackrep_entities(p1)
         self.assertEqual(res, 0)
@@ -525,7 +525,7 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
             p.unload_mod(mod_id)
 
         n_items1 = len(p.ds.items)
-        _ = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
+        _ = p.irkloader.load_mod_from_path(pyirk_ocse_path, prefix="ct", modname=pyirk_ocse_name)
         n_items2 = len(p.ds.items)
         self.assertGreater(n_items2, n_items1)
 
@@ -533,7 +533,7 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
         _ = core.ackrep_parser.load_ackrep_entities(p1)
 
         # assert that ocse-ct was loaded with expected prefix (this should be done in setUp)
-        self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2/control_theory"], "ct")
+        self.assertEqual(p.ds.uri_prefix_mapping.a["irk:/ocse/0.2/control_theory"], "ct")
         n_items3 = len(p.ds.items)
         self.assertGreater(n_items3, n_items2)
 
@@ -554,7 +554,7 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
 
-        mod1 = p.erkloader.load_mod_from_path(pyerk_ocse_path, prefix="ct", modname=pyerk_ocse_name)
+        mod1 = p.irkloader.load_mod_from_path(pyirk_ocse_path, prefix="ct", modname=pyirk_ocse_name)
 
         n_items1 = len(p.ds.items)
         items1 = set(p.ds.items.keys())
@@ -587,7 +587,7 @@ class TestCases03(ErkHandlerMixin, SimpleTestCase):
         self.assertEqual(items5.difference(items2), set())
 
 
-class TestCases04(ErkHandlerMixin, DjangoTestCase):
+class TestCases04(IRKHandlerMixin, DjangoTestCase):
     """
     These tests expect the database to be regenerated every time.
 
@@ -618,7 +618,7 @@ class TestCases04(ErkHandlerMixin, DjangoTestCase):
         core.logger.setLevel(loglevel)
 
 
-class TestCases05(ErkHandlerMixin, SimpleTestCase):
+class TestCases05(IRKHandlerMixin, SimpleTestCase):
     """
     Docker related test cases
 
@@ -761,14 +761,14 @@ class TestCases05(ErkHandlerMixin, SimpleTestCase):
 
 class TestCases06(DjangoTestCase):
     """
-    ERK related test cases
+    IRK related test cases
     """
 
-    def test_01_erk_loading(self):
+    def test_01_irk_loading(self):
         mods = core.p.ds.uri_prefix_mapping.a
 
-        # this is an assumption on pyerk
-        self.assertIn("erk:/builtins", mods)
+        # this is an assumption on pyirk
+        self.assertIn("irk:/builtins", mods)
 
         # only builtins is loaded by default
         self.assertEqual(len(mods), 1)
@@ -776,10 +776,10 @@ class TestCases06(DjangoTestCase):
         # now load the full ackrep data
         core.load_repo_to_db(ackrep_data_test_repo_path)
 
-        # this ensures that all necessary pyerk modules for correct ackrep functionality are loaded
-        self.assertIn("erk:/ocse/0.2/math", mods)
-        self.assertIn("erk:/ocse/0.2/control_theory", mods)
-        self.assertIn("erk:/ackrep", mods)
+        # this ensures that all necessary pyirk modules for correct ackrep functionality are loaded
+        self.assertIn("irk:/ocse/0.2/math", mods)
+        self.assertIn("irk:/ocse/0.2/control_theory", mods)
+        self.assertIn("irk:/ackrep", mods)
 
 
 def get_data_files_dict(path, endings=[]):

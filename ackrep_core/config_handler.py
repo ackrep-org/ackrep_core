@@ -22,7 +22,7 @@ def bootstrap_config_from_current_directory(configfile_path=None, force_new_conf
     """
 
     # use cwd as ackrep root (parent of ackrep_core, ackrep_data, etc)
-    # then expect erk/erkdata/... as "sibling"
+    # then expect irk/irkdata/... as "sibling"
 
     configfile_path = DEFAULT_CONFIGFILE_PATH
 
@@ -73,21 +73,21 @@ def _create_new_config_file(configfile_path):
     # │   ├── ackrep_data/
     # │   │
     # │   └── ...
-    # └── erk
-    # │   ├── erk_data/
-    # │   ├── erk_data_for_unittests/
+    # └── irk
+    # │   ├── irk_data/
+    # │   ├── irk_data_for_unittests/
     #     └── ...
 
     cwd = Path.cwd().as_posix()
     ackrep_root_path = Path.cwd().as_posix()
-    ocse_path = Path.cwd().parent.joinpath("erk", "erk_data", "ocse", "erkpackage.toml").as_posix()
-    ocse_ut_path = Path.cwd().parent.joinpath("erk", "erk_data_for_unittests", "ocse", "erkpackage.toml").as_posix()
+    ocse_path = Path.cwd().parent.joinpath("irk", "irk_data", "ocse", "irkpackage.toml").as_posix()
+    ocse_ut_path = Path.cwd().parent.joinpath("irk", "irk_data_for_unittests", "ocse", "irkpackage.toml").as_posix()
     ackrep_data_path = os.path.join(ackrep_root_path, "ackrep_data")
 
     check_paths = [
         ("ACKREP_ROOT_PATH", ackrep_root_path),
-        ("ERK_DATA_OCSE_CONF_PATH", ocse_path),
-        ("ERK_DATA_OCSE_UT_CONF_PATH", ocse_ut_path),
+        ("IRK_DATA_OCSE_CONF_PATH", ocse_path),
+        ("IRK_DATA_OCSE_UT_CONF_PATH", ocse_ut_path),
         ("ACKREP_DATA_PATH", ackrep_data_path),
     ]
 
@@ -107,17 +107,17 @@ def _create_new_config_file(configfile_path):
     #
     if os.environ.get("ACKREP_CORE_UT") == "True":
         ocse_path = ocse_ut_path
-        logging.logger.warn("inside CI there is no ERK_DATA, for compatibility, we point ERK_DATA at ERK_DATA_UT")
+        logging.logger.warn("inside CI there is no IRK_DATA, for compatibility, we point IRK_DATA at IRK_DATA_UT")
     if os.environ.get("ACKREP_DATA_UT") == "True":
         ocse_ut_path = ocse_path
-        logging.logger.warn("inside CI there is no ERK_DATA_UT, for compatibility, we point ERK_DATA_UT at ERK_DATA")
+        logging.logger.warn("inside CI there is no IRK_DATA_UT, for compatibility, we point IRK_DATA_UT at IRK_DATA")
 
     default_configfile_content = twdd(
         f"""
 
     ACKREP_ROOT_PATH = "{ackrep_root_path}"
-    ERK_DATA_OCSE_CONF_PATH = "{ocse_path}"
-    ERK_DATA_OCSE_UT_CONF_PATH = "{ocse_ut_path}"
+    IRK_DATA_OCSE_CONF_PATH = "{ocse_path}"
+    IRK_DATA_OCSE_UT_CONF_PATH = "{ocse_ut_path}"
     """
     )
 
@@ -146,7 +146,7 @@ def load_config_file(configfile_path: str = None, check=True, print_flag=False) 
     # this will raise an error if the relevant keys are missing
 
     if check:
-        relevant_keys = ["ERK_DATA_OCSE_CONF_PATH"]
+        relevant_keys = ["IRK_DATA_OCSE_CONF_PATH"]
         missing_keys = [key for key in relevant_keys if key not in config_dict]
 
         if missing_keys:
@@ -233,22 +233,22 @@ class FlexibleConfigHandler(object):
         else:
             self.ACKREP_DATABASE_PATH = os.path.join(ackrep_root_path, "ackrep_core", "db.sqlite3")
 
-        if ocse_conf_path := self._get_ocse_conf_path("ERK_DATA_OCSE_MAIN_PATH"):
-            os.environ["PYERK_CONF_PATH"] = ocse_conf_path
+        if ocse_conf_path := self._get_ocse_conf_path("IRK_DATA_OCSE_MAIN_PATH"):
+            os.environ["PYIRK_CONF_PATH"] = ocse_conf_path
 
     def _get_ocse_conf_path(self, name) -> str:
 
         # note the difference between ..._MAIN_... and ..._CONF_...
         # TODO: explain this difference in comments or docs
 
-        if name == "ERK_DATA_OCSE_MAIN_PATH":
+        if name == "IRK_DATA_OCSE_MAIN_PATH":
             if os.environ.get("ACKREP_UNITTEST") == "True":
-                ocse_conf_path = self.ERK_DATA_OCSE_UT_CONF_PATH
+                ocse_conf_path = self.IRK_DATA_OCSE_UT_CONF_PATH
             else:
-                ocse_conf_path = self.ERK_DATA_OCSE_CONF_PATH
+                ocse_conf_path = self.IRK_DATA_OCSE_CONF_PATH
 
-        if name == "ERK_DATA_OCSE_UT_MAIN_PATH":
-            ocse_conf_path = self.ERK_DATA_OCSE_UT_CONF_PATH
+        if name == "IRK_DATA_OCSE_UT_MAIN_PATH":
+            ocse_conf_path = self.IRK_DATA_OCSE_UT_CONF_PATH
         return ocse_conf_path
 
     def __getattr__(self, name):
@@ -267,7 +267,7 @@ class FlexibleConfigHandler(object):
             raise FileNotFoundError(msg)
 
         # handle some special cases
-        if name in ["ERK_DATA_OCSE_MAIN_PATH", "ERK_DATA_OCSE_UT_MAIN_PATH"]:
+        if name in ["IRK_DATA_OCSE_MAIN_PATH", "IRK_DATA_OCSE_UT_MAIN_PATH"]:
             ocse_conf_path = self._get_ocse_conf_path(name)
 
             if not os.path.isfile(ocse_conf_path):
@@ -275,9 +275,9 @@ class FlexibleConfigHandler(object):
                 raise FileNotFoundError(msg)
 
             with open(ocse_conf_path, "rb") as fp:
-                erk_conf_dict = tomllib.load(fp)
+                irk_conf_dict = tomllib.load(fp)
 
-            ocse_main_rel_path = erk_conf_dict["main_module"]
+            ocse_main_rel_path = irk_conf_dict["main_module"]
             ocse_main_mod_path = Path(ocse_conf_path).parent.joinpath(ocse_main_rel_path).as_posix()
             return ocse_main_mod_path
 

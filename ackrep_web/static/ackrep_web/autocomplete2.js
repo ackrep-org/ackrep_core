@@ -10,7 +10,7 @@ String.prototype.splice = function(start, delCount, newSubStr) {
 };
 
 let keysPressed = {};
-// on Ctrl + Space, jump to PyERK search field
+// on Ctrl + Space, jump to PyIRK search field
 query.addEventListener('keydown', (event) => {
   keysPressed[event.key] = true;
 

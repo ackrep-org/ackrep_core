@@ -673,7 +673,7 @@ def update_all_pdfs(start_key=None):
 
         print(bright(e))
         model_too_big = False
-        d = yaml.load(e.erk_data, yaml.FullLoader)
+        d = yaml.load(e.irk_data, yaml.FullLoader)
         try:
             rep = d['R2928["has model representation"]']
             dim = d['R2928["has model representation"]'][list(rep.keys())[0]]['R2112["has state dimension"]']
@@ -1029,33 +1029,33 @@ def checkout_ut_repo():
     core_repo = git.Repo(acm.core.core_pkg_path)
     core_branch = core_repo.active_branch.name
 
-    # 1. find erk_data ut directory
-    path = os.path.split(acm.core.CONF.ERK_DATA_OCSE_UT_CONF_PATH)[0]
+    # 1. find irk_data ut directory
+    path = os.path.split(acm.core.CONF.IRK_DATA_OCSE_UT_CONF_PATH)[0]
     acm.core.logger.info(f"ocse ut repo path: {path}")
-    erk_data_repo = git.Repo(path)
+    irk_data_repo = git.Repo(path)
 
     # 2. checkout corresponding branch
-    erk_data_branch = erk_data_repo.active_branch.name
-    erk_data_branches = erk_data_repo.git.branch("-r")  # check remote branches
+    irk_data_branch = irk_data_repo.active_branch.name
+    irk_data_branches = irk_data_repo.git.branch("-r")  # check remote branches
 
     target_name = f"ut__ackrep__{core_branch}"
     default_name = f"ut__ackrep__main"
 
     ## corresponding branch exists
-    if target_name in erk_data_branches:
-        erk_data_repo.git.checkout(target_name)
-        erk_data_repo.git.pull()
+    if target_name in irk_data_branches:
+        irk_data_repo.git.checkout(target_name)
+        irk_data_repo.git.pull()
         acm.core.logger.info("UT branch checked out successfully.")
     ## corresponsing branch does not exist, use default main branch
-    elif default_name in erk_data_branches:
-        erk_data_repo.git.checkout(default_name)
-        erk_data_repo.git.pull()
+    elif default_name in irk_data_branches:
+        irk_data_repo.git.checkout(default_name)
+        irk_data_repo.git.pull()
         acm.core.logger.warning(f"Falling back to {default_name}.")
     ## no ut branch found --> error
     else:
         acm.core.logger.error(
             acm.util.bred(
-                f"No corresponding erk_data ut branch ({target_name, default_name}) found in {erk_data_branches}!"
+                f"No corresponding irk_data ut branch ({target_name, default_name}) found in {irk_data_branches}!"
             )
         )
         raise ValueError(f"No unittest branch with the right name was found.")
@@ -1063,12 +1063,12 @@ def checkout_ut_repo():
 
 def update_metadata_from_property_report(property_path):
     import yaml
-    import pyerk as p
+    import pyirk as p
     from django.db.models import Q
-    from ackrep_core.models import PyerkEntity
+    from ackrep_core.models import PyirkEntity
     from ackrep_web.util import reload_data_if_necessary
 
-    p.erkloader.load_mod_from_path(modpath=acm.core.settings.CONF.ERK_DATA_OCSE_MAIN_PATH, prefix="ct")
+    p.irkloader.load_mod_from_path(modpath=acm.core.settings.CONF.IRK_DATA_OCSE_MAIN_PATH, prefix="ct")
     reload_data_if_necessary()
 
     # load property yaml
@@ -1085,7 +1085,7 @@ def update_metadata_from_property_report(property_path):
             meta_dict = yaml.load(f, Loader=yaml.FullLoader)
 
         # iterate properties
-        # key = erk key of property, value = property data
+        # key = irk key of property, value = property data
         for prop, data in value.items():
 
             # TODO move this to config?
@@ -1101,7 +1101,7 @@ def update_metadata_from_property_report(property_path):
             if data["result"] is not None:
 
                 # only filter uri
-                property_list = list(PyerkEntity.objects.filter(Q(uri__icontains=prop)))
+                property_list = list(PyirkEntity.objects.filter(Q(uri__icontains=prop)))
                 if len(property_list) != 1:
                     acm.core.logger.warn(f"Entity not unique or none was found. {property_list}")
                 property_key_label = (
@@ -1110,30 +1110,30 @@ def update_metadata_from_property_report(property_path):
 
                 # check if property is already set
                 ## make sure meta data entry exists
-                if not "erk_data" in meta_dict.keys():
+                if not "irk_data" in meta_dict.keys():
                     acm.core.logger.warn(f"Model {entity} has no metadata yet! Adding some automatically.")
-                    meta_dict["erk_data"] = {}
+                    meta_dict["irk_data"] = {}
 
                 # metadata has no properties: add current prop
-                if not positive_relation in meta_dict["erk_data"].keys():
-                    meta_dict["erk_data"][positive_relation] = [property_key_label]
+                if not positive_relation in meta_dict["irk_data"].keys():
+                    meta_dict["irk_data"][positive_relation] = [property_key_label]
                     # print("new property added")
                 # metadata already has current prop: do nothing
-                elif property_key_label in meta_dict["erk_data"][positive_relation]:
+                elif property_key_label in meta_dict["irk_data"][positive_relation]:
                     # print("prop already exists")
                     pass
                 # just add property to existing ones
                 else:
-                    meta_dict["erk_data"][positive_relation].append(property_key_label)
+                    meta_dict["irk_data"][positive_relation].append(property_key_label)
                     # print("property added to others")
 
                 # metadata has opposite relation
                 if (
-                    negative_relation in meta_dict["erk_data"].keys()
-                    and property_key_label in meta_dict["erk_data"][negative_relation]
+                    negative_relation in meta_dict["irk_data"].keys()
+                    and property_key_label in meta_dict["irk_data"][negative_relation]
                 ):
                     acm.core.logger.warn(f"Evaluation of property {prop} for {entity} changed to {data['result']}")
-                    meta_dict["erk_data"][negative_relation].remove(property_key_label)
+                    meta_dict["irk_data"][negative_relation].remove(property_key_label)
                 # IPS()
         with open(metadata_path, "w") as f:
             yaml.dump(meta_dict, f, allow_unicode=True)

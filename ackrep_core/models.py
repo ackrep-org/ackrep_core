@@ -231,7 +231,7 @@ class SystemModel(GenericEntity):
         null=True,
         blank=True,
     )
-    erk_data = models.CharField(max_length=100000, blank=True)
+    irk_data = models.CharField(max_length=100000, blank=True)
     system_model_file = models.CharField(max_length=500, null=True, blank=True, default="system_model.py")
     simulation_file = models.CharField(max_length=500, null=True, blank=True, default="simulation.py")
 
@@ -369,7 +369,7 @@ class LanguageSpecifiedString(BaseModel):
 envar_ACKREP_ENVIRONMENT_NAME = os.environ.get("ACKREP_ENVIRONMENT_NAME")
 
 
-class PyerkEntity(BaseModel):
+class PyirkEntity(BaseModel):
     id = models.BigAutoField(primary_key=True)
 
     # TODO: this should be renamed to `short_key` (first step: see property `short_key` below)
@@ -385,10 +385,10 @@ class PyerkEntity(BaseModel):
 
         if not envar_ACKREP_ENVIRONMENT_NAME:
             # defer this import until it is necessary
-            from pyerk import settings as pyerk_settings
+            from pyirk import settings as pyirk_settings
 
             if langtag is None:
-                langtag = pyerk_settings.DEFAULT_DATA_LANGUAGE
+                langtag = pyirk_settings.DEFAULT_DATA_LANGUAGE
         # noinspection PyUnresolvedReferences
         res = self.label.filter(langtag=langtag)
         if len(res) == 0:

@@ -16,7 +16,7 @@ class TimeoutException(Exception):
 
 
 class Property:
-    erk_key = None
+    irk_key = None
 
     @abstractmethod
     def check_property(self):
@@ -24,7 +24,7 @@ class Property:
 
 
 class LocalStrongAccess(Property):
-    erk_key = "I7178"
+    irk_key = "I7178"
 
     def check_property(self, model: GenericModel):
         """
@@ -92,7 +92,7 @@ class LocalStrongAccess(Property):
 
 
 class ExactInputStateLinearization(Property):
-    erk_key = "I5358"
+    irk_key = "I5358"
 
     @timeout(600)
     def check_property(self, model: GenericModel):

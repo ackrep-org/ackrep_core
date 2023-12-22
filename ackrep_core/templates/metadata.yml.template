@@ -10,7 +10,7 @@ short_description: {{context.description}}
 version: 0.1.0
 tag_list:
     - ''
-erk_data:
+irk_data:
     R9125["has input dimension"]: {{context.nu}}
     R8978["has output dimension"]: {{context.nz}}
     R2928["has model representation"]:

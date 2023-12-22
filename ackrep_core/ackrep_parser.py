@@ -1,5 +1,5 @@
 """
-This module was originally part of pyerk and served to parse ackrep-specific information to pyerk-entities
+This module was originally part of pyirk and served to parse ackrep-specific information to pyirk-entities
 """
 
 import os
@@ -10,25 +10,25 @@ from yaml.parser import ParserError
 from ipydex import IPS
 from typing import Union
 
-import pyerk
-from pyerk.core import Item, Relation, Entity
-from pyerk import core
-from pyerk import aux
-from pyerk.builtin_entities import instance_of
-from pyerk.erkloader import load_mod_from_path, ModuleType
-from pyerk import builtin_entities
-from pyerk.auxiliary import *
+import pyirk
+from pyirk.core import Item, Relation, Entity
+from pyirk import core
+from pyirk import aux
+from pyirk.builtin_entities import instance_of
+from pyirk.irkloader import load_mod_from_path, ModuleType
+from pyirk import builtin_entities
+from pyirk.auxiliary import *
 from . import models
 from ackrep_core_django_settings.settings import CONF
 
 
-min_pyerk_version = "0.6.0"
-msg = f"Your version of pyerk is too old. At least {min_pyerk_version} reququired!"
-assert version.parse(pyerk.__version__) >= version.parse(min_pyerk_version), msg
+min_pyirk_version = "0.6.0"
+msg = f"Your version of pyirk is too old. At least {min_pyirk_version} reququired!"
+assert version.parse(pyirk.__version__) >= version.parse(min_pyirk_version), msg
 
-__URI__ = "erk:/ackrep"
+__URI__ = "irk:/ackrep"
 
-ERK_ROOT_DIR = aux.get_erk_root_dir()
+IRK_ROOT_DIR = aux.get_irk_root_dir()
 
 entity_pattern = regex.compile(r"^(I|Ra?\d+)(\[(.*)\])$")
 item_pattern = regex.compile(r"^(Ia?\d+)(\[(.*)\])$")
@@ -58,7 +58,7 @@ def ensure_ackrep_load_success(strict: bool = True):
     if n < 10:
         if strict:
             msg = f"Number of found ACKREP entities is unexpectedly low. Found {n}, expected >= 10."
-            raise core.aux.PyERKError(msg)
+            raise core.aux.PyIRKError(msg)
     return n
 
 
@@ -78,9 +78,9 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
     # default path
     if base_path is None:
         if os.environ.get("UNITTEST") == "True" or os.environ.get("CI") == "true":
-            base_path = os.path.join(ERK_ROOT_DIR, settings.ACKREP_DATA_UT_REL_PATH)
+            base_path = os.path.join(IRK_ROOT_DIR, settings.ACKREP_DATA_UT_REL_PATH)
         else:
-            base_path = os.path.join(ERK_ROOT_DIR, settings.ACKREP_DATA_REL_PATH)
+            base_path = os.path.join(IRK_ROOT_DIR, settings.ACKREP_DATA_REL_PATH)
 
     if os.path.isabs(base_path):
         ackrep_path = base_path
@@ -126,7 +126,7 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
 
 
 def ensure_ocse_is_loaded() -> ModuleType:
-    TEST_MOD_NAME = os.path.split(CONF.ERK_DATA_OCSE_MAIN_PATH)[1]
+    TEST_MOD_NAME = os.path.split(CONF.IRK_DATA_OCSE_MAIN_PATH)[1]
 
     # noinspection PyShadowingNames
 
@@ -135,12 +135,12 @@ def ensure_ocse_is_loaded() -> ModuleType:
     if ocse_uri := core.ds.uri_prefix_mapping.b.get(ocse_prefix):
         ocse_mod = core.ds.uri_mod_dict[ocse_uri]
     else:
-        ocse_mod = load_mod_from_path(CONF.ERK_DATA_OCSE_MAIN_PATH, prefix=ocse_prefix, modname=TEST_MOD_NAME)
+        ocse_mod = load_mod_from_path(CONF.IRK_DATA_OCSE_MAIN_PATH, prefix=ocse_prefix, modname=TEST_MOD_NAME)
 
     # ensure that ocse entities are available
 
     assert core.ds.get_entity_by_key_str(f"{ocse_prefix}__R2950__has_corresponding_ackrep_key") is not None
-    assert core.ds.get_entity_by_key_str(f"{ocse_prefix}__I2931__local_ljapunov_stability") is not None
+    assert core.ds.get_entity_by_key_str(f"{ocse_prefix}__I2931__local_Lyapunov_stability") is not None
 
     return ocse_mod
 
@@ -193,10 +193,10 @@ def load_problem_or_solution(entity_path: str):
 
     if "problem_specifications" in entity_path:
         e_type = "pspec"
-        erk_class = mod.I5919["problem specification"]
+        irk_class = mod.I5919["problem specification"]
     elif "problem_solutions" in entity_path:
         e_type = "psol"
-        erk_class = mod.I4635["problem solution"]
+        irk_class = mod.I4635["problem solution"]
     else:
         raise TypeError(f"path {entity_path} doesnt lead to prob spec or prob sol.")
 
@@ -209,7 +209,7 @@ def load_problem_or_solution(entity_path: str):
 
     core.start_mod(__URI__)
 
-    entity = instance_of(erk_class, r1=md["name"], r2=md["short_description"])
+    entity = instance_of(irk_class, r1=md["name"], r2=md["short_description"])
     entity.set_relation(mod.R2950["has corresponding ackrep key"], md["key"])
 
     tags = md["tag_list"]
@@ -230,8 +230,8 @@ def load_system_model(entity_path: str):
 
     from ackrep_core import logging
 
-    logging.logger.info(f"{entity_path=}")
-    logging.logger.info(f"{metadata_path=}")
+    logging.logger.debug(f"{entity_path=}")
+    logging.logger.debug(f"{metadata_path=}")
 
     with open(metadata_path, "r") as metadata_file:
         try:
@@ -245,9 +245,9 @@ def load_system_model(entity_path: str):
     model.set_relation(mod.R2950["has corresponding ackrep key"], md["key"])
 
     try:
-        ed = md["erk_data"]
+        ed = md["irk_data"]
     except KeyError:
-        # print(byellow(f"{md['key']}({md['name']}) has no erk_data yet."))
+        # print(byellow(f"{md['key']}({md['name']}) has no irk_data yet."))
         core.end_mod()
         return 2
 
@@ -350,7 +350,7 @@ def get_entity_from_string(string: str, enforce_class=False) -> Entity:
     except AttributeError:
         pass
 
-    # try imported modules (e.g. erk_data/control_theory1.py)
+    # try imported modules (e.g. irk_data/control_theory1.py)
     try:
         entity = getattr(mod, s)
     except AttributeError:
@@ -386,7 +386,7 @@ def get_entity_from_string(string: str, enforce_class=False) -> Entity:
 
 """
 usefull commands
-pyerk -pad ../../ackrep/ackrep_data
-pyerk -pad ../../ackrep/ackrep_data/system_models/lorenz_system
+pyirk -pad ../../ackrep/ackrep_data
+pyirk -pad ../../ackrep/ackrep_data/system_models/lorenz_system
 
 """
